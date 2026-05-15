@@ -81,7 +81,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .sidebar-link:hover {
-    background: #d7d7d7;
+    background: #d7d7d7 !important;
     color: #0f172a !important;
     --sidebar-icon-color: #0f172a !important;
     border-radius: 0.5rem;
