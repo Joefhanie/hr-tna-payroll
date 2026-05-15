@@ -2,8 +2,8 @@
     <x-slot:title>Timekeeping</x-slot:title>
     <x-slot:header>Timekeeping</x-slot:header>
 
-    <div class="space-y-8">
-        <div class="grid gap-6 md:grid-cols-3">
+    <div class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-3">
             <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
                 <p class="text-sm font-medium text-slate-500">Present today</p>
                 <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $presentToday }}</p>
