@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Employee extends Model
 {
@@ -122,5 +123,29 @@ class Employee extends Model
             $name = "{$this->first_name} {$this->middle_name} {$this->last_name}";
         }
         return $name;
+    }
+
+    /**
+     * Tax brackets assigned to this employee.
+     */
+    public function taxBrackets(): BelongsToMany
+    {
+        return $this->belongsToMany(TaxBracket::class, 'employee_tax_bracket')->withTimestamps();
+    }
+
+    /**
+     * Government contributions assigned to this employee.
+     */
+    public function governmentContributionRates(): BelongsToMany
+    {
+        return $this->belongsToMany(GovernmentContributionRate::class, 'employee_government_contribution')->withTimestamps();
+    }
+
+    /**
+     * Deduction rules assigned to this employee.
+     */
+    public function deductionRules(): BelongsToMany
+    {
+        return $this->belongsToMany(DeductionRule::class, 'employee_deduction_rule')->withTimestamps();
     }
 }

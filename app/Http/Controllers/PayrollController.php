@@ -75,4 +75,56 @@ class PayrollController extends Controller
 
         return redirect()->route('payroll.index')->with('status', 'Payroll run created and finalized.');
     }
+
+    /**
+     * Show payroll details with payslips.
+     */
+    public function show(PayRun $payRun): View
+    {
+        $payRun->load('payslips.employee');
+        $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
+
+        return view('payroll.show', compact('payRun', 'statusLabels'));
+    }
+
+    /**
+     * Show edit form for payroll (draft status only).
+     */
+    public function edit(PayRun $payRun): View
+    {
+        if ($payRun->status !== 1) {
+            return back()->with('error', 'Only draft payroll runs can be edited.');
+        }
+
+        $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
+
+        return view('payroll.edit', compact('payRun', 'statusLabels'));
+    }
+
+    /**
+     * Update payroll details.
+     */
+    public function update(Request $request, PayRun $payRun)
+    {
+        $validated = $request->validate([
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after:period_start',
+            'pay_date' => 'required|date',
+            'status' => 'required|integer|in:1,2,3,4',
+        ]);
+
+        $payRun->update($validated);
+
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Payroll updated successfully.');
+    }
+
+    /**
+     * Delete payroll run.
+     */
+    public function destroy(PayRun $payRun)
+    {
+        $payRun->update(['status' => 13]);
+
+        return redirect()->route('payroll.index')->with('status', 'Payroll run deleted successfully.');
+    }
 }

@@ -22,6 +22,7 @@
     <!-- Current Salary Card -->
     @php
         $activeSalary = $employee->salaryRecords()->whereNull('end_date')->first();
+        $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
     @endphp
 
     @if ($activeSalary)
@@ -32,7 +33,7 @@
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Pay Frequency</p>
-                <p class="mt-2 text-lg font-semibold text-slate-900">{{ $payFrequencies[$activeSalary->salary_type] ?? $activeSalary->salary_type }}</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900">{{ $payFrequencies[$activeSalary->pay_frequency] ?? $activeSalary->pay_frequency }}</p>
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Effective From</p>
@@ -75,7 +76,7 @@
                         @foreach ($employee->salaryRecords->sortByDesc('effective_date') as $salary)
                             <tr>
                                 <td class="px-6 py-4 font-medium text-slate-900">₱{{ number_format($salary->amount, 2) }}</td>
-                                <td class="px-6 py-4 text-slate-600">{{ $payFrequencies[$salary->salary_type] ?? $salary->salary_type }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ $payFrequencies[$salary->pay_frequency] ?? $salary->pay_frequency }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $salary->effective_date->format('M d, Y') }}</td>
                                 <td class="px-6 py-4 text-slate-600">
                                     @if ($salary->end_date)
@@ -121,4 +122,117 @@
             </div>
         @endif
     </div>
+
+    <!-- Tax & Deductions Assignments -->
+    <div class="card overflow-hidden mt-6">
+        <div class="border-b border-slate-200 px-6 py-4">
+            <h2 class="text-lg font-semibold text-slate-900">Tax & Deductions Assignments</h2>
+            <p class="mt-1 text-sm text-slate-600">Select which tax brackets, government contributions, and deduction rules apply to this employee.</p>
+        </div>
+
+        <form method="POST" action="{{ route('salary.save-assignments', $employee) }}" class="p-6">
+            @csrf
+
+            @php
+                $assignedTaxIds = $employee->taxBrackets->pluck('id')->toArray();
+                $assignedContribIds = $employee->governmentContributionRates->pluck('id')->toArray();
+                $assignedDeductionIds = $employee->deductionRules->pluck('id')->toArray();
+            @endphp
+
+            <!-- Tax Brackets -->
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-800">Tax Brackets</h3>
+                        <p class="text-xs text-slate-500">Income thresholds and tax rates</p>
+                    </div>
+                </div>
+
+                @if ($allTaxBrackets->count() > 0)
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($allTaxBrackets as $bracket)
+                            <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($bracket->id, $assignedTaxIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
+                                <input type="checkbox" name="tax_brackets[]" value="{{ $bracket->id }}" {{ in_array($bracket->id, $assignedTaxIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-800 truncate">{{ $bracket->label ?: 'Bracket #' . $bracket->id }}</p>
+                                    <p class="text-xs text-slate-500">Threshold: ₱{{ number_format($bracket->threshold, 2) }} · Rate: {{ $bracket->rate * 100 }}%</p>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-slate-500 italic">No active tax brackets configured. <a href="{{ route('salary.settings') }}" class="text-indigo-600 hover:text-indigo-800">Configure settings</a></p>
+                @endif
+            </div>
+
+            <!-- Government Contributions -->
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-800">Government Contributions</h3>
+                        <p class="text-xs text-slate-500">SSS, PhilHealth, Pag-IBIG, etc.</p>
+                    </div>
+                </div>
+
+                @if ($allContributions->count() > 0)
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($allContributions as $contrib)
+                            <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($contrib->id, $assignedContribIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
+                                <input type="checkbox" name="contributions[]" value="{{ $contrib->id }}" {{ in_array($contrib->id, $assignedContribIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-800 truncate">{{ $contrib->name }}</p>
+                                    <p class="text-xs text-slate-500">Employee: {{ $contrib->employee_rate * 100 }}% · Employer: {{ $contrib->employer_rate * 100 }}%</p>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-slate-500 italic">No active contributions configured. <a href="{{ route('salary.settings') }}" class="text-indigo-600 hover:text-indigo-800">Configure settings</a></p>
+                @endif
+            </div>
+
+            <!-- Deduction Rules -->
+            <div class="mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-800">Deduction Rules</h3>
+                        <p class="text-xs text-slate-500">Operational deductions applied to this employee</p>
+                    </div>
+                </div>
+
+                @if ($allDeductionRules->count() > 0)
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($allDeductionRules as $rule)
+                            <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($rule->id, $assignedDeductionIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
+                                <input type="checkbox" name="deduction_rules[]" value="{{ $rule->id }}" {{ in_array($rule->id, $assignedDeductionIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-slate-800 truncate">{{ $rule->name }}</p>
+                                    <p class="text-xs text-slate-500">{{ $rule->type }} · {{ $rule->type === 'Fixed' ? '₱' . number_format($rule->amount, 2) : ($rule->amount ?? 0) . '%' }}</p>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-slate-500 italic">No active deduction rules configured. <a href="{{ route('salary.settings') }}" class="text-indigo-600 hover:text-indigo-800">Configure settings</a></p>
+                @endif
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex justify-end border-t border-slate-100 pt-5">
+                <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                    Save Assignments
+                </button>
+            </div>
+        </form>
+    </div>
+
 </x-app-layout>

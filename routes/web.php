@@ -50,14 +50,23 @@ Route::middleware('auth')->group(function () {
 
     // Salary Management
     Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
+    Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
+    Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
+    Route::post('/salaries/settings/government-contributions', [SalaryController::class, 'saveGovernmentContributions'])->name('salary.save-government-contributions');
+    Route::post('/salaries/settings/deduction-rules', [SalaryController::class, 'saveDeductionRules'])->name('salary.save-deduction-rules');
     Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
     Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
     Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
     Route::get('/salary/{salaryRecord}/edit', [SalaryController::class, 'edit'])->name('salary.edit');
     Route::put('/salary/{salaryRecord}', [SalaryController::class, 'update'])->name('salary.update');
     Route::delete('/salary/{salaryRecord}', [SalaryController::class, 'destroy'])->name('salary.destroy');
+    Route::post('/employees/{employee}/salary/assignments', [SalaryController::class, 'saveAssignments'])->name('salary.save-assignments');
 
     // Payroll Management
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
+    Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
+    Route::get('/payroll/{payRun}/edit', [PayrollController::class, 'edit'])->name('payroll.edit');
+    Route::put('/payroll/{payRun}', [PayrollController::class, 'update'])->name('payroll.update');
+    Route::delete('/payroll/{payRun}', [PayrollController::class, 'destroy'])->name('payroll.destroy');
 });
