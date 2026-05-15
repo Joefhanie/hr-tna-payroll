@@ -29,7 +29,7 @@ class SalaryController extends Controller
     public function show(Employee $employee): View
     {
         $employee->load('salaryRecords');
-        $payFrequencies = [1 => 'Weekly', 2 => 'Bi-weekly', 3 => 'Monthly', 4 => 'Annual'];
+        $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
         return view('salary.show', compact('employee', 'payFrequencies'));
     }
@@ -39,7 +39,7 @@ class SalaryController extends Controller
      */
     public function create(Employee $employee): View
     {
-        $payFrequencies = [1 => 'Weekly', 2 => 'Bi-weekly', 3 => 'Monthly', 4 => 'Annual'];
+        $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
         return view('salary.create', compact('employee', 'payFrequencies'));
     }
@@ -51,7 +51,7 @@ class SalaryController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
-            'salary_type' => 'required|integer|in:1,2,3,4',
+            'pay_frequency' => 'required|integer|in:1,2,3,4,5',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
             'reason' => 'nullable|string|max:255',
@@ -61,9 +61,9 @@ class SalaryController extends Controller
         $validated['employee_id'] = $employee->id;
         $validated['created_by'] = $request->user()->id;
 
-        // Ensure salary_type is stored as integer
-        if (isset($validated['salary_type'])) {
-            $validated['salary_type'] = (int) $validated['salary_type'];
+        // Ensure pay_frequency is stored as integer
+        if (isset($validated['pay_frequency'])) {
+            $validated['pay_frequency'] = (int) $validated['pay_frequency'];
         }
 
         // End any existing active salary record
@@ -83,7 +83,7 @@ class SalaryController extends Controller
     public function edit(SalaryRecord $salaryRecord): View
     {
         $employee = $salaryRecord->employee;
-        $payFrequencies = [1 => 'Weekly', 2 => 'Bi-weekly', 3 => 'Monthly', 4 => 'Annual'];
+        $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
         return view('salary.edit', compact('salaryRecord', 'employee', 'payFrequencies'));
     }
@@ -95,15 +95,15 @@ class SalaryController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
-            'salary_type' => 'required|integer|in:1,2,3,4',
+            'pay_frequency' => 'required|integer|in:1,2,3,4,5,6',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
             'reason' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
 
-        if (isset($validated['salary_type'])) {
-            $validated['salary_type'] = (int) $validated['salary_type'];
+        if (isset($validated['pay_frequency'])) {
+            $validated['pay_frequency'] = (int) $validated['pay_frequency'];
         }
 
         $salaryRecord->update($validated);

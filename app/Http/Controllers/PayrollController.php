@@ -59,7 +59,8 @@ class PayrollController extends Controller
         $periodEnd = Carbon::now()->endOfMonth();
 
         // PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
-        // PayRun Frequency: 1=Weekly, 2=Bi-weekly, 3=Semi-monthly, 4=Monthly
+        // PayRun Frequency: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
+
         $payRun = PayRun::create([
             'name' => $periodStart->format('F Y'),
             'period_start' => $periodStart->toDateString(),

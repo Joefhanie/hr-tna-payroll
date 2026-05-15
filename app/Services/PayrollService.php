@@ -35,26 +35,26 @@ class PayrollService
     {
         $days = $periodEnd->diffInDays($periodStart) + 1;
 
-        switch ($record->salary_type) {
-            case 'weekly':
-                $base = $record->amount; // amount per week
+        // pay_frequency uses integers: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
+        $type = (int) ($record->pay_frequency ?? 3);
+        $base = $record->amount;
+
+        switch ($type) {
+            case 1:
+                return round($base * ($days * 8), 2);
+            case 2:
+                return round($base * $days, 2);
+            case 3:
                 return round($base * ($days / 7), 2);
-            case 'bi_weekly':
-            case 'bi-weekly':
-            case 'biweekly':
-                $base = $record->amount; // amount per 14 days
+            case 4:
                 return round($base * ($days / 14), 2);
-            case 'monthly':
-                // pro-rate by actual days in month(s)
+            case 5:
                 $periodDaysInMonth = $periodStart->daysInMonth;
-                $base = $record->amount; // monthly amount
                 return round($base * ($days / $periodDaysInMonth), 2);
-            case 'annual':
-                $base = $record->amount; // annual amount
+            case 6:
                 return round($base * ($days / 365), 2);
             default:
                 // fallback: treat as monthly
-                $base = $record->amount;
                 return round($base * ($days / $periodStart->daysInMonth), 2);
         }
     }
