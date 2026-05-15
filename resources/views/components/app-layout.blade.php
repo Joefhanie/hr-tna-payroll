@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'HR System' }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -94,7 +91,6 @@
             width: 100%;
         }
     </style>
-    {{ $head ?? '' }}
 </head>
 <body class="min-h-screen font-sans text-slate-900">
     <div class="flex min-h-screen bg-transparent">
@@ -169,6 +165,19 @@
                     </button>
                 </form>
             </div>
+            @foreach ($groups as $groupName => $items)
+                <div class="mt-4">
+                    <p class="sidebar-group-label px-3 text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">{{ $groupName }}</p>
+                    <nav class="space-y-1">
+                        @foreach ($items as $item)
+                            <a href="{{ route($item['route']) }}" class="nav-link sidebar-nav-link {{ request()->routeIs($item['route']) ? 'active' : '' }}">
+                                <span class="w-4 shrink-0 text-center"><i class="fas fa-{{ $item['icon'] }}"></i></span>
+                                <span class="sidebar-nav-label">{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                </div>
+            @endforeach
         </aside>
 
         <!-- Main Content -->
@@ -189,13 +198,14 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                <div class="flex items-center gap-3">
+                    <button class="btn-outline text-sm" type="button">🔔</button>
+                    <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold">{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</div>
+                </div>
+            </header>
 
-            <!-- Page Content -->
-            <div class="p-8">
-                {{ $slot }}
-            </div>
-        </main>
+            <main class="flex-1 p-6 space-y-6">{{ $slot }}</main>
+        </div>
     </div>
     {{ $scripts ?? '' }}
 

@@ -2,15 +2,13 @@
     <x-slot:title>Employee Management</x-slot:title>
     <x-slot:header>Employee Management</x-slot:header>
 
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-end justify-between gap-4">
         <div>
-            <p class="text-slate-600">Centralized employee database with personal details, contact information, and employment history.</p>
+            <h1 class="text-2xl font-semibold">Employees</h1>
+            <p class="text-sm text-slate-500">Manage employee records, positions, and departments.</p>
         </div>
-        <a href="{{ route('employees.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            <span class="uppercase">Add Employee</span>
+        <a href="{{ route('employees.create') }}" class="btn-primary inline-flex items-center gap-2">
+            <span>+ Add Employee</span>
         </a>
     </div>
 
@@ -31,58 +29,48 @@
     @endif
 
     <!-- Employees Table -->
-    <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div class="card overflow-hidden">
         @if ($employees->count() > 0)
-            <table class="w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50">
+            <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Employee Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Email</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Department</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Position</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Employment Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-700">Actions</th>
+                        <th class="px-4 py-3">Code</th>
+                        <th class="px-4 py-3">Name</th>
+                        <th class="px-4 py-3">Position</th>
+                        <th class="px-4 py-3">Department</th>
+                        <th class="px-4 py-3">Hire Date</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-200">
+                <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ $employee->employee_code }}</td>
-                            <td class="px-6 py-4 text-sm text-slate-900">{{ $employee->full_name }}</td>
-                            <td class="px-6 py-4 text-sm text-slate-600">{{ $employee->email }}</td>
-                            <td class="px-6 py-4 text-sm text-slate-600">{{ $employee->department->name ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm text-slate-600">{{ $employee->position->title ?? 'N/A' }}</td>
-                            <td class="px-6 py-4">
-                                @php
-                                    $empLabels = [1 => 'Full-time', 2 => 'Part-time', 3 => 'Contractual', 4 => 'Intern'];
-                                    $empColors = [1 => 'bg-green-100 text-green-800', 2 => 'bg-blue-100 text-blue-800', 3 => 'bg-yellow-100 text-yellow-800', 4 => 'bg-gray-100 text-gray-800'];
-                                    $code = (int) ($employee->employment_type ?? 0);
-                                    $label = $empLabels[$code] ?? 'N/A';
-                                    $color = $empColors[$code] ?? '';
-                                @endphp
-                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold {{ $color }}">{{ $label }}</span>
+                        <tr>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
+                                        {{ collect(explode(' ', $employee->full_name))->map(fn($name) => $name[0] ?? '')->join('') }}
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-slate-900">{{ $employee->full_name }}</p>
+                                        <p class="text-xs text-slate-500">{{ $employee->email }}</p>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
-                                @php
-                                    $statusLabels = [1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
-                                    $statusColors = [
-                                        1 => 'bg-green-100 text-green-800',
-                                        2 => 'bg-blue-100 text-blue-800',
-                                        3 => 'bg-yellow-100 text-yellow-800',
-                                        4 => 'bg-gray-100 text-gray-800',
-                                        5 => 'bg-red-100 text-red-800',
-                                    ];
-                                    $st = $employee->status;
-                                    $label = $statusLabels[$st] ?? $st;
-                                    $color = $statusColors[$st] ?? '';
-                                @endphp
-                                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold {{ $color }}">
-                                    {{ $label }}
-                                </span>
+                            <td class="px-4 py-3 text-slate-600">{{ $employee->position->title ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-slate-600">{{ $employee->department->name ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-slate-500">{{ optional($employee->hire_date)->format('Y-m-d') ?? 'N/A' }}</td>
+                            <td class="px-4 py-3">
+                                <span class="badge {{ match((string) $employee->status) {
+                                    '1', 'Active' => 'badge-green',
+                                    '2', 'Probationary' => 'badge-blue',
+                                    '3', 'On Leave' => 'badge-amber',
+                                    '4', 'Resigned', 'Terminated' => 'badge-gray',
+                                    default => 'badge-gray',
+                                } }}">{{ $employee->status }}</span>
                             </td>
-                            <td class="px-6 py-4 text-sm">
+                            <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('employees.show', $employee) }}" class="text-slate-600 hover:text-slate-900 transition">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +83,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                     </a>
-                                    <form method="POST" action="{{ route('employees.destroy', $employee) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                    <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this employee?');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600 hover:text-red-900 transition">
@@ -116,16 +104,7 @@
                 {{ $employees->links() }}
             </div>
         @else
-            <div class="px-6 py-12 text-center">
-                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 12H9m4 8H9m6 0h.01M9 20h6"></path>
-                </svg>
-                <h3 class="mt-2 text-lg font-medium text-slate-900 uppercase">No employees found</h3>
-                <p class="mt-1 text-sm text-slate-600">Get started by creating a new employee record.</p>
-                <a href="{{ route('employees.create') }}" class="mt-4 inline-block rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition uppercase">
-                    Add your first employee
-                </a>
-            </div>
+            <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>
         @endif
     </div>
 </x-app-layout>

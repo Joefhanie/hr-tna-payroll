@@ -9,9 +9,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\TimekeepingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/dashboard');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
@@ -24,6 +22,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::view('/onboarding', 'onboarding')->name('onboarding');
+    Route::view('/timekeeping', 'timekeeping')->name('timekeeping');
+    Route::view('/leave', 'leave')->name('leave');
+    Route::view('/benefits', 'benefits')->name('benefits');
+    Route::view('/self-service', 'self-service')->name('self-service');
+    Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');
     Route::get('/organization/departments', [OrganizationController::class, 'departments'])->name('organization.departments.index');
