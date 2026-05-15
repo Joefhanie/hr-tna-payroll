@@ -97,11 +97,11 @@
                 <div class="grid gap-5">
                     <div>
                         <label for="department_name" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Department Name</label>
-                        <input id="department_name" name="name" type="text" value="{{ old('name') }}" class="w-full rounded-[0.5rem] border-slate-300 px-3 py-2 text-sm focus:border-[#1a56db] focus:ring-[#1a56db]" placeholder="e.g. Human Resources">
+                        <input id="department_name" name="name" type="text" value="{{ old('name') }}" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. Human Resources">
                     </div>
                     <div>
                         <label for="parent_dept_id" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Parent Department</label>
-                        <select id="parent_dept_id" name="parent_dept_id" class="w-full rounded-[0.5rem] border-slate-300 px-3 py-2 text-sm focus:border-[#1a56db] focus:ring-[#1a56db]">
+                        <select id="parent_dept_id" name="parent_dept_id" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
                             <option value="">None (Top Level)</option>
                             @foreach ($departments as $department)
                                 <option value="{{ $department->id }}" @selected(old('parent_dept_id') == $department->id)>{{ $department->name }}</option>

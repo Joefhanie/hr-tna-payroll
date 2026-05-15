@@ -2,10 +2,18 @@
     <x-slot:title>Positions</x-slot:title>
     <x-slot:header>Positions</x-slot:header>
 
-    <div>
-        <h1 class="text-2xl font-semibold">Positions</h1>
-        <p class="text-sm text-slate-500">Manage position records and department assignments.</p>
+    <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-[1.65rem] font-bold text-[#06112e]">Positions</h1>
+            <p class="mt-1 text-sm text-slate-500">Manage position records and department assignments.</p>
+        </div>
+        <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('hidden', 'flex')" class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+            <i class="ti ti-plus text-base"></i>
+            Add Position
+        </button>
     </div>
+
+    <div class="mb-4 h-px w-full bg-slate-200"></div>
 
     @if (session('success'))
         <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
@@ -13,55 +21,8 @@
         </div>
     @endif
 
-    @if ($errors->any())
-        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <ul class="space-y-1 text-sm text-red-700">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     <section class="card p-6">
-        <h2 class="text-lg font-semibold text-slate-900">Positions</h2>
-        <p class="mt-1 text-sm text-slate-600">Create positions and link them to a department.</p>
-
-        <form id="positionForm" method="POST" action="{{ route('organization.positions.store') }}" class="mt-6 {{ old('title') || old('department_id') || old('min_salary') ? '' : 'hidden' }} grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            @csrf
-            <div>
-                <label for="position_title" class="mb-2 block text-sm font-medium text-slate-700">Position Title</label>
-                <input id="position_title" name="title" type="text" value="{{ old('title') }}" class="w-full rounded-lg border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Payroll Officer">
-            </div>
-            <div>
-                <label for="position_level" class="mb-2 block text-sm font-medium text-slate-700">Level</label>
-                <input id="position_level" name="level" type="text" value="{{ old('level') }}" class="w-full rounded-lg border-slate-300 focus:border-slate-500 focus:ring-slate-500" placeholder="Senior">
-            </div>
-            <div>
-                <label for="position_department_id" class="mb-2 block text-sm font-medium text-slate-700">Department</label>
-                <select id="position_department_id" name="department_id" class="w-full rounded-lg border-slate-300 focus:border-slate-500 focus:ring-slate-500">
-                    <option value="">None</option>
-                    @foreach ($topLevelDepartments as $department)
-                        <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                    <label for="min_salary" class="mb-2 block text-sm font-medium text-slate-700">Min Salary</label>
-                    <input id="min_salary" name="min_salary" type="number" step="0.01" min="0" value="{{ old('min_salary') }}" class="w-full rounded-lg border-slate-300 focus:border-slate-500 focus:ring-slate-500">
-                </div>
-                <div>
-                    <label for="max_salary" class="mb-2 block text-sm font-medium text-slate-700">Max Salary</label>
-                    <input id="max_salary" name="max_salary" type="number" step="0.01" min="0" value="{{ old('max_salary') }}" class="w-full rounded-lg border-slate-300 focus:border-slate-500 focus:ring-slate-500">
-                </div>
-            </div>
-            <div>
-                <button type="submit" class="btn-primary">Add Position</button>
-            </div>
-        </form>
-
-        <div class="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
@@ -110,15 +71,64 @@
         </div>
     </section>
 
-    <script>
-        document.getElementById('toggleFormBtn').addEventListener('click', function() {
-            const form = document.getElementById('positionForm');
-            form.classList.toggle('hidden');
-        });
-
-        document.getElementById('cancelFormBtn').addEventListener('click', function() {
-            const form = document.getElementById('positionForm');
-            form.classList.add('hidden');
-        });
-    </script>
+    <!-- Add Position Modal -->
+    <div id="positionFormModal" class="{{ $errors->any() ? 'flex' : 'hidden' }} fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
+        <div class="w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-bold text-[#06112e]">Add Position</h3>
+                <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
+                    <i class="ti ti-x text-xl"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{{ route('organization.positions.store') }}" class="p-6">
+                @csrf
+                
+                @if ($errors->any())
+                    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-3">
+                        <ul class="space-y-1 text-[0.8rem] text-red-700">
+                            @foreach ($errors->all() as $error)
+                                <li>• {{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                
+                <div class="grid gap-5">
+                    <div>
+                        <label for="position_title" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Position Title</label>
+                        <input id="position_title" name="title" type="text" value="{{ old('title') }}" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. Payroll Officer">
+                    </div>
+                    <div>
+                        <label for="position_level" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Level</label>
+                        <input id="position_level" name="level" type="text" value="{{ old('level') }}" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. Senior">
+                    </div>
+                    <div>
+                        <label for="position_department_id" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Department</label>
+                        <select id="position_department_id" name="department_id" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                            <option value="">None (Unassigned)</option>
+                            @foreach ($topLevelDepartments as $department)
+                                <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label for="min_salary" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Min Salary</label>
+                            <input id="min_salary" name="min_salary" type="text" inputmode="decimal" maxlength="10" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" value="{{ old('min_salary') }}" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                        </div>
+                        <div>
+                            <label for="max_salary" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Max Salary</label>
+                            <input id="max_salary" name="max_salary" type="text" inputmode="decimal" maxlength="10" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" value="{{ old('max_salary') }}" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Position</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-app-layout>
