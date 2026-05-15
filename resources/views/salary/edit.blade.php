@@ -37,14 +37,14 @@
 
             <!-- Pay Frequency -->
             <div>
-                <label for="salary_type" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Pay Frequency *</label>
-                <select id="salary_type" name="salary_type" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                <label for="pay_frequency" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Pay Frequency *</label>
+                <select id="pay_frequency" name="pay_frequency" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
                     <option value="">Select frequency...</option>
                     @foreach ($payFrequencies as $key => $label)
-                        <option value="{{ $key }}" @selected(old('salary_type', $salaryRecord->salary_type) == $key)>{{ $label }}</option>
+                        <option value="{{ $key }}" @selected(old('pay_frequency', $salaryRecord->pay_frequency) == $key)>{{ $label }}</option>
                     @endforeach
                 </select>
-                @error('salary_type')
+                @error('pay_frequency')
                     <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                 @enderror
             </div>

@@ -50,7 +50,7 @@
                     @foreach ($employees as $employee)
                         @php
                             $activeSalary = $employee->salaryRecords()->whereNull('end_date')->first();
-                            $payFrequencyLabels = ['weekly' => 'Weekly', 'bi_weekly' => 'Bi-weekly', 'monthly' => 'Monthly', 'annual' => 'Annual'];
+                            $payFrequencyLabels = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
                         @endphp
                         <tr>
                             <td class="px-4 py-3">
@@ -74,7 +74,7 @@
                             </td>
                             <td class="px-4 py-3 text-slate-600">
                                 @if ($activeSalary)
-                                    {{ $payFrequencyLabels[$activeSalary->salary_type] ?? $activeSalary->salary_type }}
+                                    {{ $payFrequencyLabels[$activeSalary->pay_frequency] ?? $activeSalary->pay_frequency }}
                                 @else
                                     —
                                 @endif

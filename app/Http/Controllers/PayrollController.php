@@ -17,8 +17,9 @@ class PayrollController extends Controller
     {
         $currentYear = now()->year;
 
-        // Get all pay runs for the current year
+        // Get all pay runs for the current year, excluding deleted ones (status 13)
         $payRuns = PayRun::whereYear('period_start', $currentYear)
+            ->where('status', '!=', 13)
             ->orderBy('period_end', 'desc')
             ->get();
 
@@ -35,6 +36,7 @@ class PayrollController extends Controller
         $currentMonth = now()->month;
         $statutoryAmount = PayRun::whereYear('period_start', $currentYear)
             ->whereMonth('period_end', $currentMonth)
+            ->where('status', '!=', 13)
             ->with('payslips.governmentContributions')
             ->get()
             ->flatMap(function ($payRun) {
@@ -51,28 +53,108 @@ class PayrollController extends Controller
     }
 
     /**
-     * Run payroll for the current period (simple default: full current month).
+     * Show form to create a new pay run.
      */
-    public function run(Request $request, PayrollService $payrollService)
+    public function create(): View
     {
-        $periodStart = Carbon::now()->startOfMonth();
-        $periodEnd = Carbon::now()->endOfMonth();
+        $employees = \App\Models\Employee::whereNull('termination_date')->orderBy('last_name')->get();
+        return view('payroll.create', compact('employees'));
+    }
+
+    /**
+     * Store the new pay run based on user input.
+     */
+    public function store(Request $request, PayrollService $payrollService)
+    {
+        $validated = $request->validate([
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after_or_equal:period_start',
+            'employee_ids' => 'required|array|min:1',
+            'employee_ids.*' => 'exists:employees,id',
+        ]);
+
+        $periodStart = Carbon::parse($validated['period_start']);
+        $periodEnd = Carbon::parse($validated['period_end']);
 
         // PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
-        // PayRun Frequency: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
-
         $payRun = PayRun::create([
-            'name' => $periodStart->format('F Y'),
+            'name' => $periodStart->format('M d') . ' - ' . $periodEnd->format('M d, Y'),
             'period_start' => $periodStart->toDateString(),
             'period_end' => $periodEnd->toDateString(),
             'pay_date' => $periodEnd->toDateString(),
-            'frequency' => 4,  // Monthly
-            'status' => 2,     // Processing
+            'frequency' => 4,  // Default to Monthly or customizable later
+            'status' => 2,     // Processing / Draft Review
             'created_by' => $request->user()->id ?? null,
         ]);
 
+        $payrollService->generateDraftPayRun($payRun, $validated['employee_ids']);
+
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Draft pay run created. Please review the breakdown below before finalizing.');
+    }
+
+    /**
+     * Finalize the pay run after preview.
+     */
+    public function finalize(PayRun $payRun, PayrollService $payrollService)
+    {
+        if ($payRun->status == 3) {
+            return back()->with('error', 'This pay run is already finalized.');
+        }
+
         $payrollService->finalizePayRun($payRun);
 
-        return redirect()->route('payroll.index')->with('status', 'Payroll run created and finalized.');
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Pay run finalized successfully.');
+    }
+
+    /**
+     * Show payroll details with payslips.
+     */
+    public function show(PayRun $payRun): View
+    {
+        $payRun->load('payslips.employee');
+        $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
+
+        return view('payroll.show', compact('payRun', 'statusLabels'));
+    }
+
+    /**
+     * Show edit form for payroll (draft status only).
+     */
+    public function edit(PayRun $payRun): View
+    {
+        if ($payRun->status !== 1) {
+            return back()->with('error', 'Only draft payroll runs can be edited.');
+        }
+
+        $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
+
+        return view('payroll.edit', compact('payRun', 'statusLabels'));
+    }
+
+    /**
+     * Update payroll details.
+     */
+    public function update(Request $request, PayRun $payRun)
+    {
+        $validated = $request->validate([
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after:period_start',
+            'pay_date' => 'required|date',
+            'status' => 'required|integer|in:1,2,3,4',
+        ]);
+
+        $payRun->update($validated);
+
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Payroll updated successfully.');
+    }
+
+    /**
+     * Delete payroll run.
+     */
+    public function destroy(PayRun $payRun)
+    {
+        $payRun->update(['status' => 13]);
+
+        return redirect()->route('payroll.index')->with('status', 'Payroll run deleted successfully.');
     }
 }

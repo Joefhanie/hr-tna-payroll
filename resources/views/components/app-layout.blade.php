@@ -19,7 +19,10 @@
                 ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock'],
                 ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event'],
-                ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salaries', 'icon' => 'coins'],
+                ['label' => 'Salaries', 'icon' => 'coins', 'children' => [
+                    ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
+                    ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
+                ]],
                 ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet'],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
@@ -43,17 +46,51 @@
                         <p class="sidebar-group-label px-2 pt-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $groupName }}</p>
 
                         @foreach ($items as $item)
-                            @php
-                                $routeExists = \Illuminate\Support\Facades\Route::has($item['route']);
-                                $isActive = $routeExists ? request()->routeIs($item['route']) : request()->is(ltrim($item['path'], '/'));
-                                $href = $routeExists ? route($item['route']) : url($item['path']);
-                            @endphp
-                            <a href="{{ $href }}" class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}">
-                                <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
-                                    <i class="ti ti-{{ $item['icon'] }} sidebar-icon text-xl"></i>
-                                </span>
-                                <span class="sidebar-nav-label whitespace-nowrap font-medium">{{ $item['label'] }}</span>
-                            </a>
+                            @if (isset($item['children']))
+                                @php
+                                    $hasActiveChild = collect($item['children'])->contains(function ($child) {
+                                        $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
+                                        return $childRouteExists ? request()->routeIs($child['route']) : request()->is(ltrim($child['path'], '/'));
+                                    });
+                                @endphp
+                                <details class="sidebar-group" @if ($hasActiveChild) open @endif>
+                                    <summary class="sidebar-link {{ $hasActiveChild ? 'sidebar-link-active' : '' }} cursor-pointer list-none">
+                                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                            <i class="ti ti-{{ $item['icon'] }} sidebar-icon text-xl"></i>
+                                        </span>
+                                        <span class="sidebar-nav-label whitespace-nowrap font-medium flex-1">{{ $item['label'] }}</span>
+                                        <span class="text-xs text-slate-400">▾</span>
+                                    </summary>
+
+                                    <div class="mt-1 space-y-1 pl-2">
+                                        @foreach ($item['children'] as $child)
+                                            @php
+                                                $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
+                                                $childIsActive = $childRouteExists ? request()->routeIs($child['route']) : request()->is(ltrim($child['path'], '/'));
+                                                $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
+                                            @endphp
+                                            <a href="{{ $childHref }}" class="sidebar-link sidebar-link-sub {{ $childIsActive ? 'sidebar-link-active' : '' }}">
+                                                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                                                    <i class="ti ti-point sidebar-icon text-base"></i>
+                                                </span>
+                                                <span class="sidebar-nav-label whitespace-nowrap font-medium">{{ $child['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            @else
+                                @php
+                                    $routeExists = \Illuminate\Support\Facades\Route::has($item['route']);
+                                    $isActive = $routeExists ? request()->routeIs($item['route']) : request()->is(ltrim($item['path'], '/'));
+                                    $href = $routeExists ? route($item['route']) : url($item['path']);
+                                @endphp
+                                <a href="{{ $href }}" class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}">
+                                    <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                        <i class="ti ti-{{ $item['icon'] }} sidebar-icon text-xl"></i>
+                                    </span>
+                                    <span class="sidebar-nav-label whitespace-nowrap font-medium">{{ $item['label'] }}</span>
+                                </a>
+                            @endif
                         @endforeach
                     @endforeach
 

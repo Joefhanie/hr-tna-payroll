@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\SalaryRecord;
+use App\Models\TaxBracket;
+use App\Models\DeductionRule;
+use App\Models\GovernmentContributionRate;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -24,14 +27,142 @@ class SalaryController extends Controller
     }
 
     /**
+     * Show salary deduction and tax settings.
+     */
+    public function settings(): View
+    {
+        $taxBrackets = TaxBracket::orderBy('sort_order')->orderBy('threshold')->get();
+        $governmentContributions = GovernmentContributionRate::orderBy('sort_order')->get();
+        $deductionRules = DeductionRule::orderBy('sort_order')->get();
+
+        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules'));
+    }
+
+    /**
+     * Save tax brackets.
+     */
+    public function saveTaxBrackets(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'brackets' => 'required|array',
+            'brackets.*.id' => 'nullable|integer',
+            'brackets.*.threshold' => 'required|numeric|min:0',
+            'brackets.*.rate' => 'required|numeric|min:0|max:100',
+            'brackets.*.label' => 'nullable|string',
+            'brackets.*.is_active' => 'nullable',
+        ]);
+
+        foreach ($validated['brackets'] as $index => $bracketData) {
+            $payload = [
+                'threshold' => $bracketData['threshold'],
+                'rate' => $bracketData['rate'] / 100,
+                'label' => $bracketData['label'] ?? null,
+                'is_active' => isset($bracketData['is_active']),
+                'sort_order' => $index,
+            ];
+
+            if (isset($bracketData['id']) && $bracketData['id']) {
+                TaxBracket::findOrFail($bracketData['id'])->update($payload);
+            } else {
+                TaxBracket::create($payload);
+            }
+        }
+
+        return redirect()->route('salary.settings')->with('success', 'Tax brackets updated successfully.');
+    }
+
+    /**
+     * Save government contribution rates.
+     */
+    public function saveGovernmentContributions(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'contributions' => 'required|array',
+            'contributions.*.id' => 'nullable|integer',
+            'contributions.*.name' => 'required|string|max:255',
+            'contributions.*.employee_rate' => 'required|numeric|min:0|max:100',
+            'contributions.*.employer_rate' => 'required|numeric|min:0|max:100',
+            'contributions.*.is_active' => 'nullable',
+        ]);
+
+        foreach ($validated['contributions'] as $index => $contribData) {
+            $payload = [
+                'name' => $contribData['name'],
+                'employee_rate' => $contribData['employee_rate'] / 100,
+                'employer_rate' => $contribData['employer_rate'] / 100,
+                'is_active' => isset($contribData['is_active']),
+                'sort_order' => $index,
+            ];
+
+            if (isset($contribData['id']) && $contribData['id']) {
+                GovernmentContributionRate::findOrFail($contribData['id'])->update($payload);
+            } else {
+                GovernmentContributionRate::create($payload);
+            }
+        }
+
+        return redirect()->route('salary.settings')->with('success', 'Government contributions updated successfully.');
+    }
+
+    /**
+     * Save deduction rules.
+     */
+    public function saveDeductionRules(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rules' => 'required|array',
+            'rules.*.id' => 'nullable|integer',
+            'rules.*.name' => 'required|string|max:255',
+            'rules.*.type' => 'required|in:Fixed,Percentage,Prorated',
+            'rules.*.amount' => 'nullable|numeric|min:0',
+            'rules.*.rate' => 'nullable|numeric|min:0|max:100',
+            'rules.*.scope' => 'nullable|string',
+            'rules.*.is_active' => 'nullable',
+        ]);
+
+        foreach ($validated['rules'] as $index => $ruleData) {
+            if (isset($ruleData['id']) && $ruleData['id']) {
+                DeductionRule::findOrFail($ruleData['id'])->update([
+                    'name' => $ruleData['name'],
+                    'type' => $ruleData['type'],
+                    'amount' => $ruleData['amount'] ?? null,
+                    'rate' => $ruleData['rate'] ?? null,
+                    'scope' => $ruleData['scope'] ?? null,
+                    'is_active' => isset($ruleData['is_active']),
+                    'sort_order' => $index,
+                ]);
+            } else {
+                DeductionRule::create([
+                    'name' => $ruleData['name'],
+                    'type' => $ruleData['type'],
+                    'amount' => $ruleData['amount'] ?? null,
+                    'rate' => $ruleData['rate'] ?? null,
+                    'scope' => $ruleData['scope'] ?? null,
+                    'is_active' => isset($ruleData['is_active']),
+                    'sort_order' => $index,
+                ]);
+            }
+        }
+
+        return redirect()->route('salary.settings')->with('success', 'Deduction rules updated successfully.');
+    }
+
+    /**
      * Show salary details for a specific employee.
      */
     public function show(Employee $employee): View
     {
-        $employee->load('salaryRecords');
+        $employee->load('salaryRecords', 'taxBrackets', 'governmentContributionRates', 'deductionRules');
         $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
-        return view('salary.show', compact('employee', 'payFrequencies'));
+        $allTaxBrackets = TaxBracket::where('is_active', true)->orderBy('sort_order')->get();
+        $allContributions = GovernmentContributionRate::where('is_active', true)->orderBy('sort_order')->get();
+        $allDeductionRules = DeductionRule::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('salary.show', compact(
+            'employee', 'payFrequencies',
+            'allTaxBrackets', 'allContributions', 'allDeductionRules'
+        ));
     }
 
     /**
@@ -122,5 +253,18 @@ class SalaryController extends Controller
 
         return redirect()->route('salary.show', $employee)
             ->with('success', 'Salary record deleted successfully.');
+    }
+
+    /**
+     * Save per-employee tax bracket, contribution, and deduction rule assignments.
+     */
+    public function saveAssignments(Request $request, Employee $employee): RedirectResponse
+    {
+        $employee->taxBrackets()->sync($request->input('tax_brackets', []));
+        $employee->governmentContributionRates()->sync($request->input('contributions', []));
+        $employee->deductionRules()->sync($request->input('deduction_rules', []));
+
+        return redirect()->route('salary.show', $employee)
+            ->with('success', 'Tax & deduction assignments updated successfully.');
     }
 }

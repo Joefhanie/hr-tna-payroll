@@ -24,6 +24,9 @@
     .nav-link { display: flex; align-items: center; gap: .625rem; padding: .5rem .75rem; border-radius: 8px; color: var(--muted-fg); font-size: .875rem; text-decoration: none; }
     .nav-link:hover { background: var(--muted); color: var(--fg); }
     .nav-link.active { background: #eef2ff; color: var(--primary); font-weight: 500; }
+    .nav-link-sub { display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem .45rem 1.25rem; border-radius: 8px; color: var(--muted-fg); font-size: .84rem; text-decoration: none; }
+    .nav-link-sub:hover { background: var(--muted); color: var(--fg); }
+    .nav-link-sub.active { background: #eef2ff; color: var(--primary); font-weight: 500; }
     .badge { display: inline-flex; align-items: center; padding: .125rem .5rem; border-radius: 9999px; font-size: .75rem; font-weight: 500; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-amber { background: #fef3c7; color: #92400e; }
@@ -40,6 +43,10 @@
       ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules'],
       ['url' => route('timekeeping'),  'label' => 'Timekeeping',   'group' => 'Modules'],
       ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules'],
+      ['label' => 'Salaries', 'group' => 'Modules', 'children' => [
+        ['url' => route('salary.index'), 'label' => 'Salary Records'],
+        ['url' => route('salary.settings'), 'label' => 'Tax & Deductions'],
+      ]],
       ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules'],
       ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules'],
       ['url' => route('self-service'), 'label' => 'Self-Service',  'group' => 'Modules'],
@@ -65,11 +72,32 @@
           <p class="px-3 text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">{{ $groupName }}</p>
           <nav class="space-y-1">
             @foreach ($items as $item)
-              <a href="{{ $item['url'] }}"
-                 class="nav-link {{ $current === $item['url'] ? 'active' : '' }}">
-                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
-                {{ $item['label'] }}
-              </a>
+              @if (isset($item['children']))
+                @php
+                  $hasActiveChild = collect($item['children'])->contains(fn ($child) => $current === $child['url']);
+                @endphp
+                <details class="group" @if ($hasActiveChild) open @endif>
+                  <summary class="nav-link cursor-pointer list-none {{ $hasActiveChild ? 'active' : '' }}">
+                    <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+                    <span class="flex-1">{{ $item['label'] }}</span>
+                    <span class="text-xs text-slate-400 group-open:rotate-180">▾</span>
+                  </summary>
+                  <div class="mt-1 space-y-1 pl-2">
+                    @foreach ($item['children'] as $child)
+                      <a href="{{ $child['url'] }}" class="nav-link-sub {{ $current === $child['url'] ? 'active' : '' }}">
+                        <span class="h-1 w-1 rounded-full bg-current opacity-50"></span>
+                        {{ $child['label'] }}
+                      </a>
+                    @endforeach
+                  </div>
+                </details>
+              @else
+                <a href="{{ $item['url'] }}"
+                   class="nav-link {{ $current === $item['url'] ? 'active' : '' }}">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+                  {{ $item['label'] }}
+                </a>
+              @endif
             @endforeach
           </nav>
         </div>
