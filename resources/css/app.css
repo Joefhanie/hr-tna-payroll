@@ -63,10 +63,9 @@ body.sidebar-collapsed .main-content {
     justify-content: flex-start;
     gap: 0.1rem;
     border-radius: 0.5rem;
-    padding: 0.3rem 0.3rem;
+    padding: 0.2rem 0.3rem;
     color: #000000af;
     --sidebar-icon-color: #344153;
-    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
 .sidebar-icon {
@@ -85,7 +84,7 @@ body.sidebar-collapsed .main-content {
     background: #d7d7d7;
     color: #0f172a !important;
     --sidebar-icon-color: #0f172a !important;
-    padding: 0.3rem 0.3rem;
+    border-radius: 0.5rem;
 }
 
 .sidebar-link-active {
@@ -101,12 +100,6 @@ body.sidebar-collapsed .main-content {
 
 .sidebar-link:not(.sidebar-link-active) .sidebar-nav-label {
     font-weight: 400;
-}
-
-.sidebar-link-active {
-    padding-top: 0.2rem;
-    padding-bottom: 0.2rem;
-    border-radius: 0.7rem;
 }
 
 details>summary::-webkit-details-marker {
