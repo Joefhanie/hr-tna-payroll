@@ -33,7 +33,7 @@ class PayrollService
      */
     public function computeGrossForPeriod(SalaryRecord $record, Carbon $periodStart, Carbon $periodEnd): float
     {
-        $days = $periodEnd->diffInDays($periodStart) + 1;
+        $days = $periodStart->diffInDays($periodEnd) + 1;
 
         // pay_frequency uses integers: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
         $type = (int) ($record->pay_frequency ?? 3);
@@ -330,9 +330,14 @@ class PayrollService
     /**
      * Generate draft payslips for all active employees to allow previewing.
      */
-    public function generateDraftPayRun(PayRun $payRun): void
+    public function generateDraftPayRun(PayRun $payRun, array $employeeIds = null): void
     {
-        $employees = Employee::whereNull('termination_date')->get();
+        $query = Employee::whereNull('termination_date');
+        if ($employeeIds) {
+            $query->whereIn('id', $employeeIds);
+        }
+        $employees = $query->get();
+
         foreach ($employees as $employee) {
             // Prevent duplicate payslips if regenerated
             if (!Payslip::where('pay_run_id', $payRun->id)->where('employee_id', $employee->id)->exists()) {

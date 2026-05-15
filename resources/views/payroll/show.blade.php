@@ -7,7 +7,17 @@
             <h1 class="text-2xl font-semibold">{{ $payRun->name }}</h1>
             <p class="text-sm text-slate-500">Pay period: {{ $payRun->period_start->format('M d, Y') }} – {{ $payRun->period_end->format('M d, Y') }}</p>
         </div>
-        <a href="{{ route('payroll.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
+        <div class="flex items-center gap-3">
+            @if ($payRun->status == 1 || $payRun->status == 2)
+                <form action="{{ route('payroll.finalize', $payRun) }}" method="POST">
+                    @csrf
+                    <button type="submit" onclick="return confirm('Are you sure you want to finalize this pay run? This will approve all payslips.')" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+                        Finalize Pay Run
+                    </button>
+                </form>
+            @endif
+            <a href="{{ route('payroll.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
+        </div>
     </div>
 
     @php
@@ -55,7 +65,6 @@
                         <th class="px-6 py-3">Employee</th>
                         <th class="px-6 py-3 text-right">Gross</th>
                         <th class="px-6 py-3 text-right">Deductions</th>
-                        <th class="px-6 py-3 text-right">Tax</th>
                         <th class="px-6 py-3 text-right">Net</th>
                         <th class="px-6 py-3">Status</th>
                     </tr>
@@ -75,7 +84,6 @@
                             <td class="px-6 py-4 font-medium text-slate-900">{{ $payslip->employee->full_name }}</td>
                             <td class="px-6 py-4 text-right text-slate-600">₱{{ number_format($payslip->gross_pay, 2) }}</td>
                             <td class="px-6 py-4 text-right text-slate-600">₱{{ number_format($payslip->total_deductions, 2) }}</td>
-                            <td class="px-6 py-4 text-right text-slate-600">₱{{ number_format($payslip->tax, 2) }}</td>
                             <td class="px-6 py-4 text-right font-semibold text-slate-900">₱{{ number_format($payslip->net_pay, 2) }}</td>
                             <td class="px-6 py-4"><span class="badge {{ $payslipStatusColor }}">{{ $payslipStatusLabels[$payslip->status] ?? 'Unknown' }}</span></td>
                         </tr>

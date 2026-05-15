@@ -4,13 +4,10 @@
 
     <div class="mb-6 flex items-center justify-between">
         <p class="text-sm text-slate-600">Payroll runs, payslips, and statutory contributions.</p>
-        <form action="{{ route('payroll.run') }}" method="POST">
-            @csrf
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium">
-                <i class="fas fa-play"></i>
-                Run Payroll
-            </button>
-        </form>
+        <a href="{{ route('payroll.create') }}" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium">
+            <i class="fas fa-play"></i>
+            Run Payroll
+        </a>
     </div>
 
     @if(session('status'))

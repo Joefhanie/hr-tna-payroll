@@ -64,7 +64,8 @@ Route::middleware('auth')->group(function () {
 
     // Payroll Management
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
-    Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
+    Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
+    Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
     Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
     Route::post('/payroll/{payRun}/finalize', [PayrollController::class, 'finalize'])->name('payroll.finalize');
     Route::get('/payroll/{payRun}/edit', [PayrollController::class, 'edit'])->name('payroll.edit');
