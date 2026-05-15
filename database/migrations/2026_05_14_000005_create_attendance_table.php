@@ -18,7 +18,8 @@ return new class extends Migration
             $table->date('attendance_date');
             $table->time('check_in')->nullable();
             $table->time('check_out')->nullable();
-            $table->string('status')->default('present'); // present, late, absent, excused
+            // status codes: 1=present, 2=late, 3=absent, 4=excused
+            $table->tinyInteger('status')->default(1);
             $table->text('notes')->nullable();
             $table->timestamps();
 

@@ -21,7 +21,6 @@
             </div>
             <p class="text-[0.98rem] text-slate-600">Total Employees</p>
             <p class="mt-1.5 text-[2rem] font-semibold tracking-tight text-slate-950">{{ $totalEmployees }}</p>
-            <p class="mt-1.5 text-sm text-slate-500">+6 this month</p>
         </div>
 
         <div class="card p-5">

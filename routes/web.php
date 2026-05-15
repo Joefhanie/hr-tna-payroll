@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +25,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::view('/onboarding', 'onboarding')->name('onboarding');
-    Route::view('/timekeeping', 'timekeeping')->name('timekeeping');
     Route::view('/leave', 'leave')->name('leave');
     Route::view('/benefits', 'benefits')->name('benefits');
     Route::view('/self-service', 'self-service')->name('self-service');
@@ -48,6 +48,16 @@ Route::middleware('auth')->group(function () {
     // Employee Management
     Route::resource('employees', EmployeeController::class);
 
+    // Salary Management
+    Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
+    Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
+    Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
+    Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
+    Route::get('/salary/{salaryRecord}/edit', [SalaryController::class, 'edit'])->name('salary.edit');
+    Route::put('/salary/{salaryRecord}', [SalaryController::class, 'update'])->name('salary.update');
+    Route::delete('/salary/{salaryRecord}', [SalaryController::class, 'destroy'])->name('salary.destroy');
+
     // Payroll Management
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
 });

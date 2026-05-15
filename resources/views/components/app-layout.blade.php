@@ -15,6 +15,7 @@
             ],
             'Modules' => [
                 ['route' => 'employees.index', 'path' => '/employees', 'label' => 'Employees', 'icon' => 'user'],
+                ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salaries', 'icon' => 'coins'],
                 ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'clipboard-user'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock'],
                 ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-days'],

@@ -13,11 +13,11 @@ class SalaryRecord extends Model
     protected $fillable = [
         'employee_id',
         'amount',
-        'currency',
         'salary_type',
         'effective_date',
         'end_date',
         'reason',
+        'notes',
         'created_by',
     ];
 
@@ -25,6 +25,7 @@ class SalaryRecord extends Model
         'amount' => 'decimal:2',
         'effective_date' => 'date',
         'end_date' => 'date',
+        'salary_type' => 'integer',
     ];
 
     /**

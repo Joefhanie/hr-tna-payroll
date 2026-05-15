@@ -16,7 +16,8 @@ return new class extends Migration
             $table->date('hire_date')->nullable();
             $table->string('position')->nullable();
             $table->string('department')->nullable();
-            $table->string('status')->default('active'); // active, inactive, onboarding
+            // status codes: 1=active, 0=inactive, 2=onboarding
+            $table->tinyInteger('status')->default(1);
         });
     }
 

@@ -15,8 +15,8 @@ return new class extends Migration
             Schema::create('salary_records', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->decimal('salary_amount', 10, 2);
-            $table->enum('pay_frequency', ['weekly', 'bi_weekly', 'monthly', 'annual']);
+            $table->decimal('amount', 10, 2);
+            $table->enum('salary_type', ['weekly', 'bi_weekly', 'monthly', 'annual']);
             $table->date('effective_date');
             $table->date('end_date')->nullable();
             $table->string('reason')->nullable(); // e.g., 'Raise', 'Promotion', 'Adjustment'

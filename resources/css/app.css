@@ -198,3 +198,13 @@ details > summary::-webkit-details-marker {
     background: #e2e8f0;
     color: #475569;
 }
+
+.badge-indigo {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.badge-purple {
+    background: #f3e8ff;
+    color: #6b21a8;
+}

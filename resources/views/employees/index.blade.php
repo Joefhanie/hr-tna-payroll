@@ -39,6 +39,7 @@
                         <th class="px-4 py-3">Position</th>
                         <th class="px-4 py-3">Department</th>
                         <th class="px-4 py-3">Hire Date</th>
+                        <th class="px-4 py-3">Employment Type</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Actions</th>
                     </tr>
@@ -62,13 +63,35 @@
                             <td class="px-4 py-3 text-slate-600">{{ $employee->department->name ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-slate-500">{{ optional($employee->hire_date)->format('Y-m-d') ?? 'N/A' }}</td>
                             <td class="px-4 py-3">
-                                <span class="badge {{ match((string) $employee->status) {
-                                    '1', 'Active' => 'badge-green',
-                                    '2', 'Probationary' => 'badge-blue',
-                                    '3', 'On Leave' => 'badge-amber',
-                                    '4', 'Resigned', 'Terminated' => 'badge-gray',
-                                    default => 'badge-gray',
-                                } }}">{{ $employee->status }}</span>
+                                @php
+                                    $empLabels = [1 => 'Full-time', 2 => 'Part-time', 3 => 'Contractual', 4 => 'Intern'];
+                                    $empCode = (int) ($employee->employment_type ?? 0);
+                                    $empLabel = $empLabels[$empCode] ?? 'N/A';
+                                    $empColors = [
+                                        1 => 'badge-green',
+                                        2 => 'badge-amber',
+                                        3 => 'badge-indigo',
+                                        4 => 'badge-purple',
+                                    ];
+                                    $empBadgeColor = $empColors[$empCode] ?? 'badge-gray';
+                                @endphp
+                                <span class="badge {{ $empBadgeColor }}">{{ $empLabel }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                @php
+                                    $statusLabels = [1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
+                                    $statusCode = (int) ($employee->status ?? 0);
+                                    $statusLabel = $statusLabels[$statusCode] ?? 'Unknown';
+                                    $statusColors = [
+                                        1 => 'badge-green',
+                                        2 => 'badge-blue',
+                                        3 => 'badge-amber',
+                                        4 => 'badge-gray',
+                                        5 => 'badge-gray',
+                                    ];
+                                    $badgeColor = $statusColors[$statusCode] ?? 'badge-gray';
+                                @endphp
+                                <span class="badge {{ $badgeColor }}">{{ $statusLabel }}</span>
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">

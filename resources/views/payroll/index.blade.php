@@ -2,20 +2,29 @@
     <x-slot:title>Payroll</x-slot:title>
     <x-slot:header>Payroll</x-slot:header>
 
-    <div class="flex items-end justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold">Payroll</h1>
-            <p class="text-sm text-slate-500">Payroll runs, payslips, and statutory contributions.</p>
-        </div>
-        <button onclick="alert('Run Payroll feature coming soon')" class="btn-primary inline-flex items-center gap-2">
-            <span>▶ Run Payroll</span>
-        </button>
+    <div class="mb-6 flex items-center justify-between">
+        <p class="text-sm text-slate-600">Payroll runs, payslips, and statutory contributions.</p>
+        <form action="{{ route('payroll.run') }}" method="POST">
+            @csrf
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium">
+                <i class="fas fa-play"></i>
+                Run Payroll
+            </button>
+        </form>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-3">
-        <div class="card p-5">
-            <p class="text-sm text-slate-500">YTD Gross</p>
-            <p class="mt-1 text-2xl font-semibold">₱{{ number_format($ytdGross, 0) }}</p>
+    @if(session('status'))
+        <div class="mb-4 p-3 rounded bg-green-50 text-green-800">{{ session('status') }}</div>
+    @endif
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- YTD Gross Card -->
+        <div class="bg-white rounded-lg border border-slate-200 p-6 shadow-sm hover:shadow-md transition">
+            <h3 class="text-sm font-medium text-slate-600 mb-2">YTD Gross</h3>
+            <p class="text-3xl font-bold text-slate-900">
+                ₱{{ number_format($ytdGross, 0) }}
+            </p>
         </div>
 
         <div class="card p-5">
@@ -45,14 +54,17 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($payRuns as $payRun)
                         @php
+                            // PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
                             $grossTotal = $payRun->payslips()->sum('gross_pay');
                             $netTotal = $payRun->payslips()->sum('net_pay');
                             $employeeCount = $payRun->payslips()->count();
-                            $statusColor = match($payRun->status) {
-                                'Paid', 'Completed' => 'badge-green',
-                                'Processing' => 'badge-blue',
-                                'Draft' => 'badge-gray',
-                                'Cancelled' => 'badge-red',
+                            $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
+                            $statusLabel = $statusLabels[$payRun->status] ?? 'Unknown';
+                            $statusColor = match((int) $payRun->status) {
+                                3 => 'badge-green',      // Completed
+                                2 => 'badge-blue',       // Processing
+                                1 => 'badge-gray',       // Draft
+                                4 => 'badge-red',        // Cancelled
                                 default => 'badge-gray'
                             };
                         @endphp
@@ -71,7 +83,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 <span class="badge {{ $statusColor }}">
-                                    {{ ucfirst($payRun->status) }}
+                                    {{ $statusLabel }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm">

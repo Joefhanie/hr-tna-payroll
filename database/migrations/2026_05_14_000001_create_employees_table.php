@@ -49,7 +49,7 @@ return new class extends Migration
 
             // Salary Information
             $table->decimal('base_salary', 10, 2)->nullable();
-            $table->enum('pay_frequency', ['weekly', 'bi_weekly', 'monthly', 'annual'])->default('monthly');
+            $table->enum('salary_type', ['weekly', 'bi_weekly', 'monthly', 'annual'])->default('monthly');
             $table->decimal('hourly_rate', 8, 2)->nullable();
 
             // Bank Information

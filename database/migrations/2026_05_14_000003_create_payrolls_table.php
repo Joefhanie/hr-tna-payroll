@@ -18,7 +18,8 @@ return new class extends Migration
             $table->decimal('gross_salary', 12, 2);
             $table->decimal('deductions', 12, 2)->default(0);
             $table->decimal('net_salary', 12, 2);
-            $table->string('status')->default('processing'); // processing, completed, failed
+            // status codes: 1=processing, 2=completed, 3=failed
+            $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });
     }
