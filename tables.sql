@@ -97,7 +97,7 @@ CREATE TABLE salary_records (
     employee_id     INT UNSIGNED     NOT NULL,
     amount          DECIMAL(14,2)    NOT NULL,
     currency        CHAR(3)          NOT NULL DEFAULT 'PHP',
-    salary_type     ENUM('Monthly','Semi-monthly','Hourly','Daily') NOT NULL DEFAULT 'Monthly',
+    pay_frequency     ENUM('Monthly','Semi-monthly','Hourly','Daily') NOT NULL DEFAULT 'Monthly',
     effective_date  DATE             NOT NULL,
     end_date        DATE             NULL,
     reason          VARCHAR(200)     NULL COMMENT 'e.g. Promotion, Annual review',

@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::post('/payroll/run', [PayrollController::class, 'run'])->name('payroll.run');
     Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
+    Route::post('/payroll/{payRun}/finalize', [PayrollController::class, 'finalize'])->name('payroll.finalize');
     Route::get('/payroll/{payRun}/edit', [PayrollController::class, 'edit'])->name('payroll.edit');
     Route::put('/payroll/{payRun}', [PayrollController::class, 'update'])->name('payroll.update');
     Route::delete('/payroll/{payRun}', [PayrollController::class, 'destroy'])->name('payroll.destroy');

@@ -67,13 +67,27 @@ class PayrollController extends Controller
             'period_end' => $periodEnd->toDateString(),
             'pay_date' => $periodEnd->toDateString(),
             'frequency' => 4,  // Monthly
-            'status' => 2,     // Processing
+            'status' => 2,     // Processing / Draft Review
             'created_by' => $request->user()->id ?? null,
         ]);
 
+        $payrollService->generateDraftPayRun($payRun);
+
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Draft pay run created. Please review the breakdown below before finalizing.');
+    }
+
+    /**
+     * Finalize the pay run after preview.
+     */
+    public function finalize(PayRun $payRun, PayrollService $payrollService)
+    {
+        if ($payRun->status == 3) {
+            return back()->with('error', 'This pay run is already finalized.');
+        }
+
         $payrollService->finalizePayRun($payRun);
 
-        return redirect()->route('payroll.index')->with('status', 'Payroll run created and finalized.');
+        return redirect()->route('payroll.show', $payRun)->with('status', 'Pay run finalized successfully.');
     }
 
     /**
