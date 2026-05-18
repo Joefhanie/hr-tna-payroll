@@ -40,7 +40,9 @@
                         </th>
                         @foreach ($weekData as $day)
                             <th class="border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 last:border-r-0">
-                                {{ $day['date'] }}
+                                <a href="{{ route('payroll.per-date', ['date' => urlencode($day['date'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    {{ $day['date'] }}
+                                </a>
                             </th>
                         @endforeach
                     </tr>

@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/payroll/plotting-payment', 'payroll.plotting-payment')->name('payroll.plotting-payment');
     Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
     Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
+    Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');

@@ -85,6 +85,23 @@ class PayrollController extends Controller
         return view('payroll.work-location-details', compact('date', 'workplaceName', 'employeeData'));
     }
 
+    public function showPerDateDetails(string $date): View
+    {
+        $dateFormatted = urldecode($date);
+
+        // Sample employee data for the date
+        $employeeData = [
+            ['name' => 'Kenneth', 'workplace' => 'Manila Zoo', 'supervisor' => 'Andre', 'amount' => ''],
+            ['name' => 'Alfren', 'workplace' => 'Manila Zoo', 'supervisor' => 'Andre', 'amount' => ''],
+            ['name' => 'Jano', 'workplace' => 'Manila Zoo', 'supervisor' => 'Jim', 'amount' => ''],
+            ['name' => 'KJ', 'workplace' => 'Manila Zoo', 'supervisor' => 'Jim', 'amount' => ''],
+            ['name' => 'Jim', 'workplace' => 'Manila Zoo', 'supervisor' => 'Andrei', 'amount' => ''],
+            ['name' => 'Andrei', 'workplace' => 'Manila Zoo', 'supervisor' => 'Andrei', 'amount' => ''],
+        ];
+
+        return view('payroll.per-date', compact('dateFormatted', 'employeeData'));
+    }
+
     /**
      * Show form to create a new pay run.
      */
