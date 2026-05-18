@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -23,23 +24,28 @@ class DashboardController extends Controller
 
         // On Leave Today
         $today = Carbon::now()->toDateString();
-        $onLeaveToday = Leave::where('status', 'approved')
+        $onLeaveToday = Leave::where('status', 2)
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
             ->count();
 
-        $leavesPendingApproval = Leave::where('status', 'pending')->count();
+        $leavesPendingApproval = Leave::where('status', 1)->count();
 
         // Current Payroll Status
         $currentMonth = Carbon::now();
-        $totalPayroll = Payroll::whereMonth('payroll_date', $currentMonth->month)
-            ->whereYear('payroll_date', $currentMonth->year)
-            ->sum('net_salary');
+        $totalPayroll = 0;
+        $payrollProcessing = 0;
 
-        $payrollProcessing = Payroll::whereMonth('payroll_date', $currentMonth->month)
-            ->whereYear('payroll_date', $currentMonth->year)
-            ->where('status', 'processing')
-            ->count();
+        if (Schema::hasTable('payrolls')) {
+            $totalPayroll = Payroll::whereMonth('payroll_date', $currentMonth->month)
+                ->whereYear('payroll_date', $currentMonth->year)
+                ->sum('net_salary');
+
+            $payrollProcessing = Payroll::whereMonth('payroll_date', $currentMonth->month)
+                ->whereYear('payroll_date', $currentMonth->year)
+                ->where('status', 1)
+                ->count();
+        }
 
         // Today's Attendance
         $todayAttendance = Attendance::with('user')
