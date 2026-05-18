@@ -15,11 +15,19 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+
         // Total Employees (from employees table)
         $totalEmployees = Employee::where('status', 1)->count();
 
-        // New Hires: employees hired within the last 30 days
+        // New Hires: employees hired within the last 30 days (interns, probationary, part-time)
+        // employment_type: 2=Part-time, 4=Temporary (Interns); status: 2=Probationary
         $newHires = Employee::whereBetween('hire_date', [Carbon::now()->subDays(30)->startOfDay(), Carbon::now()->endOfDay()])
+            ->where(function ($query) {
+                $query->where('employment_type', 2)  // Part-time
+                      ->orWhere('employment_type', 4) // Temporary/Interns
+                      ->orWhere('status', 2);          // Probationary
+            })
             ->count();
 
         // On Leave Today
@@ -58,6 +66,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard', [
+            'user' => $user,
             'totalEmployees' => $totalEmployees,
             'newHires' => $newHires,
             'onLeaveToday' => $onLeaveToday,

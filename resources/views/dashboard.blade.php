@@ -4,7 +4,7 @@
 
     <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h2 class="text-[2rem] font-semibold tracking-tight text-slate-950">Good morning, Ana</h2>
+            <h2 class="text-[2rem] font-semibold tracking-tight text-slate-950">Good morning, {{ collect(preg_split('/\s+/', trim($user->name ?? 'User')))->first() }}</h2>
             <p class="mt-1.5 text-[0.98rem] text-slate-500">Here&apos;s what&apos;s happening with your team today.</p>
         </div>
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\Position;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,6 +31,14 @@ class OrganizationController extends Controller
             ->get();
 
         return view('organization.positions', compact('positions', 'topLevelDepartments'));
+    }
+
+    public function users(): View
+    {
+        $users = User::orderBy('name')
+            ->get();
+
+        return view('organization.users', compact('users'));
     }
 
     public function storeDepartment(Request $request): RedirectResponse

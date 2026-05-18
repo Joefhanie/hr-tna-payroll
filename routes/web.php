@@ -55,6 +55,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/organization/positions/{position}', [OrganizationController::class, 'updatePosition'])->name('organization.positions.update');
     Route::delete('/organization/positions/{position}', [OrganizationController::class, 'destroyPosition'])->name('organization.positions.destroy');
 
+    Route::get('/organization/users', [OrganizationController::class, 'users'])->name('organization.users.index');
+
     // Employee Management
     Route::resource('employees', EmployeeController::class);
 

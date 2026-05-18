@@ -108,7 +108,18 @@
                         $positionsRouteExists = \Illuminate\Support\Facades\Route::has('organization.positions.index');
                         $positionsHref = $positionsRouteExists ? route('organization.positions.index') : url('/organization/positions');
                         $positionsActive = $positionsRouteExists ? request()->routeIs('organization.positions.*') : request()->is('organization/positions*');
+
+                        $usersRouteExists = \Illuminate\Support\Facades\Route::has('organization.users.index');
+                        $usersHref = $usersRouteExists ? route('organization.users.index') : url('/organization/users');
+                        $usersActive = $usersRouteExists ? request()->routeIs('organization.users.*') : request()->is('organization/users*');
                     @endphp
+
+                    <a href="{{ $usersHref }}" class="sidebar-link {{ $usersActive ? 'sidebar-link-active' : '' }}">
+                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                            <i class="ti ti-users sidebar-icon text-xl"></i>
+                        </span>
+                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Users</span>
+                    </a>
 
                     <a href="{{ $departmentsHref }}" class="sidebar-link {{ $departmentsActive ? 'sidebar-link-active' : '' }}">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">

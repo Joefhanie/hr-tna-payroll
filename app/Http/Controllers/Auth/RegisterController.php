@@ -31,6 +31,7 @@ class RegisterController extends Controller
             'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', 'in:1,2,3,4'],
             'remember' => ['nullable', 'boolean'],
         ]);
 
@@ -39,6 +40,7 @@ class RegisterController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'role' => $validated['role'] ?? 4,
             'remember' => (bool) $request->input('remember'),
         ]);
 
@@ -124,6 +126,7 @@ class RegisterController extends Controller
                 'username' => $account['username'],
                 'email' => $account['email'],
                 'password' => $account['password'],
+                'role' => $account['role'] ?? 4,
                 'status' => 2,
             ]);
 
