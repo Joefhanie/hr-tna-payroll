@@ -8,6 +8,7 @@ use App\Models\Position;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -15,11 +16,20 @@ class OrganizationController extends Controller
 {
     public function departments(): View
     {
-        $departments = Department::with('parentDepartment')
+        $departments = Department::with(['parentDepartment', 'employees', 'positions'])
+            ->withCount('employees')
             ->orderBy('name')
             ->get();
 
-        return view('organization.departments', compact('departments'));
+        $departmentRows = $this->flattenDepartmentsByHierarchy($departments);
+
+        $positions = Position::with('department')
+            ->orderBy('title')
+            ->get();
+
+        $departmentOptions = $this->departmentOptionsByHierarchy();
+
+        return view('organization.departments', compact('departments', 'departmentRows', 'positions', 'departmentOptions'));
     }
 
     public function positions(): View
@@ -28,11 +38,9 @@ class OrganizationController extends Controller
             ->orderBy('title')
             ->get();
 
-        $topLevelDepartments = Department::whereNull('parent_dept_id')
-            ->orderBy('name')
-            ->get();
+        $departmentOptions = $this->departmentOptionsByHierarchy();
 
-        return view('organization.positions', compact('positions', 'topLevelDepartments'));
+        return view('organization.positions', compact('positions', 'departmentOptions'));
     }
 
     public function users(): View
@@ -154,6 +162,10 @@ class OrganizationController extends Controller
         return redirect()->route('organization.users.index')->with('success', 'User updated successfully.');
     }
 
+    /**
+     * @param \App\Models\Employee|null $currentEmployee
+     * @return \Illuminate\Support\Collection<int, \App\Models\Employee>
+     */
     private function availableEmployees(?Employee $currentEmployee = null)
     {
         $linkedEmployeeIds = User::query()
@@ -161,6 +173,7 @@ class OrganizationController extends Controller
             ->pluck('employee_id')
             ->all();
 
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees */
         $employees = Employee::query()
             ->when(! empty($linkedEmployeeIds), function ($query) use ($linkedEmployeeIds) {
                 $query->whereNotIn('id', $linkedEmployeeIds);
@@ -170,7 +183,7 @@ class OrganizationController extends Controller
             ->get();
 
         if ($currentEmployee && ! $employees->contains('id', $currentEmployee->id)) {
-            $employees = $employees->prepend($currentEmployee);
+            $employees->prepend($currentEmployee);
         }
 
         return $employees->values();
@@ -234,7 +247,7 @@ class OrganizationController extends Controller
 
         Position::create($validated);
 
-        return redirect()->route('organization.positions.index')->with('success', 'Position created successfully.');
+        return redirect()->route('organization.departments.index')->with('success', 'Position created successfully.');
     }
 
     public function showPosition(Position $position): View
@@ -244,11 +257,70 @@ class OrganizationController extends Controller
 
     public function editPosition(Position $position): View
     {
-        $topLevelDepartments = Department::whereNull('parent_dept_id')
+        $departmentOptions = $this->departmentOptionsByHierarchy();
+
+        return view('organization.positions-edit', compact('position', 'departmentOptions'));
+    }
+
+    /**
+     * Build a flattened department list ordered by hierarchy depth.
+     *
+        * @return array<int, array{id:int,name:string,depth:int,label:string}>
+     */
+    private function departmentOptionsByHierarchy(): array
+    {
+        $departments = Department::query()
+            ->select(['id', 'name', 'parent_dept_id'])
             ->orderBy('name')
             ->get();
 
-        return view('organization.positions-edit', compact('position', 'topLevelDepartments'));
+        $departmentRows = $this->flattenDepartmentsByHierarchy($departments);
+
+        return array_map(static function (array $row): array {
+            /** @var Department $department */
+            $department = $row['department'];
+
+            return [
+                'id' => $department->id,
+                'name' => $department->name,
+                'depth' => $row['depth'],
+                'label' => $row['path'],
+            ];
+        }, $departmentRows);
+    }
+
+    /**
+     * Flatten departments in parent-to-child display order.
+     *
+     * @param Collection<int, Department> $departments
+    * @return array<int, array{department: Department, depth: int, path: string}>
+     */
+    private function flattenDepartmentsByHierarchy(Collection $departments): array
+    {
+        $byParent = $departments->groupBy(function (Department $department) {
+            return $department->parent_dept_id ?? 0;
+        });
+
+        $rows = [];
+        $appendChildren = function (int $parentId, int $depth, string $parentPath = '') use (&$appendChildren, &$rows, $byParent): void {
+            foreach ($byParent->get($parentId, collect()) as $department) {
+                $currentPath = $parentPath === ''
+                    ? $department->name
+                    : $parentPath . ' / ' . $department->name;
+
+                $rows[] = [
+                    'department' => $department,
+                    'depth' => $depth,
+                    'path' => $currentPath,
+                ];
+
+                $appendChildren($department->id, $depth + 1, $currentPath);
+            }
+        };
+
+        $appendChildren(0, 0, '');
+
+        return $rows;
     }
 
     public function updatePosition(Request $request, Position $position): RedirectResponse
@@ -263,13 +335,13 @@ class OrganizationController extends Controller
 
         $position->update($validated);
 
-        return redirect()->route('organization.positions.index')->with('success', 'Position updated successfully.');
+        return redirect()->route('organization.departments.index')->with('success', 'Position updated successfully.');
     }
 
     public function destroyPosition(Position $position): RedirectResponse
     {
         $position->delete();
 
-        return redirect()->route('organization.positions.index')->with('success', 'Position deleted successfully.');
+        return redirect()->route('organization.departments.index')->with('success', 'Position deleted successfully.');
     }
 }

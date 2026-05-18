@@ -13,6 +13,22 @@
         ['label' => 'Employment',  'color' => 'emerald'],
         ['label' => 'Termination', 'color' => 'rose'],
     ];
+
+    // Pre-calculate all descendant department IDs for each department
+    $departmentChildrenMap = [];
+    foreach ($departments as $dept) {
+        $childrenIds = [];
+        $getDescendants = function($parentId) use (&$getDescendants, $departments, &$childrenIds) {
+            foreach ($departments as $d) {
+                if ($d->parent_dept_id == $parentId) {
+                    $childrenIds[] = (string) $d->id;
+                    $getDescendants($d->id);
+                }
+            }
+        };
+        $getDescendants($dept->id);
+        $departmentChildrenMap[$dept->id] = $childrenIds;
+    }
 @endphp
 
 {{-- ── Step Progress Bar ─────────────────────────────────────────────── --}}
@@ -200,10 +216,10 @@
         </div>
         <div>
             <label class="{{ $lbl }}" for="position_id">Position</label>
-            <select id="position_id" name="position_id" class="{{ $sel }}">
+            <select id="position_id" name="position_id" class="{{ $sel }} disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
                 <option value="">Select position</option>
                 @foreach ($positions as $position)
-                    <option value="{{ $position->id }}" @selected(old('position_id', $employee->position_id ?? '') == $position->id)>{{ $position->title }}</option>
+                    <option value="{{ $position->id }}" data-department-id="{{ $position->department_id }}" @selected(old('position_id', $employee->position_id ?? '') == $position->id)>{{ $position->title }}</option>
                 @endforeach
             </select>
             @error('position_id')<p class="{{ $err }}">{{ $message }}</p>@enderror
@@ -375,5 +391,66 @@
     });
 
     update();
+
+    // Position Dropdown Filtering Logic
+    const deptSelect = document.getElementById('department_id');
+    const posSelect = document.getElementById('position_id');
+    const departmentChildrenMap = @json($departmentChildrenMap);
+    
+    function updatePositionDropdown() {
+        const deptId = String(deptSelect.value);
+        const currentPosId = posSelect.value;
+        
+        if (!deptId) {
+            posSelect.disabled = true;
+            posSelect.value = '';
+        } else {
+            posSelect.disabled = false;
+            let isValidSelection = false;
+            
+            const validDeptIds = [deptId];
+            if (departmentChildrenMap[deptId]) {
+                validDeptIds.push(...departmentChildrenMap[deptId]);
+            }
+            
+            Array.from(posSelect.options).forEach(opt => {
+                if (opt.value === '') return;
+                
+                const optDeptId = String(opt.dataset.departmentId);
+                
+                if (optDeptId === '' || validDeptIds.includes(optDeptId)) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    if (opt.value === currentPosId) isValidSelection = true;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            });
+            
+            if (!isValidSelection) {
+                posSelect.value = '';
+            }
+        }
+    }
+    
+    if (deptSelect && posSelect) {
+        deptSelect.addEventListener('change', updatePositionDropdown);
+        
+        posSelect.addEventListener('change', () => {
+            const selectedOpt = posSelect.options[posSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                const optDeptId = selectedOpt.dataset.departmentId;
+                if (optDeptId && deptSelect.value !== optDeptId) {
+                    deptSelect.value = optDeptId;
+                    // Re-run the dropdown update to ensure UI consistency
+                    updatePositionDropdown();
+                }
+            }
+        });
+        
+        // Delay initial run slightly to ensure selected values are populated
+        setTimeout(updatePositionDropdown, 0);
+    }
 })();
 </script>

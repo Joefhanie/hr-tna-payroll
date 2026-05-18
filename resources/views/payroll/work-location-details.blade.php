@@ -47,10 +47,11 @@
                                 <input
                                     type="text"
                                     inputmode="decimal"
-                                    placeholder="0"
+                                    placeholder="0.00"
                                     name="amounts[{{ $employee['name'] }}]"
+                                    value="{{ $employee['amount'] > 0 ? number_format($employee['amount'], 2, '.', '') : '' }}"
                                     oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
-                                    class="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring"
+                                    class="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring font-mono text-right"
                                 >
                             </td>
                         </tr>

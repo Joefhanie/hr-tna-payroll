@@ -140,13 +140,6 @@
                         </span>
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
                     </a>
-
-                    <a href="{{ $positionsHref }}" class="sidebar-link {{ $positionsActive ? 'sidebar-link-active' : '' }}">
-                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
-                            <i class="ti ti-sitemap sidebar-icon text-xl"></i>
-                        </span>
-                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Positions</span>
-                    </a>
                 </nav>
             </div>
 

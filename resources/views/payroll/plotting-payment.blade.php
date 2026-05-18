@@ -2,24 +2,6 @@
     <x-slot:title>Plotting of Payments</x-slot:title>
     <x-slot:header>Plotting of Payments</x-slot:header>
 
-    @php
-        $weekData = [
-            ['date' => 'May 18', 'workplace' => 'Manila Zoo'],
-            ['date' => 'May 19', 'workplace' => 'Manila Zoo'],
-            ['date' => 'May 20', 'workplace' => 'SM'],
-            ['date' => 'May 21', 'workplace' => 'Manila Zoo'],
-            ['date' => 'May 22', 'workplace' => 'Manila Zoo'],
-        ];
-        $employees = [
-            ['name' => 'Kenneth', 'group' => 1],
-            ['name' => 'Alfren', 'group' => 1],
-            ['name' => 'Jano', 'group' => 2],
-            ['name' => 'KJ', 'group' => 2],
-            ['name' => 'Jim', 'group' => 3],
-            ['name' => 'Andrei', 'group' => 3],
-        ];
-    @endphp
-
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex items-start justify-between gap-4">
             <div>
@@ -40,9 +22,7 @@
                         </th>
                         @foreach ($weekData as $day)
                             <th class="border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 last:border-r-0">
-                                <a href="{{ route('payroll.per-date', ['date' => urlencode($day['date'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                    {{ $day['date'] }}
-                                </a>
+                                {{ $day['date'] }}
                             </th>
                         @endforeach
                     </tr>
@@ -72,39 +52,44 @@
                                         <!-- Comment indicator triangle -->
                                         <div class="absolute top-1 right-1 w-0 h-0 border-l-3 border-b-3 border-l-transparent border-b-gray-400 pointer-events-none"></div>
 
-                                        <!-- Comment bubble (Excel/Sheets style) -->
-                                        <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
-                                            <div class="space-y-2">
-                                                <div class="text-xs text-slate-700">
-                                                    <span class="font-semibold">Work location:</span>
-                                                    <a href="{{ route('payroll.work-location-details', ['date' => $day['date'], 'workplace' => urlencode($day['workplace'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
-                                                        {{ $day['workplace'] }}
-                                                    </a>
+                                            <!-- Comment bubble (Excel/Sheets style) -->
+                                            <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
+                                                <div class="space-y-1">
+                                                    <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Work location:</span>
+                                                        <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                            {{ $dayData['location'] }}
+                                                        </a>
+                                                    </div>
+                                                     <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Supervisor:</span>
+                                                        <span class="text-slate-600">
+                                                            {{ $dayData['supervisor_name'] }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Note:</span>
+                                                        <span class="text-slate-600 italic">No description</span>
+                                                    </div>
                                                 </div>
-                                                <div class="text-xs text-slate-700">
-                                                    <span class="font-semibold">Supervisor:</span> <span class="text-slate-600">TBD</span>
-                                                </div>
-                                                <div class="text-xs text-slate-700">
-                                                    <span class="font-semibold">Note:</span> <span class="text-slate-600 italic">No description</span>
-                                                </div>
+                                                <!-- Comment pointer -->
+                                                <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>
                                             </div>
-                                            <!-- Comment pointer -->
-                                            <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>
                                         </div>
-                                    </div>
-                                </td>
-                            @endforeach
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="mt-4 flex items-center justify-between gap-3">
-            <p class="text-xs text-slate-500">Enter each employee's amount per date. The grid stays fixed like a spreadsheet.</p>
-            <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
-                Save Plotting
-            </button>
-        </div>
+            <div class="mt-4 flex items-center justify-between gap-3">
+                <p class="text-xs text-slate-500">Enter each employee's amount per date. Hover/focus cells to see supervisor-inherited locations.</p>
+                <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 shadow-sm">
+                    Save Plotting
+                </button>
+            </div>
+        </form>
     </div>
 </x-app-layout>
