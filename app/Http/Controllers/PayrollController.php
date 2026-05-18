@@ -53,6 +53,23 @@ class PayrollController extends Controller
     }
 
     /**
+     * Show plotting details for a single employee.
+     */
+    public function showPlottingEmployee(string $employee): View
+    {
+        $employeeName = urldecode($employee);
+
+        $weekData = [
+            ['date' => 'May 18', 'workplace' => 'Manila Zoo'],
+            ['date' => 'May 19', 'workplace' => 'Manila Zoo'],
+            ['date' => 'May 20', 'workplace' => 'SM'],
+            ['date' => 'May 21', 'workplace' => 'Manila Zoo'],
+            ['date' => 'May 22', 'workplace' => 'Manila Zoo'],
+        ];
+
+        return view('payroll.per-employee', compact('employeeName', 'weekData'));
+    }
+    /**
      * Show form to create a new pay run.
      */
     public function create(): View
@@ -120,7 +137,7 @@ class PayrollController extends Controller
     /**
      * Show edit form for payroll (draft status only).
      */
-    public function edit(PayRun $payRun): View
+    public function edit(PayRun $payRun): \Illuminate\Http\RedirectResponse|View
     {
         if ($payRun->status !== 1) {
             return back()->with('error', 'Only draft payroll runs can be edited.');
