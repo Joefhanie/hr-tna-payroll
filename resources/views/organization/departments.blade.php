@@ -57,11 +57,8 @@
                                 <div class="flex items-center gap-3" style="padding-left: {{ $departmentRow['depth'] * 1.5 }}rem">
                                     <div>
                                         <span class="font-medium text-slate-900">{{ $department->name }}</span>
-                                        @if ($departmentRow['depth'] > 0)
-                                            <p class="text-[0.7rem] text-slate-400">{{ $departmentRow['path'] }}</p>
-                                        @endif
                                     </div>
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600" title="Employees Count">{{ $department->employees_count }}</span>
+                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600" title="Positions Count">{{ $department->positions->count() }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-slate-600">{{ $department->parentDepartment->name ?? 'Top Level' }}</td>
@@ -75,12 +72,12 @@
                                     >
                                         <i class="ti ti-plus text-xl"></i>
                                     </button>
-                                    
+
                                     <div class="w-px h-4 bg-slate-200 mx-1"></div>
 
                                     <button
                                         type="button"
-                                        class="text-slate-500 hover:text-slate-700 transition"
+                                        class="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 transition"
                                         title="View Employees"
                                         data-department-name="{{ $departmentRow['path'] }}"
                                         data-parent-name="{{ $department->parentDepartment->name ?? 'Top Level' }}"
@@ -89,6 +86,7 @@
                                         onclick="openDepartmentViewModal(this)"
                                     >
                                         <i class="ti ti-users text-lg"></i>
+                                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600">{{ $department->employees_count }}</span>
                                     </button>
                                     <a href="{{ route('organization.departments.edit', $department) }}" class="text-slate-500 hover:text-slate-700 transition" title="Edit Department">
                                         <i class="ti ti-edit text-lg"></i>
@@ -178,10 +176,10 @@
                     <i class="ti ti-x text-xl"></i>
                 </button>
             </div>
-            
+
             <form method="POST" action="{{ route('organization.departments.store') }}" class="p-6">
                 @csrf
-                
+
                 @if ($errors->has('name') || $errors->has('parent_dept_id'))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-3">
                         <ul class="space-y-1 text-[0.8rem] text-red-700">
@@ -191,7 +189,7 @@
                         </ul>
                     </div>
                 @endif
-                
+
                 <div class="grid gap-5">
                     <div>
                         <label for="department_name" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Department Name</label>
@@ -210,7 +208,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="mt-8 flex justify-end gap-3">
                     <button type="button" onclick="document.getElementById('departmentFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
                     <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Department</button>
@@ -263,10 +261,10 @@
                     <i class="ti ti-x text-xl"></i>
                 </button>
             </div>
-            
+
             <form method="POST" action="{{ route('organization.positions.store') }}" class="p-6">
                 @csrf
-                
+
                 @if ($errors->has('title') || $errors->has('level') || $errors->has('department_id') || $errors->has('min_salary') || $errors->has('max_salary'))
                     <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-3">
                         <ul class="space-y-1 text-[0.8rem] text-red-700">
@@ -276,7 +274,7 @@
                         </ul>
                     </div>
                 @endif
-                
+
                 <div class="grid gap-5">
                     <div>
                         <label for="position_title" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Position Title</label>
@@ -306,7 +304,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="mt-8 flex justify-end gap-3">
                     <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
                     <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Position</button>

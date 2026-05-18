@@ -5,11 +5,11 @@
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex items-start justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">Work Location: {{ $workplaceName }}</h1>
+                <h1 class="text-2xl font-bold text-slate-900">Work Assignment: {{ $workplaceName }}</h1>
                 <p class="mt-1 text-sm text-slate-600">Date: {{ $date }}</p>
             </div>
             <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                Work Location
+                Work Assignment
             </span>
         </div>
 
@@ -21,7 +21,7 @@
                             Employees
                         </th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Work Location
+                            Work Assignment
                         </th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Supervisor
@@ -61,7 +61,7 @@
         </div>
 
         <div class="mt-4 flex items-center justify-between gap-3">
-            <p class="text-xs text-slate-500">Enter the amount for each employee at this work location.</p>
+            <p class="text-xs text-slate-500">Enter the amount for each employee at this Work Assignment.</p>
             <div class="flex gap-3">
                 <a href="{{ route('payroll.plotting-payment') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                     Back
