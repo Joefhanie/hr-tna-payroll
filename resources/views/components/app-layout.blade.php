@@ -81,7 +81,9 @@
                             @else
                                 @php
                                     $routeExists = \Illuminate\Support\Facades\Route::has($item['route']);
-                                    $isActive = $routeExists ? request()->routeIs($item['route']) : request()->is(ltrim($item['path'], '/'));
+                                    $isActive = $routeExists
+                                        ? request()->routeIs($item['route']) || ($item['route'] === 'self-service' && request()->routeIs('self-service.*'))
+                                        : request()->is(ltrim($item['path'], '/'));
                                     $href = $routeExists ? route($item['route']) : url($item['path']);
                                 @endphp
                                 <a href="{{ $href }}" class="sidebar-link {{ $isActive ? 'sidebar-link-active' : '' }}">

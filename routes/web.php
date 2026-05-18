@@ -28,6 +28,9 @@ Route::middleware('auth')->group(function () {
     Route::view('/leave', 'leave')->name('leave');
     Route::view('/benefits', 'benefits')->name('benefits');
     Route::view('/self-service', 'self-service')->name('self-service');
+    Route::get('/self-service/profile/{id}', function($id) {
+        return view('self-service.profile');
+    })->name('self-service.profile');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');
