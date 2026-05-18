@@ -107,8 +107,8 @@
                         <label for="position_department_id" class="mb-1.5 block text-[0.8rem] font-bold text-[#06112e]">Department</label>
                         <select id="position_department_id" name="department_id" class="w-full rounded-[0.5rem] border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
                             <option value="">None (Unassigned)</option>
-                            @foreach ($topLevelDepartments as $department)
-                                <option value="{{ $department->id }}" @selected(old('department_id') == $department->id)>{{ $department->name }}</option>
+                            @foreach ($departmentOptions as $department)
+                                <option value="{{ $department['id'] }}" @selected(old('department_id') == $department['id'])>{{ $department['label'] }}</option>
                             @endforeach
                         </select>
                     </div>

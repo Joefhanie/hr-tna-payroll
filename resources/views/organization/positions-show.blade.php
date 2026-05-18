@@ -3,11 +3,11 @@
     <x-slot:header>{{ $position->title }}</x-slot:header>
 
     <div class="mb-8">
-        <a href="{{ route('organization.positions.index') }}" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition">
+        <a href="{{ route('organization.departments.index') }}" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
             </svg>
-            Back to Positions
+            Back to Departments
         </a>
     </div>
 
