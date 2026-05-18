@@ -23,9 +23,8 @@
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
-                ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'children' => [
-                    ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
-                ]],
+                ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet'],
+                ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments', 'icon' => 'table'],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
                 ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar'],
