@@ -81,8 +81,29 @@
 
                                             <!-- Comment bubble (Excel/Sheets style) -->
                                             <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
-                                                <div class="text-xs text-slate-700">
-                                                    <span class="font-semibold">Work location:</span> {{ $dayData['location'] }}
+                                                <div class="space-y-1">
+                                                    <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Work location:</span>
+                                                        <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                            {{ $dayData['location'] }}
+                                                        </a>
+                                                    </div>
+                                                    <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Supervisor:</span>
+                                                        <span class="text-slate-600">
+                                                            @php
+                                                                $isSupervisor = $emp->user && $emp->user->role === 2;
+                                                                $dailySvId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
+                                                                $svModel = $dailySvId ? \App\Models\Employee::find($dailySvId) : null;
+                                                                $svName = $isSupervisor ? 'None' : ($svModel ? $svModel->first_name . ' ' . $svModel->last_name : 'None');
+                                                            @endphp
+                                                            {{ $svName }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Note:</span>
+                                                        <span class="text-slate-600 italic">No description</span>
+                                                    </div>
                                                 </div>
                                                 <!-- Comment pointer -->
                                                 <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>

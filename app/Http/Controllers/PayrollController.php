@@ -329,6 +329,68 @@ class PayrollController extends Controller
 
         return redirect()->route('payroll.plotting-payment')->with('status', "Plotting payments for {$employee->first_name} saved successfully.");
     }
+
+    public function showWorkLocationDetails(string $date, string $workplace): View
+    {
+        $workplaceName = urldecode($workplace);
+
+        // Get all employees (SVs and regular)
+        $allEmployees = Employee::with(['user', 'manager'])->get();
+
+        $employeeData = [];
+
+        // For location resolution
+        $assignmentMap = SupervisorAssignment::where('date', $date)
+            ->get()
+            ->groupBy('supervisor_id')
+            ->map(fn($group) => $group->first()->location);
+
+        foreach ($allEmployees as $emp) {
+            $isSupervisor = $emp->user && $emp->user->role === 2;
+            
+            // Get their plotting for this day
+            $plotting = EmployeePlotting::where('employee_id', $emp->id)
+                ->where('date', $date)
+                ->first();
+
+            // Resolve daily location
+            $loc = 'General';
+            if ($isSupervisor) {
+                $loc = $assignmentMap[$emp->id] ?? 'General';
+            } else {
+                if ($plotting && $plotting->location && $plotting->location !== 'General') {
+                    $loc = $plotting->location;
+                } else {
+                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
+                    $loc = $dailySupervisorId ? ($assignmentMap[$dailySupervisorId] ?? 'General') : 'General';
+                }
+            }
+
+            if ($loc === $workplaceName) {
+                // Determine supervisor name
+                $supervisorName = 'None';
+                if (!$isSupervisor) {
+                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
+                    if ($dailySupervisorId) {
+                        $sv = Employee::find($dailySupervisorId);
+                        if ($sv) {
+                            $supervisorName = $sv->first_name . ' ' . $sv->last_name;
+                        }
+                    }
+                }
+
+                $employeeData[] = [
+                    'id' => $emp->id,
+                    'name' => $emp->first_name . ' ' . $emp->last_name,
+                    'supervisor' => $supervisorName,
+                    'amount' => $plotting ? $plotting->amount : 0.00
+                ];
+            }
+        }
+
+        return view('payroll.work-location-details', compact('date', 'workplaceName', 'employeeData'));
+    }
+
     /**
      * Show form to create a new pay run.
      */

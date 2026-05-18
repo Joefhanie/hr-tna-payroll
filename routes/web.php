@@ -35,12 +35,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/self-service/profile/{id}', function($id) {
         return view('self-service.profile');
     })->name('self-service.profile');
+    Route::redirect('/payroll', '/payroll/plotting-payment');
     Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
     Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
+    Route::redirect('/payroll/plotting-payments', '/payroll/plotting-payment');
     Route::get('/payroll/plotting-payment', [PayrollController::class, 'plottingPayment'])->name('payroll.plotting-payment');
     Route::post('/payroll/plotting-payment/save', [PayrollController::class, 'savePlottingPayment'])->name('payroll.plotting-payment.save');
     Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
     Route::post('/payroll/plotting-payment/{employee}', [PayrollController::class, 'savePlottingEmployee'])->name('payroll.plotting-payment.employee.save');
+    Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');
