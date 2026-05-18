@@ -31,11 +31,11 @@
             </span>
         </div>
 
-        <div class="mt-6 overflow-hidden rounded-lg border border-slate-200">
+        <div class="mt-6 overflow-hidden rounded-lg border border-slate-200 relative">
             <table class="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
                     <tr>
-                        <th class="sticky left-0 z-10 w-44 border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <th class="sticky left-0 z-10 w-44 border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 text-center">
                             Name
                         </th>
                         @foreach ($weekData as $day)
@@ -47,31 +47,38 @@
                 </thead>
                 <tbody>
                     @foreach ($employees as $employeeIndex => $employee)
-                        @if ($employeeIndex === 0 || $employees[$employeeIndex - 1]['group'] !== $employee['group'])
-                            <tr class="bg-slate-100">
-                                <td class="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-100 px-4 py-3"></td>
-                                @foreach ($weekData as $day)
-                                    <td class="border-b border-r border-slate-200 bg-slate-100 px-4 py-3 text-center text-xs font-medium text-slate-700 last:border-r-0">
-                                        {{ $day['workplace'] }}
-                                    </td>
-                                @endforeach
-                            </tr>
-                        @endif
                         <tr class="bg-white">
                             <td class="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 font-medium text-slate-900">
-                                {{ $employee['name'] }}
+                                <a href="{{ route('payroll.plotting-payment.employee', ['employee' => urlencode($employee['name'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    {{ $employee['name'] }}
+                                </a>
                             </td>
                             @foreach ($weekData as $dayIndex => $day)
-                                <td class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0">
-                                    <input
-                                        type="text"
-                                        inputmode="text"
-                                        maxlength="7"
-                                        name="entries[{{ $employee['name'] }}][{{ $dayIndex }}]"
-                                        placeholder="0"
-                                        oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 7)"
-                                        class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring"
-                                    >
+                                <td class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative">
+                                    <div class="relative group">
+                                        <input
+                                            type="text"
+                                            inputmode="text"
+                                            maxlength="10"
+                                            name="entries[{{ $employee['name'] }}][{{ $dayIndex }}]"
+                                            placeholder="0"
+                                            data-workplace="{{ $day['workplace'] }}"
+                                            data-employee="{{ $employee['name'] }}"
+                                            oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
+                                            class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden"
+                                        >
+                                        <!-- Comment indicator triangle -->
+                                        <div class="absolute top-1 right-1 w-0 h-0 border-l-3 border-b-3 border-l-transparent border-b-gray-400 pointer-events-none"></div>
+
+                                        <!-- Comment bubble (Excel/Sheets style) -->
+                                        <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
+                                            <div class="text-xs text-slate-700">
+                                                <span class="font-semibold">Work location:</span> {{ $day['workplace'] }}
+                                            </div>
+                                            <!-- Comment pointer -->
+                                            <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>
+                                        </div>
+                                    </div>
                                 </td>
                             @endforeach
                         </tr>

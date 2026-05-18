@@ -52,7 +52,10 @@
                                 @php
                                     $hasActiveChild = collect($item['children'])->contains(function ($child) {
                                         $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
-                                        return $childRouteExists ? request()->routeIs($child['route']) : request()->is(ltrim($child['path'], '/'));
+                                        if ($childRouteExists) {
+                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*');
+                                        }
+                                        return request()->is(ltrim($child['path'], '/'));
                                     });
                                 @endphp
                                 <details class="sidebar-group" @if ($hasActiveChild) open @endif>
@@ -68,7 +71,9 @@
                                         @foreach ($item['children'] as $child)
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
-                                                $childIsActive = $childRouteExists ? request()->routeIs($child['route']) : request()->is(ltrim($child['path'], '/'));
+                                                $childIsActive = $childRouteExists
+                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*'))
+                                                    : request()->is(ltrim($child['path'], '/'));
                                                 $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
                                             @endphp
                                             <a href="{{ $childHref }}" class="sidebar-link sidebar-link-sub {{ $childIsActive ? 'sidebar-link-active' : '' }}">
