@@ -130,7 +130,7 @@ CREATE TABLE government_ids (
     expiry_date     DATE             NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
+DROP TABLE IF EXISTS salary_records;
 CREATE TABLE salary_records (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     employee_id     INT UNSIGNED     NOT NULL,
@@ -140,6 +140,7 @@ CREATE TABLE salary_records (
     effective_date  DATE             NOT NULL,
     end_date        DATE             NULL,
     reason          VARCHAR(200)     NULL COMMENT 'e.g. Promotion, Annual review',
+    notes           VARCHAR(300)     NULL,
     created_by      INT UNSIGNED     NULL,
     created_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -416,7 +417,32 @@ CREATE TABLE deduction_rules (
     deleted_at          DATETIME         NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE employee_tax_bracket (
+    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    employee_id     INT UNSIGNED     NOT NULL,
+    tax_bracket_id  INT UNSIGNED     NOT NULL,
+    created_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_emp_tax_bracket (employee_id, tax_bracket_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE employee_government_contribution (
+    id                                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    employee_id                         INT UNSIGNED     NOT NULL,
+    government_contribution_rate_id     INT UNSIGNED     NOT NULL,
+    created_at                          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY emp_gov_contrib_unique (employee_id, government_contribution_rate_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE employee_deduction_rule (
+    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    employee_id         INT UNSIGNED     NOT NULL,
+    deduction_rule_id   INT UNSIGNED     NOT NULL,
+    created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_emp_deduction_rule (employee_id, deduction_rule_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 --  MODULE 6 — BENEFITS ADMINISTRATION
