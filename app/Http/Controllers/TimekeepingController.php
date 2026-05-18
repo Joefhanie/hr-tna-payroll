@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class TimekeepingController extends Controller
 {
@@ -11,10 +12,12 @@ class TimekeepingController extends Controller
     {
         $today = Carbon::now()->toDateString();
 
-        $todayAttendance = Attendance::with('user')
-            ->where('attendance_date', $today)
-            ->orderBy('check_in')
-            ->get();
+        $todayAttendance = Schema::hasTable('attendance')
+            ? Attendance::with('user')
+                ->where('attendance_date', $today)
+                ->orderBy('check_in')
+                ->get()
+            : collect();
 
         $attendanceStatusLabels = [
             1 => 'Present',

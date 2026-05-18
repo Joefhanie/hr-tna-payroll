@@ -15,6 +15,10 @@ Route::redirect('/', '/dashboard');
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
+    Route::get('/register/profile', [RegisterController::class, 'profile'])->name('register.profile');
+    Route::post('/register/profile', [RegisterController::class, 'storeProfile'])->name('register.profile.store');
+    Route::get('/register/employment', [RegisterController::class, 'employment'])->name('register.employment');
+    Route::post('/register/employment', [RegisterController::class, 'storeEmployment'])->name('register.employment.store');
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 });
