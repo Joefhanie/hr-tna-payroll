@@ -371,16 +371,49 @@ CREATE TABLE government_contributions (
     employer_share      DECIMAL(10,2)    NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
+DROP TABLE IF EXISTS tax_brackets;
 CREATE TABLE tax_brackets (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    country_code    CHAR(2)          NOT NULL DEFAULT 'PH',
-    year            YEAR             NOT NULL,
-    min_income      DECIMAL(14,2)    NOT NULL,
-    max_income      DECIMAL(14,2)    NULL COMMENT 'NULL = no upper bound',
-    base_tax        DECIMAL(14,2)    NOT NULL DEFAULT 0,
-    rate            DECIMAL(5,4)     NOT NULL COMMENT 'e.g. 0.20 = 20%',
-    excess_over     DECIMAL(14,2)    NOT NULL DEFAULT 0
+    threshold       DECIMAL(14,2)    NOT NULL,
+    rate            DECIMAL(5,4)     NOT NULL,
+    label           VARCHAR(120)     NULL,
+    notes           TEXT             NULL,
+    is_active       TINYINT          NOT NULL DEFAULT 1,
+    sort_order      INT              NOT NULL DEFAULT 0,
+    created_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at      DATETIME         NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE IF NOT EXISTS government_contribution_rates (
+    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(120)     NOT NULL,
+    employee_rate       DECIMAL(5,4)     NOT NULL,
+    employer_rate       DECIMAL(5,4)     NOT NULL,
+    description         TEXT             NULL,
+    is_active           TINYINT          NOT NULL DEFAULT 1,
+    sort_order          INT              NOT NULL DEFAULT 0,
+    created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at          DATETIME         NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+DROP TABLE IF EXISTS deduction_rules;
+CREATE TABLE deduction_rules (
+    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(120)     NOT NULL,
+    type                ENUM('Fixed','Percentage','Prorated') NOT NULL DEFAULT 'Fixed',
+    amount              DECIMAL(10,2)    NULL,
+    rate                DECIMAL(5,4)     NULL,
+    scope               VARCHAR(120)     NULL,
+    description         TEXT             NULL,
+    is_active           TINYINT          NOT NULL DEFAULT 1,
+    sort_order          INT              NOT NULL DEFAULT 0,
+    created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at          DATETIME         NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
