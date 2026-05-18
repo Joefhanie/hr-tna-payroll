@@ -141,7 +141,7 @@ class DatabaseSeeder extends Seeder
             'password' => $hashedPassword,
             'employee_id' => $hrEmp->id,
             'role' => 4, // HR
-            'status' => 'active',
+            'status' => 1,
         ]);
 
         // 5. Seed 3 Supervisors (SV)
@@ -202,7 +202,7 @@ class DatabaseSeeder extends Seeder
                 'password' => $hashedPassword,
                 'employee_id' => $svEmp->id,
                 'role' => 2, // Supervisor
-                'status' => 'active',
+                'status' => 1,
             ]);
 
             $svEmployees[] = $svEmp;
@@ -301,7 +301,7 @@ class DatabaseSeeder extends Seeder
                 'password' => $hashedPassword,
                 'employee_id' => $empRecord->id,
                 'role' => 1, // Employee
-                'status' => 'active',
+                'status' => 1,
             ]);
         }
 
