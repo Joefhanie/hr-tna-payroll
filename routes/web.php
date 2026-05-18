@@ -37,8 +37,10 @@ Route::middleware('auth')->group(function () {
     })->name('self-service.profile');
     Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
     Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
-    Route::view('/payroll/plotting-payment', 'payroll.plotting-payment')->name('payroll.plotting-payment');
+    Route::get('/payroll/plotting-payment', [PayrollController::class, 'plottingPayment'])->name('payroll.plotting-payment');
+    Route::post('/payroll/plotting-payment/save', [PayrollController::class, 'savePlottingPayment'])->name('payroll.plotting-payment.save');
     Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
+    Route::post('/payroll/plotting-payment/{employee}', [PayrollController::class, 'savePlottingEmployee'])->name('payroll.plotting-payment.employee.save');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');
