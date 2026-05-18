@@ -24,7 +24,7 @@
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
                 ['label' => 'Payroll', 'icon' => 'wallet', 'children' => [
-                    ['route' => 'payroll.plotting-of-payments', 'path' => '/payroll/plotting-of-payments', 'label' => 'Plotting of Payments'],
+                    ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
