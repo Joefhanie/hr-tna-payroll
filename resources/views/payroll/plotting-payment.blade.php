@@ -88,16 +88,10 @@
                                                             {{ $dayData['location'] }}
                                                         </a>
                                                     </div>
-                                                    <div class="text-xs text-slate-700">
+                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Supervisor:</span>
                                                         <span class="text-slate-600">
-                                                            @php
-                                                                $isSupervisor = $emp->user && $emp->user->role === 2;
-                                                                $dailySvId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
-                                                                $svModel = $dailySvId ? \App\Models\Employee::find($dailySvId) : null;
-                                                                $svName = $isSupervisor ? 'None' : ($svModel ? $svModel->first_name . ' ' . $svModel->last_name : 'None');
-                                                            @endphp
-                                                            {{ $svName }}
+                                                            {{ $dayData['supervisor_name'] }}
                                                         </span>
                                                     </div>
                                                     <div class="text-xs text-slate-700">

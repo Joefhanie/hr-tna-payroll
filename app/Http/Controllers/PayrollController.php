@@ -90,6 +90,8 @@ class PayrollController extends Controller
             $assignmentMap[$a->supervisor_id][Carbon::parse($a->date)->format('Y-m-d')] = $a->location;
         }
 
+        $employeeMap = $employees->keyBy('id');
+
         $gridData = [];
         foreach ($employees as $employee) {
             $row = [
@@ -107,6 +109,7 @@ class PayrollController extends Controller
                 if ($isSupervisor) {
                     // Supervisors ALWAYS resolve directly from their daily assignment!
                     $location = $assignmentMap[$employee->id][$date] ?? 'General';
+                    $svName = 'None';
                 } else {
                     // Regular employees:
                     if ($plotting && $plotting->location && $plotting->location !== 'General') {
@@ -119,11 +122,16 @@ class PayrollController extends Controller
                             ? $assignmentMap[$dailySupervisorId][$date] 
                             : 'General';
                     }
+
+                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
+                    $svEmployee = $dailySupervisorId ? ($employeeMap[$dailySupervisorId] ?? Employee::find($dailySupervisorId)) : null;
+                    $svName = $svEmployee ? ($svEmployee->first_name . ' ' . $svEmployee->last_name) : 'None';
                 }
 
                 $row['days'][$date] = [
                     'amount' => $amount,
-                    'location' => $location
+                    'location' => $location,
+                    'supervisor_name' => $svName
                 ];
             }
 

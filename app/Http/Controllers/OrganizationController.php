@@ -162,6 +162,10 @@ class OrganizationController extends Controller
         return redirect()->route('organization.users.index')->with('success', 'User updated successfully.');
     }
 
+    /**
+     * @param \App\Models\Employee|null $currentEmployee
+     * @return \Illuminate\Support\Collection<int, \App\Models\Employee>
+     */
     private function availableEmployees(?Employee $currentEmployee = null)
     {
         $linkedEmployeeIds = User::query()
@@ -169,6 +173,7 @@ class OrganizationController extends Controller
             ->pluck('employee_id')
             ->all();
 
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees */
         $employees = Employee::query()
             ->when(! empty($linkedEmployeeIds), function ($query) use ($linkedEmployeeIds) {
                 $query->whereNotIn('id', $linkedEmployeeIds);
@@ -178,7 +183,7 @@ class OrganizationController extends Controller
             ->get();
 
         if ($currentEmployee && ! $employees->contains('id', $currentEmployee->id)) {
-            $employees = $employees->prepend($currentEmployee);
+            $employees->prepend($currentEmployee);
         }
 
         return $employees->values();
