@@ -23,7 +23,9 @@
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
-                ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet'],
+                ['label' => 'Payroll', 'icon' => 'wallet', 'children' => [
+                    ['route' => 'payroll.plotting-of-payments', 'path' => '/payroll/plotting-of-payments', 'label' => 'Plotting of Payments'],
+                ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
                 ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar'],
@@ -73,7 +75,7 @@
                                                 <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
                                                     <i class="ti ti-point sidebar-icon text-base"></i>
                                                 </span>
-                                                <span class="sidebar-nav-label whitespace-nowrap font-medium">{{ $child['label'] }}</span>
+                                                <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">{{ $child['label'] }}</span>
                                             </a>
                                         @endforeach
                                     </div>

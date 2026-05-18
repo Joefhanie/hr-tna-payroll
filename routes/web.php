@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/self-service/profile/{id}', function($id) {
         return view('self-service.profile');
     })->name('self-service.profile');
+    Route::redirect('/payroll/special-case', '/payroll/plotting-of-payments');
+    Route::view('/payroll/plotting-of-payments', 'self-service.special-case')->name('payroll.plotting-of-payments');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');
