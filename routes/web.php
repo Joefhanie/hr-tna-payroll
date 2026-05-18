@@ -35,10 +35,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/self-service/profile/{id}', function($id) {
         return view('self-service.profile');
     })->name('self-service.profile');
-    Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
-    Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
+    Route::redirect('/payroll', '/payroll');
+    Route::redirect('/payroll/plotting-payments', '/payroll/plotting-payment');
     Route::view('/payroll/plotting-payment', 'payroll.plotting-payment')->name('payroll.plotting-payment');
     Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
+    Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
     Route::view('/reports', 'reports')->name('reports');
 
     Route::redirect('/organization', '/organization/departments');

@@ -72,8 +72,19 @@
 
                                         <!-- Comment bubble (Excel/Sheets style) -->
                                         <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
-                                            <div class="text-xs text-slate-700">
-                                                <span class="font-semibold">Work location:</span> {{ $day['workplace'] }}
+                                            <div class="space-y-2">
+                                                <div class="text-xs text-slate-700">
+                                                    <span class="font-semibold">Work location:</span>
+                                                    <a href="{{ route('payroll.work-location-details', ['date' => $day['date'], 'workplace' => urlencode($day['workplace'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                        {{ $day['workplace'] }}
+                                                    </a>
+                                                </div>
+                                                <div class="text-xs text-slate-700">
+                                                    <span class="font-semibold">Supervisor:</span> <span class="text-slate-600">TBD</span>
+                                                </div>
+                                                <div class="text-xs text-slate-700">
+                                                    <span class="font-semibold">Note:</span> <span class="text-slate-600 italic">No description</span>
+                                                </div>
                                             </div>
                                             <!-- Comment pointer -->
                                             <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>

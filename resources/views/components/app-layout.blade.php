@@ -23,7 +23,7 @@
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
-                ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'children' => [
+                   ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'children' => [
                     ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
@@ -55,7 +55,7 @@
                                     $hasActiveChild = collect($item['children'])->contains(function ($child) {
                                         $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                         if ($childRouteExists) {
-                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*');
+                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && request()->routeIs('payroll.work-location-details'));
                                         }
                                         return request()->is(ltrim($child['path'], '/'));
                                     });
@@ -80,7 +80,7 @@
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                                 $childIsActive = $childRouteExists
-                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*'))
+                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && request()->routeIs('payroll.work-location-details')))
                                                     : request()->is(ltrim($child['path'], '/'));
                                                 $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
                                             @endphp

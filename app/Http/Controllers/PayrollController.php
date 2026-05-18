@@ -69,6 +69,22 @@ class PayrollController extends Controller
 
         return view('payroll.per-employee', compact('employeeName', 'weekData'));
     }
+
+    public function showWorkLocationDetails(string $date, string $workplace): View
+    {
+        $workplaceName = urldecode($workplace);
+
+        // Sample employee data for the work location
+        $employeeData = [
+            ['name' => 'Kenneth', 'supervisor' => 'Andre', 'amount' => ''],
+            ['name' => 'Alfren', 'supervisor' => 'Andre', 'amount' => ''],
+            ['name' => 'Jano', 'supervisor' => 'Jim', 'amount' => ''],
+            ['name' => 'KJ', 'supervisor' => 'Jim', 'amount' => ''],
+        ];
+
+        return view('payroll.work-location-details', compact('date', 'workplaceName', 'employeeData'));
+    }
+
     /**
      * Show form to create a new pay run.
      */
