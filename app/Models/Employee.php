@@ -127,11 +127,28 @@ class Employee extends Model
      */
     public function getFullNameAttribute(): string
     {
-        $name = "{$this->first_name} {$this->last_name}";
-        if ($this->middle_name) {
-            $name = "{$this->first_name} {$this->middle_name} {$this->last_name}";
-        }
-        return $name;
+        $middleName = trim((string) $this->middle_name);
+        $middleInitial = $middleName !== ''
+            ? strtoupper(substr($middleName, 0, 1)) . '.'
+            : null;
+
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $middleInitial,
+            $this->last_name,
+        ])));
+    }
+
+    /**
+     * Get the employee's full name with full middle name.
+     */
+    public function getFullNameWithMiddleNameAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name,
+        ])));
     }
 
     /**

@@ -4,7 +4,7 @@
 
     <div class="mb-8 flex items-center justify-between">
         <div>
-            <p class="text-slate-600">Viewing the profile for {{ $employee->full_name }}.</p>
+            <p class="text-slate-600">Viewing the profile for {{ $employee->full_name_with_middle_name }}.</p>
         </div>
         <div class="flex items-center gap-3">
             <a href="{{ route('employees.edit', $employee) }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">Edit Employee</a>
@@ -17,7 +17,7 @@
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Personal Information</h2>
             <dl class="space-y-3 text-sm">
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Employee Code</dt><dd class="font-medium text-slate-900">{{ $employee->employee_code }}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-slate-500">Name</dt><dd class="font-medium text-slate-900">{{ $employee->full_name }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-slate-500">Name</dt><dd class="font-medium text-slate-900">{{ $employee->full_name_with_middle_name }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Email</dt><dd class="font-medium text-slate-900">{{ $employee->email }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Phone</dt><dd class="font-medium text-slate-900">{{ $employee->phone ?? 'N/A' }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Birth Date</dt><dd class="font-medium text-slate-900">{{ $employee->birth_date?->format('Y-m-d') ?? 'N/A' }}</dd></div>
@@ -30,7 +30,7 @@
             <dl class="space-y-3 text-sm">
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Department</dt><dd class="font-medium text-slate-900">{{ $employee->department->name ?? 'N/A' }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-slate-500">Position</dt><dd class="font-medium text-slate-900">{{ $employee->position->title ?? 'N/A' }}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-slate-500">Manager</dt><dd class="font-medium text-slate-900">{{ $employee->manager?->full_name ?? 'N/A' }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-slate-500">Manager</dt><dd class="font-medium text-slate-900">{{ $employee->manager?->full_name_with_middle_name ?? 'N/A' }}</dd></div>
                 <div class="flex justify-between gap-4">
                     <dt class="text-slate-500">Employment Type</dt>
                     @php

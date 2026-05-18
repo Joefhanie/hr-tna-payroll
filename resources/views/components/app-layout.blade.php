@@ -23,7 +23,7 @@
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
-                ['label' => 'Payroll', 'icon' => 'wallet', 'children' => [
+                ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'children' => [
                     ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
@@ -50,6 +50,8 @@
                         @foreach ($items as $item)
                             @if (isset($item['children']))
                                 @php
+                                    $parentRouteExists = isset($item['route']) && \Illuminate\Support\Facades\Route::has($item['route']);
+                                    $parentHref = $parentRouteExists ? route($item['route']) : url($item['path'] ?? '#');
                                     $hasActiveChild = collect($item['children'])->contains(function ($child) {
                                         $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                         if ($childRouteExists) {
@@ -57,13 +59,19 @@
                                         }
                                         return request()->is(ltrim($child['path'], '/'));
                                     });
+                                    $hasActiveParent = $parentRouteExists
+                                        ? request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*')
+                                        : request()->is(ltrim($item['path'] ?? '', '/'));
+                                    $groupIsActive = $hasActiveParent || $hasActiveChild;
                                 @endphp
-                                <details class="sidebar-group" @if ($hasActiveChild) open @endif>
-                                    <summary class="sidebar-link {{ $hasActiveChild ? 'sidebar-link-active' : '' }} cursor-pointer list-none">
-                                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
-                                            <i class="ti ti-{{ $item['icon'] }} sidebar-icon text-xl"></i>
-                                        </span>
-                                        <span class="sidebar-nav-label whitespace-nowrap font-medium flex-1">{{ $item['label'] }}</span>
+                                <details class="sidebar-group" @if ($groupIsActive) open @endif>
+                                    <summary class="sidebar-link {{ $groupIsActive ? 'sidebar-link-active' : '' }} cursor-pointer list-none">
+                                        <a href="{{ $parentHref }}" class="flex flex-1 items-center gap-[0.1rem] text-inherit no-underline">
+                                            <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                                <i class="ti ti-{{ $item['icon'] }} sidebar-icon text-xl"></i>
+                                            </span>
+                                            <span class="sidebar-nav-label whitespace-nowrap font-medium flex-1">{{ $item['label'] }}</span>
+                                        </a>
                                         <span class="text-xs text-slate-400">▾</span>
                                     </summary>
 

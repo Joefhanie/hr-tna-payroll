@@ -117,7 +117,7 @@
     <div class="grid gap-6 sm:grid-cols-2">
         <div>
             <label class="{{ $lbl }}" for="email">Email Address</label>
-            <input id="email" name="email" type="email" value="{{ old('email', $employee->email ?? '') }}" placeholder="e.g. juan@company.com" class="{{ $inp }}">
+            <input id="email" name="email" type="email" value="{{ old('email', $employee->email ?? ($pendingUser->email ?? '')) }}" placeholder="e.g. juan@company.com" class="{{ $inp }}">
             @error('email')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>

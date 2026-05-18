@@ -4,7 +4,7 @@
 @endphp
 
 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-    Signing up for {{ data_get($account, 'email') }} as {{ data_get($account, 'name') }}.
+    Signing up for {{ data_get($account, 'email') }}.
 </div>
 
 <div class="grid gap-5 sm:grid-cols-2">

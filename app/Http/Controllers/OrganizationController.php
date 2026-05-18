@@ -67,7 +67,6 @@ class OrganizationController extends Controller
         $availableEmployeeIds = $availableEmployees->pluck('id')->all();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -81,7 +80,7 @@ class OrganizationController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
+            'name' => $validated['username'],
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'],
@@ -114,7 +113,6 @@ class OrganizationController extends Controller
         $availableEmployeeIds = $availableEmployees->pluck('id')->all();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:255', 'alpha_dash', 'unique:users,username,' . $user->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -129,7 +127,6 @@ class OrganizationController extends Controller
         ]);
 
         $user->fill([
-            'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'] ?? $user->role,

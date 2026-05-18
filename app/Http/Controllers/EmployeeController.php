@@ -91,7 +91,12 @@ class EmployeeController extends Controller
 
         $pendingUserId = $request->session()->pull('pending_employee_user_id');
         if ($pendingUserId) {
-            User::whereKey($pendingUserId)->update(['employee_id' => $employee->id]);
+            $fullName = trim($employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name);
+            $fullName = str_replace('  ', ' ', $fullName);
+            User::whereKey($pendingUserId)->update([
+                'employee_id' => $employee->id,
+                'name' => $fullName
+            ]);
         }
 
         return redirect()->route('employees.index')

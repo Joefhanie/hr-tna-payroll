@@ -27,7 +27,6 @@ class RegisterController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -36,7 +35,7 @@ class RegisterController extends Controller
         ]);
 
         $request->session()->put('registration.account', [
-            'name' => $validated['name'],
+            'name' => $validated['username'],
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'],
@@ -121,8 +120,11 @@ class RegisterController extends Controller
         }
 
         $user = DB::transaction(function () use ($account, $profile, $validated) {
+            $fullName = trim($profile['first_name'] . ' ' . ($profile['middle_name'] ?? '') . ' ' . $profile['last_name']);
+            $fullName = str_replace('  ', ' ', $fullName);
+
             $user = User::create([
-                'name' => $account['name'],
+                'name' => $fullName,
                 'username' => $account['username'],
                 'email' => $account['email'],
                 'password' => $account['password'],

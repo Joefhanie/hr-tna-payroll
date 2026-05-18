@@ -1,11 +1,6 @@
 <div>
-    <label for="name" class="mb-2 block text-sm font-medium text-slate-800">Full name</label>
-    <input id="name" name="name" type="text" value="{{ old('name') }}" required autofocus class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10" placeholder="Jane Doe">
-</div>
-
-<div>
     <label for="username" class="mb-2 block text-sm font-medium text-slate-800">Username</label>
-    <input id="username" name="username" type="text" value="{{ old('username') }}" required autocomplete="username" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10" placeholder="jane_doe">
+    <input id="username" name="username" type="text" value="{{ old('username') }}" required autofocus autocomplete="username" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-900/10" placeholder="jane_doe">
 </div>
 
 <div>

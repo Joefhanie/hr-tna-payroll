@@ -81,7 +81,7 @@
                                 $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                             @endphp
                             <tr class="transition hover:bg-slate-50">
-                                <td class="px-4 py-4 text-sm font-semibold text-slate-900">{{ $attendance->user->name }}</td>
+                                <td class="px-4 py-4 text-sm font-semibold text-slate-900">{{ $attendance->user->display_name }}</td>
                                 <td class="px-4 py-4 text-sm text-slate-600">{{ $attendance->attendance_date->format('M d, Y') }}</td>
                                 <td class="px-4 py-4 text-sm text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</td>
                                 <td class="px-4 py-4 text-sm text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</td>

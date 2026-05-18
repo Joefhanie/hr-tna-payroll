@@ -42,4 +42,23 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Employee::class);
     }
+
+    /**
+     * Get a consistently formatted display name using middle initial.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        $parts = preg_split('/\s+/', trim((string) $this->name));
+        $parts = array_values(array_filter($parts));
+
+        if (count($parts) <= 2) {
+            return trim((string) $this->name);
+        }
+
+        $firstName = $parts[0];
+        $lastName = $parts[count($parts) - 1];
+        $middleInitial = strtoupper(substr($parts[1], 0, 1)) . '.';
+
+        return trim(implode(' ', [$firstName, $middleInitial, $lastName]));
+    }
 }

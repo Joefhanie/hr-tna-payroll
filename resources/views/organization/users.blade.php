@@ -42,7 +42,7 @@
                 <tbody class="divide-y divide-slate-100 bg-white">
                     @forelse ($users as $user)
                         <tr>
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $user->name }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-900">{{ $user->display_name }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $user->email }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $user->username }}</td>
                             <td class="px-4 py-3">
@@ -109,10 +109,6 @@
                 @endif
 
                 <div class="grid gap-2.5">
-                    <div>
-                        <label for="user_name" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Full Name</label>
-                        <input id="user_name" name="name" type="text" value="{{ old('name') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. John Doe">
-                    </div>
                     <div>
                         <label for="user_email" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Email</label>
                         <input id="user_email" name="email" type="email" value="{{ old('email') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. john@example.com">
@@ -184,10 +180,6 @@
                     @method('PUT')
 
                     <div class="grid gap-2.5">
-                        <div>
-                            <label for="edit_user_name" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Full Name</label>
-                            <input id="edit_user_name" name="name" type="text" value="{{ old('name', $editingUser->name) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
-                        </div>
                         <div>
                             <label for="edit_user_email" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Email</label>
                             <input id="edit_user_email" name="email" type="email" value="{{ old('email', $editingUser->email) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">

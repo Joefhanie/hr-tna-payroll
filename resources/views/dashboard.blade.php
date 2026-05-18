@@ -82,7 +82,7 @@
                 @forelse($todayAttendance as $attendance)
                     <div class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3.5">
                         <div>
-                            <p class="text-[0.98rem] font-semibold text-slate-950">{{ $attendance->user->name }}</p>
+                            <p class="text-[0.98rem] font-semibold text-slate-950">{{ $attendance->user->display_name }}</p>
                             <p class="mt-0.5 text-sm text-slate-500">In: {{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }} • Out: {{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</p>
                         </div>
                         @php $s = $attendance->status; @endphp
@@ -103,7 +103,7 @@
                     <div class="rounded-2xl border border-slate-200 p-4">
                         <div class="mb-3 flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-[0.98rem] font-semibold text-slate-950">{{ $leave->user->name }}</p>
+                                <p class="text-[0.98rem] font-semibold text-slate-950">{{ $leave->user->display_name }}</p>
                                 <p class="mt-0.5 text-sm text-slate-500">{{ ucfirst($leave->type) }} • {{ $leave->start_date->format('M d') }} – {{ $leave->end_date->format('M d') }}</p>
                             </div>
                             <span class="badge badge-amber">Pending</span>
