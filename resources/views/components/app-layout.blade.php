@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen overflow-x-hidden font-sans text-slate-900">
+<body class="h-screen overflow-hidden font-sans text-slate-900">
     @php
         $navGroups = [
             'Overview' => [
@@ -40,8 +40,8 @@
         $workspaceLabel = $header ?? ($title ?? 'Workspace');
     @endphp
 
-    <div class="flex min-h-screen bg-transparent">
-        <aside class="sidebar fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-200 bg-white px-3 py-3 text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
+    <div class="flex h-screen bg-transparent">
+        <aside class="sidebar fixed left-0 top-0 z-40 flex h-full flex-col border-r border-slate-200 bg-white px-3 py-3 text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
             <div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto pb-3">
                 <nav class="space-y-1">
                     @foreach ($navGroups as $groupName => $items)
@@ -155,7 +155,7 @@
             </div>
         </aside>
 
-        <main class="main-content flex-1 overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
+        <main class="main-content flex-1 h-screen overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
             <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pl-4 pr-5 py-3.5 backdrop-blur-md sm:pl-5 sm:pr-8">
                 <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-center gap-2 text-slate-500">

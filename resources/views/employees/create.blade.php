@@ -2,9 +2,15 @@
     <x-slot:title>Create Employee</x-slot:title>
     <x-slot:header>Create Employee</x-slot:header>
 
+    @if (! empty($pendingUser))
+        <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+            Creating an employee record for {{ $pendingUser->name }}. Saving this form will link the new employee profile to that user account.
+        </div>
+    @endif
+
     @if ($errors->any())
         <div class="mb-6 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-            <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mt-0.5 h-5 w-5 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <div>

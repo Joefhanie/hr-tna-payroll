@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OrganizationController extends Controller
@@ -35,46 +37,82 @@ class OrganizationController extends Controller
 
     public function users(): View
     {
-        $users = User::orderBy('name')
+        $users = User::with('employee')
+            ->orderBy('name')
             ->get();
 
-        return view('organization.users', compact('users'));
+        $availableEmployees = $this->availableEmployees();
+
+        return view('organization.users', compact('users', 'availableEmployees'));
     }
 
     public function editUser(User $user): View
     {
-        $users = User::orderBy('name')->get();
+        $user->load('employee');
+
+        $users = User::with('employee')->orderBy('name')->get();
+        $availableEmployees = $this->availableEmployees($user->employee);
 
         return view('organization.users', [
             'users' => $users,
             'editingUser' => $user,
+            'availableEmployees' => $availableEmployees,
         ]);
     }
 
     public function storeUser(Request $request): RedirectResponse
     {
+        $availableEmployees = $this->availableEmployees();
+        $associateEmployee = $request->boolean('has_employee_record');
+        $availableEmployeeIds = $availableEmployees->pluck('id')->all();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['nullable', 'in:1,2,3,4'],
+            'has_employee_record' => ['nullable', 'boolean'],
+            'employee_id' => [
+                Rule::requiredIf($associateEmployee && ! empty($availableEmployeeIds)),
+                'nullable',
+                Rule::in($availableEmployeeIds),
+            ],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => $validated['password'],
             'role' => $validated['role'] ?? 4,
             'status' => 2,
+            'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
         ]);
+
+        if (! $associateEmployee) {
+            $request->session()->put('pending_employee_user_id', $user->id);
+
+            return redirect()->route('employees.create')->with('success', 'User credentials saved. Continue by creating the employee profile.');
+        }
+
+        if ($associateEmployee && empty($validated['employee_id']) && $availableEmployees->isEmpty()) {
+            $request->session()->put('pending_employee_user_id', $user->id);
+
+            return redirect()->route('employees.create')->with('success', 'User credentials saved. Complete the employee profile to finish linking the account.');
+        }
 
         return redirect()->route('organization.users.index')->with('success', 'User created successfully.');
     }
 
     public function updateUser(Request $request, User $user): RedirectResponse
     {
+        $user->load('employee');
+
+        $availableEmployees = $this->availableEmployees($user->employee);
+        $associateEmployee = $request->boolean('has_employee_record');
+        $availableEmployeeIds = $availableEmployees->pluck('id')->all();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:3', 'max:255', 'alpha_dash', 'unique:users,username,' . $user->id],
@@ -82,6 +120,12 @@ class OrganizationController extends Controller
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['nullable', 'in:1,2,3,4'],
             'status' => ['nullable', 'integer'],
+            'has_employee_record' => ['nullable', 'boolean'],
+            'employee_id' => [
+                Rule::requiredIf($associateEmployee && ! empty($availableEmployeeIds)),
+                'nullable',
+                Rule::in($availableEmployeeIds),
+            ],
         ]);
 
         $user->fill([
@@ -89,6 +133,7 @@ class OrganizationController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'] ?? $user->role,
+            'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
         ]);
 
         if (! empty($validated['password'])) {
@@ -97,7 +142,41 @@ class OrganizationController extends Controller
 
         $user->save();
 
+        if (! $associateEmployee) {
+            $request->session()->put('pending_employee_user_id', $user->id);
+
+            return redirect()->route('employees.create')->with('success', 'User updated successfully. Continue by creating the employee profile.');
+        }
+
+        if ($associateEmployee && empty($validated['employee_id']) && $availableEmployees->isEmpty()) {
+            $request->session()->put('pending_employee_user_id', $user->id);
+
+            return redirect()->route('employees.create')->with('success', 'User credentials saved. Complete the employee profile to finish linking the account.');
+        }
+
         return redirect()->route('organization.users.index')->with('success', 'User updated successfully.');
+    }
+
+    private function availableEmployees(?Employee $currentEmployee = null)
+    {
+        $linkedEmployeeIds = User::query()
+            ->whereNotNull('employee_id')
+            ->pluck('employee_id')
+            ->all();
+
+        $employees = Employee::query()
+            ->when(! empty($linkedEmployeeIds), function ($query) use ($linkedEmployeeIds) {
+                $query->whereNotIn('id', $linkedEmployeeIds);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        if ($currentEmployee && ! $employees->contains('id', $currentEmployee->id)) {
+            $employees = $employees->prepend($currentEmployee);
+        }
+
+        return $employees->values();
     }
 
     public function storeDepartment(Request $request): RedirectResponse

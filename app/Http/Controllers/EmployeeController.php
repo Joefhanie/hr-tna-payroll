@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Position;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -34,7 +35,13 @@ class EmployeeController extends Controller
             ->where('employment_type', 1)
             ->get();
 
-        return view('employees.create', compact('departments', 'positions', 'managers'));
+        $pendingUser = null;
+        $pendingUserId = session('pending_employee_user_id');
+        if ($pendingUserId) {
+            $pendingUser = User::find($pendingUserId);
+        }
+
+        return view('employees.create', compact('departments', 'positions', 'managers', 'pendingUser'));
     }
 
     /**
@@ -81,6 +88,11 @@ class EmployeeController extends Controller
                 $employee->id,
             ),
         ]);
+
+        $pendingUserId = $request->session()->pull('pending_employee_user_id');
+        if ($pendingUserId) {
+            User::whereKey($pendingUserId)->update(['employee_id' => $employee->id]);
+        }
 
         return redirect()->route('employees.index')
             ->with('success', 'Employee created successfully.');

@@ -15,7 +15,7 @@
       --fg: #0f172a;
       --muted-fg: #64748b;
     }
-    body { background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; height: 100vh; }
     .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; }
     .btn-primary { background: var(--primary); color: #fff; padding: .5rem 1rem; border-radius: 8px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none; }
     .btn-primary:hover { opacity: 0.9; }
@@ -56,9 +56,9 @@
     $current = url()->current();
   @endphp
 
-  <div class="min-h-screen flex w-full">
+  <div class="h-screen flex w-full">
     {{-- Sidebar --}}
-    <aside class="w-60 shrink-0 border-r border-slate-200 bg-white p-4 hidden md:block">
+    <aside class="w-60 shrink-0 border-r border-slate-200 bg-white p-4 hidden md:block h-full overflow-y-auto">
       <div class="flex items-center gap-2 px-2 py-3">
         <div class="h-8 w-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">N</div>
         <div>
@@ -105,8 +105,8 @@
     </aside>
 
     {{-- Main --}}
-    <div class="flex-1 flex flex-col min-w-0">
-      <header class="h-14 flex items-center justify-between border-b border-slate-200 bg-white px-6">
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+      <header class="h-14 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div class="flex items-center gap-3">
           <input type="search" placeholder="Search..."
                  class="w-72 max-w-sm rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
