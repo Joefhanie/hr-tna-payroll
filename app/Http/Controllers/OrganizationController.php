@@ -41,6 +41,65 @@ class OrganizationController extends Controller
         return view('organization.users', compact('users'));
     }
 
+    public function editUser(User $user): View
+    {
+        $users = User::orderBy('name')->get();
+
+        return view('organization.users', [
+            'users' => $users,
+            'editingUser' => $user,
+        ]);
+    }
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', 'in:1,2,3,4'],
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => $validated['role'] ?? 4,
+            'status' => 2,
+        ]);
+
+        return redirect()->route('organization.users.index')->with('success', 'User created successfully.');
+    }
+
+    public function updateUser(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'min:3', 'max:255', 'alpha_dash', 'unique:users,username,' . $user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', 'in:1,2,3,4'],
+            'status' => ['nullable', 'integer'],
+        ]);
+
+        $user->fill([
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'role' => $validated['role'] ?? $user->role,
+        ]);
+
+        if (! empty($validated['password'])) {
+            $user->password = $validated['password'];
+        }
+
+        $user->save();
+
+        return redirect()->route('organization.users.index')->with('success', 'User updated successfully.');
+    }
+
     public function storeDepartment(Request $request): RedirectResponse
     {
         $validated = $request->validate([

@@ -56,6 +56,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/organization/positions/{position}', [OrganizationController::class, 'destroyPosition'])->name('organization.positions.destroy');
 
     Route::get('/organization/users', [OrganizationController::class, 'users'])->name('organization.users.index');
+    Route::get('/organization/users/{user}/edit', [OrganizationController::class, 'editUser'])->name('organization.users.edit');
+    Route::post('/organization/users', [OrganizationController::class, 'storeUser'])->name('organization.users.store');
+    Route::put('/organization/users/{user}', [OrganizationController::class, 'updateUser'])->name('organization.users.update');
 
     // Employee Management
     Route::resource('employees', EmployeeController::class);
