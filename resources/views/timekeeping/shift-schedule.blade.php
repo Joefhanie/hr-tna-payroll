@@ -48,20 +48,40 @@
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">
                                     {{ $employee->department->name ?? 'Unassigned' }}
                                 </td>
-                                
+
                                 <!-- VIEW MODE -->
                                 <td class="whitespace-nowrap px-4 py-3 view-mode-{{ $employee->id }}">
                                     <div class="shift-container">
-                                        <span class="text-slate-400 italic text-xs no-shift">Not assigned</span>
-                                        <span class="hidden inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge">
-                                            <i class="ti ti-clock text-indigo-500"></i>
-                                            <span class="time-display"></span>
-                                        </span>
+                                        @if($employee->currentShift && $employee->currentShift->shift)
+                                            <span class="hidden text-slate-400 italic text-xs no-shift">Not assigned</span>
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge">
+                                                <i class="ti ti-clock text-indigo-500"></i>
+                                                <span class="time-display">
+                                                    {{ \Carbon\Carbon::parse($employee->currentShift->shift->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($employee->currentShift->shift->end_time)->format('h:i A') }}
+                                                </span>
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400 italic text-xs no-shift">Not assigned</span>
+                                            <span class="hidden inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge">
+                                                <i class="ti ti-clock text-indigo-500"></i>
+                                                <span class="time-display"></span>
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 view-mode-{{ $employee->id }}">
                                     <div class="flex gap-1 days-display">
-                                        <span class="text-slate-400 italic text-xs no-days">Not assigned</span>
+                                        @if($employee->currentShift && $employee->currentShift->shift && is_array($employee->currentShift->shift->days_of_week))
+                                            @foreach(['Mon'=>'M', 'Tue'=>'T', 'Wed'=>'W', 'Thu'=>'T', 'Fri'=>'F', 'Sat'=>'S', 'Sun'=>'S'] as $day => $label)
+                                                @if(in_array($day, $employee->currentShift->shift->days_of_week))
+                                                    <span class="flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700">{{ $label }}</span>
+                                                @else
+                                                    <span class="flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-400">{{ $label }}</span>
+                                                @endif
+                                            @endforeach
+                                        @else
+                                            <span class="text-slate-400 italic text-xs no-days">Not assigned</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-right text-slate-600 view-mode-{{ $employee->id }}">
@@ -73,16 +93,16 @@
                                 <!-- EDIT MODE -->
                                 <td class="whitespace-nowrap px-4 py-3 edit-mode-{{ $employee->id }} hidden">
                                     <div class="flex items-center gap-2">
-                                        <input type="time" name="start_time_{{ $employee->id }}" value="" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                        <input type="time" name="start_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->start_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
                                         <span class="text-slate-400">-</span>
-                                        <input type="time" name="end_time_{{ $employee->id }}" value="" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                        <input type="time" name="end_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->end_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 edit-mode-{{ $employee->id }} hidden">
                                     <div class="flex flex-wrap gap-1">
                                         @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $day)
                                             <label class="cursor-pointer">
-                                                <input type="checkbox" name="days_{{ $employee->id }}[]" value="{{ $day }}" class="peer hidden">
+                                                <input type="checkbox" name="days_{{ $employee->id }}[]" value="{{ $day }}" class="peer hidden" {{ ($employee->currentShift && $employee->currentShift->shift && is_array($employee->currentShift->shift->days_of_week) && in_array($day, $employee->currentShift->shift->days_of_week)) ? 'checked' : '' }}>
                                                 <span class="day-pill inline-flex items-center rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-100 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700">{{ substr($day, 0, 3) }}</span>
                                             </label>
                                         @endforeach
@@ -132,9 +152,9 @@
                             </div>
                             <div id="employee_suggestions" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg hidden">
                                 @foreach($employees as $emp)
-                                    <button type="button" class="suggestion-item w-full px-4 py-2 text-left text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors text-slate-700" 
-                                            data-id="{{ $emp->id }}" 
-                                            data-name="{{ $emp->full_name }}" 
+                                    <button type="button" class="suggestion-item w-full px-4 py-2 text-left text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors text-slate-700"
+                                            data-id="{{ $emp->id }}"
+                                            data-name="{{ $emp->full_name }}"
                                             data-search="{{ strtolower($emp->full_name . ' ' . $emp->employee_code) }}">
                                         {{ $emp->full_name }}
                                     </button>
@@ -195,15 +215,15 @@
                 searchInput.addEventListener('input', function(e) {
                     const term = e.target.value.toLowerCase().trim();
                     hiddenIdInput.value = ''; // Reset on typing
-                    
+
                     if (!term) {
                         suggestionsContainer.classList.add('hidden');
                         return;
                     }
-                    
+
                     suggestionsContainer.classList.remove('hidden');
                     let found = false;
-                    
+
                     suggestionItems.forEach(item => {
                         if (item.getAttribute('data-search').includes(term)) {
                             item.classList.remove('hidden');
@@ -212,7 +232,7 @@
                             item.classList.add('hidden');
                         }
                     });
-                    
+
                     if (found) {
                         noSuggestions.classList.add('hidden');
                     } else {
@@ -240,10 +260,10 @@
             const employeeId = document.getElementById('modal_employee_id').value;
             const startTime = document.querySelector('#addShiftModal input[name="start_time"]').value;
             const endTime = document.querySelector('#addShiftModal input[name="end_time"]').value;
-            
+
             // Get checked days
             const checkedDays = Array.from(document.querySelectorAll('#addShiftModal input[name="days[]"]:checked')).map(cb => cb.value);
-            
+
             // Sync to the row's hidden inputs
             const rowStartTime = document.querySelector(`input[name="start_time_${employeeId}"]`);
             const rowEndTime = document.querySelector(`input[name="end_time_${employeeId}"]`);
@@ -251,19 +271,19 @@
                 rowStartTime.value = startTime;
                 rowEndTime.value = endTime;
             }
-            
+
             const rowCheckboxes = document.querySelectorAll(`input[name="days_${employeeId}[]"]`);
             rowCheckboxes.forEach(cb => {
                 cb.checked = checkedDays.includes(cb.value);
             });
-            
+
             createShift(employeeId, true);
 
             const m = document.getElementById('addShiftModal');
             m.classList.add('hidden');
             m.classList.remove('flex');
             showToast();
-            
+
             document.querySelector('#addShiftModal form').reset();
         }
 
@@ -289,70 +309,104 @@
             // Get inputs
             const startTimeInput = document.querySelector(`input[name="start_time_${id}"]`);
             const endTimeInput = document.querySelector(`input[name="end_time_${id}"]`);
-            
-            if (startTimeInput && endTimeInput) {
-                const formatTime = (time) => {
-                    if (!time) return '';
-                    let [h, m] = time.split(':');
-                    let ampm = h >= 12 ? 'PM' : 'AM';
-                    h = h % 12 || 12;
-                    return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
-                };
-                
-                const timeDisplay = document.querySelector(`.view-mode-${id} .time-display`);
-                if (timeDisplay) {
-                    timeDisplay.innerText = `${formatTime(startTimeInput.value)} - ${formatTime(endTimeInput.value)}`;
-                    const noShift = document.querySelector(`.view-mode-${id} .no-shift`);
-                    const timeBadge = document.querySelector(`.view-mode-${id} .time-badge`);
-                    if (noShift) noShift.classList.add('hidden');
-                    if (timeBadge) timeBadge.classList.remove('hidden');
-                }
-            }
-            
-            // Update days display
             const checkboxes = Array.from(document.querySelectorAll(`input[name="days_${id}[]"]:checked`));
             const checkedDays = checkboxes.map(cb => cb.value);
-            const daysContainer = document.querySelector(`.view-mode-${id} .days-display`);
-            
-            if (daysContainer) {
-                daysContainer.innerHTML = '';
-                
-                if (checkedDays.length === 0) {
-                    const noDaysSpan = document.createElement('span');
-                    noDaysSpan.className = 'text-slate-400 italic text-xs no-days';
-                    noDaysSpan.innerText = 'Not assigned';
-                    daysContainer.appendChild(noDaysSpan);
-                } else {
-                    const allDays = [
-                        { value: 'Mon', label: 'M' },
-                        { value: 'Tue', label: 'T' },
-                        { value: 'Wed', label: 'W' },
-                        { value: 'Thu', label: 'T' },
-                        { value: 'Fri', label: 'F' },
-                        { value: 'Sat', label: 'S' },
-                        { value: 'Sun', label: 'S' }
-                    ];
-                    
-                    allDays.forEach(day => {
-                        const isChecked = checkedDays.includes(day.value);
-                        
-                        const span = document.createElement('span');
-                        span.className = isChecked 
-                            ? 'flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700'
-                            : 'flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-400';
-                        span.innerText = day.label;
-                        daysContainer.appendChild(span);
-                    });
-                }
+
+            if (!startTimeInput || !endTimeInput || !startTimeInput.value || !endTimeInput.value) {
+                alert('Please select start and end time');
+                return;
             }
 
-            // Hide edit mode or ensure view mode
-            if (!fromModal) {
-                toggleEdit(id);
-            } else {
-                document.querySelectorAll('.view-mode-' + id).forEach(el => el.classList.remove('hidden'));
-                document.querySelectorAll('.edit-mode-' + id).forEach(el => el.classList.add('hidden'));
-            }
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            // Perform AJAX request
+            fetch('{{ route("timekeeping.shift-schedule.save") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    employee_id: id,
+                    start_time: startTimeInput.value,
+                    end_time: endTimeInput.value,
+                    days: checkedDays
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (startTimeInput && endTimeInput) {
+                        const formatTime = (time) => {
+                            if (!time) return '';
+                            let [h, m] = time.split(':');
+                            let ampm = h >= 12 ? 'PM' : 'AM';
+                            h = h % 12 || 12;
+                            return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
+                        };
+
+                        const timeDisplay = document.querySelector(`.view-mode-${id} .time-display`);
+                        if (timeDisplay) {
+                            timeDisplay.innerText = `${formatTime(startTimeInput.value)} - ${formatTime(endTimeInput.value)}`;
+                            const noShift = document.querySelector(`.view-mode-${id} .no-shift`);
+                            const timeBadge = document.querySelector(`.view-mode-${id} .time-badge`);
+                            if (noShift) noShift.classList.add('hidden');
+                            if (timeBadge) timeBadge.classList.remove('hidden');
+                        }
+                    }
+
+                    // Update days display
+                    const daysContainer = document.querySelector(`.view-mode-${id} .days-display`);
+
+                    if (daysContainer) {
+                        daysContainer.innerHTML = '';
+
+                        if (checkedDays.length === 0) {
+                            const noDaysSpan = document.createElement('span');
+                            noDaysSpan.className = 'text-slate-400 italic text-xs no-days';
+                            noDaysSpan.innerText = 'Not assigned';
+                            daysContainer.appendChild(noDaysSpan);
+                        } else {
+                            const allDays = [
+                                { value: 'Mon', label: 'M' },
+                                { value: 'Tue', label: 'T' },
+                                { value: 'Wed', label: 'W' },
+                                { value: 'Thu', label: 'T' },
+                                { value: 'Fri', label: 'F' },
+                                { value: 'Sat', label: 'S' },
+                                { value: 'Sun', label: 'S' }
+                            ];
+
+                            allDays.forEach(day => {
+                                const isChecked = checkedDays.includes(day.value);
+
+                                const span = document.createElement('span');
+                                span.className = isChecked
+                                    ? 'flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700'
+                                    : 'flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-400';
+                                span.innerText = day.label;
+                                daysContainer.appendChild(span);
+                            });
+                        }
+                    }
+
+                    // Hide edit mode or ensure view mode
+                    if (!fromModal) {
+                        toggleEdit(id);
+                        showToast();
+                    } else {
+                        document.querySelectorAll('.view-mode-' + id).forEach(el => el.classList.remove('hidden'));
+                        document.querySelectorAll('.edit-mode-' + id).forEach(el => el.classList.add('hidden'));
+                    }
+                } else {
+                    alert('Error saving shift');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving shift');
+            });
         }
     </script>
 </x-app-layout>
