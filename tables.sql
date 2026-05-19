@@ -176,12 +176,16 @@ CREATE TABLE employee_documents (
 CREATE TABLE shifts (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(80)      NOT NULL,
+    shift_order     INT              NOT NULL DEFAULT 1 COMMENT 'Order for sorting shifts (1st, 2nd, etc.)',
     start_time      TIME             NOT NULL,
     end_time        TIME             NOT NULL,
     break_minutes   INT              NOT NULL DEFAULT 60,
-    is_night_shift  TINYINT          NOT NULL DEFAULT 0,
+    is_night_shift  TINYINT          NOT NULL DEFAULT 0 COMMENT 'Flag for night shift differentials',
+    crosses_midnight TINYINT         NOT NULL DEFAULT 0 COMMENT 'True if shift runs past midnight (e.g., 10pm-7am)',
+    shift_duration_minutes INT       NULL COMMENT 'Total shift duration in minutes (excludes breaks)',
     days_of_week    VARCHAR(20)      NOT NULL COMMENT 'e.g. Mon-Fri, CSV bitmask',
-    is_active       TINYINT          NOT NULL DEFAULT 1
+    is_active       TINYINT          NOT NULL DEFAULT 1,
+    INDEX idx_shifts_active_order (is_active, shift_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -218,6 +222,34 @@ CREATE TABLE break_logs (
     break_end       DATETIME         NULL,
     break_type      ENUM('Lunch','Rest','Other') NOT NULL DEFAULT 'Lunch'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE late_deductions (
+    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    time_log_id         INT UNSIGNED     NULL UNIQUE COMMENT 'Reference to time_logs table',
+    employee_id         INT UNSIGNED     NULL COMMENT 'Reference to employees table',
+    attendance_date     DATE             NOT NULL COMMENT 'Date of the late attendance',
+    expected_time       TIME             NOT NULL COMMENT 'Expected clock-in time (shift start)',
+    actual_time         TIME             NOT NULL COMMENT 'Actual clock-in time',
+    late_minutes        INT              NOT NULL COMMENT 'Total minutes late',
+    deduction_type      ENUM('none','grace_period','one_hour','half_day','absent') NOT NULL DEFAULT 'none' COMMENT 'Type of deduction applied',
+    deduction_hours     DECIMAL(5,2)     NOT NULL DEFAULT 0 COMMENT 'Hours deducted from pay',
+    hourly_rate         DECIMAL(10,2)    NULL COMMENT 'Hourly rate for calculation',
+    deduction_amount    DECIMAL(10,2)    NULL COMMENT 'Amount deducted from salary',
+    policy_version      VARCHAR(20)      NOT NULL DEFAULT '1.0' COMMENT 'Version of late policy applied',
+    is_excused          TINYINT          NOT NULL DEFAULT 0 COMMENT 'Whether late was excused/waived',
+    excuse_reason       TEXT             NULL COMMENT 'Reason for excuse if applicable',
+    approved_by         INT UNSIGNED     NULL COMMENT 'HR/Manager who approved/waived',
+    notes               TEXT             NULL,
+    created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_emp_date (employee_id, attendance_date),
+    INDEX idx_ded_type (deduction_type),
+    INDEX idx_is_excused (is_excused),
+    CONSTRAINT late_deductions_employee_id_foreign FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT late_deductions_time_log_id_foreign FOREIGN KEY (time_log_id) REFERENCES time_logs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT late_deductions_approved_by_foreign FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Tracks late clock-in deductions and penalties';
 
 
 CREATE TABLE timesheets (
@@ -969,6 +1001,19 @@ ALTER TABLE benefit_enrollments ADD INDEX idx_be_emp_status  (employee_id, statu
 ALTER TABLE notifications      ADD INDEX idx_notif_unread    (recipient_id, is_read);
 ALTER TABLE portal_activity_logs ADD INDEX idx_pal_emp_time  (employee_id, created_at);
 ALTER TABLE workforce_snapshots ADD INDEX idx_ws_date        (snapshot_date);
+
+-- ============================================================
+--  SHIFT TEMPLATES (Common Shifts)
+-- ============================================================
+
+INSERT INTO shifts (name, shift_order, start_time, end_time, break_minutes, is_night_shift, crosses_midnight, shift_duration_minutes, days_of_week, is_active) VALUES
+('Morning Shift (8-5)', 1, '08:00:00', '17:00:00', 60, 0, 0, 480, 'Mon-Fri', 1),
+('8-4 (No Lunch)', 2, '08:00:00', '16:00:00', 0, 0, 0, 480, 'Mon-Fri', 1),
+('9-6', 3, '09:00:00', '18:00:00', 60, 0, 0, 480, 'Mon-Fri', 1),
+('10-7', 4, '10:00:00', '19:00:00', 60, 0, 0, 480, 'Mon-Fri', 1),
+('11-8', 5, '11:00:00', '20:00:00', 60, 0, 0, 480, 'Mon-Fri', 1),
+('Graveyard (10pm-7am)', 6, '22:00:00', '07:00:00', 60, 1, 1, 480, 'Mon-Fri', 1),
+('Graveyard (11pm-8am)', 7, '23:00:00', '08:00:00', 60, 1, 1, 480, 'Mon-Fri', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
 
