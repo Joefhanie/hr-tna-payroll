@@ -55,7 +55,7 @@
                                     $hasActiveChild = collect($item['children'])->contains(function ($child) {
                                         $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                         if ($childRouteExists) {
-                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && request()->routeIs('payroll.work-location-details'));
+                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date')));
                                         }
                                         return request()->is(ltrim($child['path'], '/'));
                                     });
@@ -80,7 +80,7 @@
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                                 $childIsActive = $childRouteExists
-                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && request()->routeIs('payroll.work-location-details')))
+                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))))
                                                     : request()->is(ltrim($child['path'], '/'));
                                                 $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
                                             @endphp
