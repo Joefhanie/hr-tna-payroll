@@ -18,7 +18,6 @@
             'Modules' => [
                 ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'children' => [
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
-                    ['route' => 'employees.work-assignment', 'path' => '/employees-work-assignment',  'label' => 'Work Assignment'],
                 ]],
                 ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'children' => [

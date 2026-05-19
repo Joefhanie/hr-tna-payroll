@@ -73,8 +73,7 @@ Route::middleware('auth')->group(function () {
 
     // Employee Management
     Route::resource('employees', EmployeeController::class);
-    Route::get('/employees-work-assignment', [EmployeeController::class, 'workAssignment'])->name('employees.work-assignment');
-    Route::patch('/employees/{employee}/work-assignment', [EmployeeController::class, 'saveWorkAssignment'])->name('employees.work-assignment.save');
+    Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
 
     // Salary Management
     Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
