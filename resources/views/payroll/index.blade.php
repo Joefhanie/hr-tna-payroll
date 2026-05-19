@@ -1,10 +1,13 @@
 <x-app-layout>
-    <x-slot:title>Payroll</x-slot:title>
-    <x-slot:header>Payroll</x-slot:header>
+    <x-slot:title>Payroll List</x-slot:title>
+    <x-slot:header>Payroll Run</x-slot:header>
 
-    <div class="mb-6 flex items-center justify-between">
-        <p class="text-sm text-slate-600">Payroll runs, payslips, and statutory contributions.</p>
-        <a href="{{ route('payroll.create') }}" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium">
+     <div class="mb-6 flex items-center justify-between pb-6 border-b border-slate-200">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Payroll</h1>
+            <p class="mt-1 text-sm text-slate-600">Payroll runs, payslips, and statutory contributions.</p>
+        </div>
+       <a href="{{ route('payroll.create') }}" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium">
             <i class="fas fa-play"></i>
             Run Payroll
         </a>

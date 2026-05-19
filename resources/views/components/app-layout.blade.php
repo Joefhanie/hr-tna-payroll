@@ -15,7 +15,10 @@
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
             ],
             'Modules' => [
-                ['route' => 'employees.index', 'path' => '/employees', 'label' => 'Employees', 'icon' => 'user'],
+                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'children' => [
+                    ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
+                    ['route' => 'employees.work-assignment', 'path' => '/employees-work-assignment',  'label' => 'Work Assignment'],
+                ]],
                 ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
@@ -26,8 +29,9 @@
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
-                   ['route' => 'payroll.index', 'path' => '/payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'children' => [
-                    ['route' => 'payroll.plotting-payment', 'path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
+                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'children' => [
+                    ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
+                    ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],

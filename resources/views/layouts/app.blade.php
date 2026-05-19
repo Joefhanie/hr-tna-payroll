@@ -28,20 +28,28 @@
     .nav-link-sub:hover { background: var(--muted); color: var(--fg); }
     .nav-link-sub.active { background: #eef2ff; color: var(--primary); font-weight: 500; }
     .badge { display: inline-flex; align-items: center; padding: .125rem .5rem; border-radius: 9999px; font-size: .75rem; font-weight: 500; }
-    .badge-green { background: #dcfce7; color: #166534; }
-    .badge-amber { background: #fef3c7; color: #92400e; }
-    .badge-red   { background: #fee2e2; color: #991b1b; }
-    .badge-blue  { background: #dbeafe; color: #1e40af; }
-    .badge-gray  { background: #f1f5f9; color: #475569; }
+    .badge-green   { background: #dcfce7; color: #166534; }
+    .badge-amber   { background: #fef3c7; color: #92400e; }
+    .badge-red     { background: #fee2e2; color: #991b1b; }
+    .badge-blue    { background: #dbeafe; color: #1e40af; }
+    .badge-gray    { background: #f1f5f9; color: #475569; }
+    .badge-indigo  { background: #e0e7ff; color: #3730a3; }
+    .badge-purple  { background: #f3e8ff; color: #6b21a8; }
   </style>
 </head>
 <body>
   @php
     $nav = [
       ['url' => route('dashboard'),     'label' => 'Dashboard',     'group' => 'Overview'],
-      ['url' => route('employees.index'), 'label' => 'Employees',    'group' => 'Modules'],
+      ['label' => 'Employees', 'group' => 'Modules', 'children' => [
+        ['url' => route('employees.index'),           'label' => 'Employee List'],
+        ['url' => route('employees.work-assignment'), 'label' => 'Work Assignment'],
+      ]],
       ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules'],
-      ['url' => route('timekeeping'),  'label' => 'Timekeeping',   'group' => 'Modules'],
+      ['label' => 'Timekeeping', 'group' => 'Modules', 'children' => [
+        ['url' => route('timekeeping.index'),          'label' => 'Attendance'],
+        ['url' => route('timekeeping.shift-schedule'), 'label' => 'Shift Schedule'],
+      ]],
       ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules'],
       ['label' => 'Salaries', 'group' => 'Modules', 'children' => [
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
@@ -54,6 +62,7 @@
     ];
     $groups = collect($nav)->groupBy('group');
     $current = url()->current();
+    $currentPath = request()->path();
   @endphp
 
   <div class="h-screen flex w-full">
@@ -74,7 +83,9 @@
             @foreach ($items as $item)
               @if (isset($item['children']))
                 @php
-                  $hasActiveChild = collect($item['children'])->contains(fn ($child) => $current === $child['url']);
+                  $hasActiveChild = collect($item['children'])->contains(
+                    fn ($child) => $current === $child['url'] || str_starts_with($current, $child['url'])
+                  );
                 @endphp
                 <details class="group" @if ($hasActiveChild) open @endif>
                   <summary class="nav-link cursor-pointer list-none {{ $hasActiveChild ? 'active' : '' }}">
@@ -84,7 +95,7 @@
                   </summary>
                   <div class="mt-1 space-y-1 pl-2">
                     @foreach ($item['children'] as $child)
-                      <a href="{{ $child['url'] }}" class="nav-link-sub {{ $current === $child['url'] ? 'active' : '' }}">
+                      <a href="{{ $child['url'] }}" class="nav-link-sub {{ ($current === $child['url'] || str_starts_with($current, $child['url'])) ? 'active' : '' }}">
                         <span class="h-1 w-1 rounded-full bg-current opacity-50"></span>
                         {{ $child['label'] }}
                       </a>

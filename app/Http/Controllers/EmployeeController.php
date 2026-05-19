@@ -24,6 +24,38 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Display the Work Assignment listing.
+     */
+    public function workAssignment(): View
+    {
+        $employees = Employee::with(['department', 'position', 'manager'])
+            ->paginate(15);
+
+        return view('employees.work-assignment', compact('employees'));
+    }
+
+    /**
+     * Save the supervisor and work assignment type for a given employee.
+     */
+    public function saveWorkAssignment(Request $request, Employee $employee): RedirectResponse
+    {
+        $validated = $request->validate([
+            'manager_id'      => ['nullable', 'exists:employees,id'],
+            'employment_type' => ['required', 'in:1,2,3,4'],
+        ]);
+
+        // Prevent an employee from being their own supervisor
+        if (!empty($validated['manager_id']) && $validated['manager_id'] == $employee->id) {
+            return back()->withErrors(['manager_id' => 'An employee cannot be their own supervisor.']);
+        }
+
+        $employee->update($validated);
+
+        return redirect()->route('employees.work-assignment')
+            ->with('success', "Work assignment updated for {$employee->full_name}.");
+    }
+
+    /**
      * Show the form for creating a new employee.
      */
     public function create(): View
