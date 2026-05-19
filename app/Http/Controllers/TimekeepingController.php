@@ -74,4 +74,10 @@ class TimekeepingController extends Controller
             'recentAttendance' => $recentAttendance,
         ]);
     }
+
+    public function shiftSchedule()
+    {
+        $employees = \App\Models\Employee::with('department')->get();
+        return view('timekeeping.shift-schedule', compact('employees'));
+    }
 }

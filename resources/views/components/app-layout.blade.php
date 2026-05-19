@@ -17,7 +17,10 @@
             'Modules' => [
                 ['route' => 'employees.index', 'path' => '/employees', 'label' => 'Employees', 'icon' => 'user'],
                 ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
-                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock'],
+                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'children' => [
+                    ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
+                    ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
+                ]],
                 ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event'],
                 ['label' => 'Salaries', 'icon' => 'coins', 'children' => [
                     ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
@@ -156,7 +159,7 @@
             </div>
         </aside>
 
-        <main class="main-content flex-1 h-screen overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
+        <main class="main-content relative flex-1 h-screen overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
             <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pl-4 pr-5 py-3.5 backdrop-blur-md sm:pl-5 sm:pr-8">
                 <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-center gap-2 text-slate-500">
