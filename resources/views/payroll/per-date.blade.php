@@ -8,9 +8,6 @@
                 <h1 class="text-2xl font-bold text-slate-900">Date: {{ $dateFormatted }}</h1>
                 <p class="mt-1 text-sm text-slate-600">All employees assigned on this date</p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                Per Date
-            </span>
         </div>
 
         <div class="overflow-hidden rounded-lg border border-slate-200">
@@ -21,7 +18,7 @@
                             Employees
                         </th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Work Location
+                            Work Assignment
                         </th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Supervisor
