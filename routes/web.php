@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
     Route::post('/salaries/settings/government-contributions', [SalaryController::class, 'saveGovernmentContributions'])->name('salary.save-government-contributions');
     Route::post('/salaries/settings/deduction-rules', [SalaryController::class, 'saveDeductionRules'])->name('salary.save-deduction-rules');
+    Route::post('/salaries/settings/payroll', [SalaryController::class, 'savePayrollSettings'])->name('salary.save-payroll-settings');
     Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
     Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
     Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');

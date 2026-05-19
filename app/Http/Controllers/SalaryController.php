@@ -36,7 +36,41 @@ class SalaryController extends Controller
         $governmentContributions = GovernmentContributionRate::orderBy('sort_order')->get();
         $deductionRules = DeductionRule::orderBy('sort_order')->get();
 
-        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules'));
+        $global = \App\Models\PayrollSetting::first();
+
+        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules', 'global'));
+    }
+
+    /**
+     * Save company-wide payroll defaults (attendance multipliers).
+     */
+    public function savePayrollSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'attendance_overtime_multiplier' => 'nullable|numeric|min:0',
+            'attendance_night_differential_multiplier' => 'nullable|numeric|min:0',
+            'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_undertime_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_absence_deduction_multiplier' => 'nullable|numeric|min:0',
+        ]);
+
+        $payload = [
+            'attendance_overtime_multiplier' => $validated['attendance_overtime_multiplier'] ?? 1.25,
+            'attendance_night_differential_multiplier' => $validated['attendance_night_differential_multiplier'] ?? 0.10,
+            'attendance_late_deduction_multiplier' => $validated['attendance_late_deduction_multiplier'] ?? 1.00,
+            'attendance_undertime_deduction_multiplier' => $validated['attendance_undertime_deduction_multiplier'] ?? 1.00,
+            'attendance_absence_deduction_multiplier' => $validated['attendance_absence_deduction_multiplier'] ?? 1.00,
+        ];
+
+        $global = \App\Models\PayrollSetting::first();
+
+        if ($global) {
+            $global->update($payload);
+        } else {
+            \App\Models\PayrollSetting::create($payload);
+        }
+
+        return redirect()->route('salary.settings')->with('success', 'Payroll defaults updated successfully.');
     }
 
     /**
@@ -160,9 +194,11 @@ class SalaryController extends Controller
         $allContributions = GovernmentContributionRate::where('is_active', true)->orderBy('sort_order')->get();
         $allDeductionRules = DeductionRule::where('is_active', true)->orderBy('sort_order')->get();
 
+        $global = \App\Models\PayrollSetting::first();
+
         return view('salary.show', compact(
             'employee', 'payFrequencies',
-            'allTaxBrackets', 'allContributions', 'allDeductionRules'
+            'allTaxBrackets', 'allContributions', 'allDeductionRules', 'global'
         ));
     }
 
@@ -173,7 +209,9 @@ class SalaryController extends Controller
     {
         $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
-        return view('salary.create', compact('employee', 'payFrequencies'));
+        $global = \App\Models\PayrollSetting::first();
+
+        return view('salary.create', compact('employee', 'payFrequencies', 'global'));
     }
 
     /**
@@ -184,12 +222,19 @@ class SalaryController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'daily_divisor' => 'nullable|numeric|min:1',
+            'attendance_overtime_multiplier' => 'nullable|numeric|min:0',
+            'attendance_night_differential_multiplier' => 'nullable|numeric|min:0',
+            'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_undertime_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_absence_deduction_multiplier' => 'nullable|numeric|min:0',
             'pay_frequency' => 'required|integer|in:1,2,3,4,5,6',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
             'reason' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+
+        $validated = $this->normalizeAttendanceMultipliers($validated);
 
         DB::transaction(function () use ($request, $employee, $validated): void {
             $validated['employee_id'] = $employee->id;
@@ -223,7 +268,9 @@ class SalaryController extends Controller
         $employee = $salaryRecord->employee;
         $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
-        return view('salary.edit', compact('salaryRecord', 'employee', 'payFrequencies'));
+        $global = \App\Models\PayrollSetting::first();
+
+        return view('salary.edit', compact('salaryRecord', 'employee', 'payFrequencies', 'global'));
     }
 
     /**
@@ -234,12 +281,19 @@ class SalaryController extends Controller
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'daily_divisor' => 'nullable|numeric|min:1',
+            'attendance_overtime_multiplier' => 'nullable|numeric|min:0',
+            'attendance_night_differential_multiplier' => 'nullable|numeric|min:0',
+            'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_undertime_deduction_multiplier' => 'nullable|numeric|min:0',
+            'attendance_absence_deduction_multiplier' => 'nullable|numeric|min:0',
             'pay_frequency' => 'required|integer|in:1,2,3,4,5,6',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
             'reason' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+
+        $validated = $this->normalizeAttendanceMultipliers($validated);
 
         if (isset($validated['pay_frequency'])) {
             $validated['pay_frequency'] = (int) $validated['pay_frequency'];
@@ -261,6 +315,30 @@ class SalaryController extends Controller
 
         return redirect()->route('salary.show', $employee)
             ->with('success', 'Salary record deleted successfully.');
+    }
+
+    /**
+     * Ensure attendance multiplier fields always have explicit defaults.
+     */
+    private function normalizeAttendanceMultipliers(array $validated): array
+    {
+        // Allow explicit nulls - only set values when provided and non-empty
+        $keys = [
+            'attendance_overtime_multiplier',
+            'attendance_night_differential_multiplier',
+            'attendance_late_deduction_multiplier',
+            'attendance_undertime_deduction_multiplier',
+            'attendance_absence_deduction_multiplier',
+        ];
+
+        foreach ($keys as $k) {
+            if (array_key_exists($k, $validated)) {
+                // Treat empty string as null (user cleared the override)
+                $validated[$k] = $validated[$k] === '' ? null : $validated[$k];
+            }
+        }
+
+        return $validated;
     }
 
     /**

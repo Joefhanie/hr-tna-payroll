@@ -195,7 +195,7 @@ class PayrollService
     /**
      * Calculate attendance-based bonuses and deductions for a pay period.
      */
-    public function calculateAttendanceAdjustments(Employee $employee, Carbon $periodStart, Carbon $periodEnd, float $baseGross): array
+    public function calculateAttendanceAdjustments(Employee $employee, Carbon $periodStart, Carbon $periodEnd, float $baseGross, ?SalaryRecord $salaryRecord = null): array
     {
         $employee->loadMissing('user');
 
@@ -229,6 +229,28 @@ class PayrollService
         $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
         $dailyRate = round($baseGross / $periodDays, 2);
         $hourlyRate = round($dailyRate / 8, 2);
+
+        $global = \App\Models\PayrollSetting::first();
+
+        $overtimeMultiplier = $salaryRecord && $salaryRecord->attendance_overtime_multiplier !== null
+            ? (float) $salaryRecord->attendance_overtime_multiplier
+            : (float) ($global->attendance_overtime_multiplier ?? 1.25);
+
+        $nightDifferentialMultiplier = $salaryRecord && $salaryRecord->attendance_night_differential_multiplier !== null
+            ? (float) $salaryRecord->attendance_night_differential_multiplier
+            : (float) ($global->attendance_night_differential_multiplier ?? 0.10);
+
+        $lateDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_late_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_late_deduction_multiplier
+            : (float) ($global->attendance_late_deduction_multiplier ?? 1.00);
+
+        $undertimeDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_undertime_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_undertime_deduction_multiplier
+            : (float) ($global->attendance_undertime_deduction_multiplier ?? 1.00);
+
+        $absenceDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_absence_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_absence_deduction_multiplier
+            : (float) ($global->attendance_absence_deduction_multiplier ?? 1.00);
 
         $summary = [
             'absent_days' => 0,
@@ -276,12 +298,12 @@ class PayrollService
             }
         }
 
-        $lateDeduction = round(($summary['late_minutes'] / 60) * $hourlyRate, 2);
-        $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate, 2);
-        $absenceDeduction = round($summary['absent_days'] * $dailyRate, 2);
+        $lateDeduction = round(($summary['late_minutes'] / 60) * $hourlyRate * $lateDeductionMultiplier, 2);
+        $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
+        $absenceDeduction = round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
 
-        $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * 1.25, 2);
-        $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * 0.10, 2);
+        $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * $overtimeMultiplier, 2);
+        $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * $nightDifferentialMultiplier, 2);
 
         $earnings = [];
         if ($overtimePay > 0) {
@@ -332,7 +354,7 @@ class PayrollService
                 $gross = $this->computeGrossForPeriod($salaryRecord, $periodStart, $periodEnd);
             }
 
-            $attendanceAdjustments = $this->calculateAttendanceAdjustments($employee, $periodStart, $periodEnd, $gross);
+            $attendanceAdjustments = $this->calculateAttendanceAdjustments($employee, $periodStart, $periodEnd, $gross, $salaryRecord);
             $attendanceEarningsTotal = $attendanceAdjustments['earnings_total'];
             $attendanceDeductionsTotal = $attendanceAdjustments['deductions_total'];
 

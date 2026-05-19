@@ -26,7 +26,7 @@
     @endphp
 
     @if ($activeSalary)
-        <div class="mb-6 grid gap-4 sm:grid-cols-5">
+        <div class="mb-6 grid gap-4 sm:grid-cols-6">
             <div class="card p-5 border-l-4 border-l-green-500">
                 <p class="text-sm text-slate-500">Current Salary</p>
                 <p class="mt-2 text-3xl font-bold text-slate-900">₱{{ number_format($activeSalary->amount, 2) }}</p>
@@ -39,6 +39,11 @@
                 <p class="text-sm text-slate-500">Daily Divisor</p>
                 <p class="mt-2 text-lg font-semibold text-slate-900">{{ number_format($activeSalary->daily_divisor, 4) }}</p>
                 <p class="text-xs text-slate-400">{{ $activeSalary->daily_divisor == 21.8 ? '5-day/week' : ($activeSalary->daily_divisor == 26.1667 ? '6-day/week' : 'Custom') }}</p>
+            </div>
+            <div class="card p-5">
+                <p class="text-sm text-slate-500">Attendance Rates</p>
+                <p class="mt-2 text-sm font-semibold text-slate-900">OT {{ number_format($activeSalary->attendance_overtime_multiplier ?? $global->attendance_overtime_multiplier ?? 1.25, 4) }}x</p>
+                <p class="text-xs text-slate-400">Night {{ number_format($activeSalary->attendance_night_differential_multiplier ?? $global->attendance_night_differential_multiplier ?? 0.10, 4) }}x · Late {{ number_format($activeSalary->attendance_late_deduction_multiplier ?? $global->attendance_late_deduction_multiplier ?? 1.00, 4) }}x</p>
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Effective From</p>

@@ -74,6 +74,16 @@ class DatabaseSeeder extends Seeder
             DeductionRule::create($d);
         }
 
+        // Seed company-wide attendance defaults
+        \App\Models\PayrollSetting::truncate();
+        \App\Models\PayrollSetting::create([
+            'attendance_overtime_multiplier' => 1.25,
+            'attendance_night_differential_multiplier' => 0.10,
+            'attendance_late_deduction_multiplier' => 1.00,
+            'attendance_undertime_deduction_multiplier' => 1.00,
+            'attendance_absence_deduction_multiplier' => 1.00,
+        ]);
+
         // 2. Seed Departments
         $deptHr = Department::create(['name' => 'Human Resources']);
         $deptOps = Department::create(['name' => 'Operations']);
@@ -197,7 +207,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Joefhanie Perez',
+            'name' => 'Joefhanie Diaz',
             'username' => 'hr_admin',
             'email' => 'hr@example.com',
             'password' => $hashedPassword,
