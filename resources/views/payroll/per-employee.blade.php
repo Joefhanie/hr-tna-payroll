@@ -46,7 +46,7 @@
                                 Date</th>
                             <th
                                 class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
-                                Work location</th>
+                                Work Assignment</th>
                             <th
                                 class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
                                 Supervisor</th>

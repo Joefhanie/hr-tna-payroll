@@ -56,7 +56,7 @@
                                             <div class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-48 text-left">
                                                 <div class="space-y-1">
                                                     <div class="text-xs text-slate-700">
-                                                        <span class="font-semibold text-slate-900">Work location:</span>
+                                                        <span class="font-semibold text-slate-900">Work Assignment:</span>
                                                         <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
                                                             {{ $dayData['location'] }}
                                                         </a>
