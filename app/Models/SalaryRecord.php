@@ -14,6 +14,7 @@ class SalaryRecord extends Model
         'employee_id',
         'amount',
         'pay_frequency',
+        'daily_divisor',
         'effective_date',
         'end_date',
         'reason',
@@ -23,6 +24,7 @@ class SalaryRecord extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'daily_divisor' => 'decimal:4',
         'effective_date' => 'date',
         'end_date' => 'date',
         'pay_frequency' => 'integer',

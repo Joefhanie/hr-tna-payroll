@@ -48,14 +48,29 @@ class PayrollService
                 return round($base * ($days / 7), 2);
             case 4:
                 return round($base * ($days / 14), 2);
-            case 5:
-                $periodDaysInMonth = $periodStart->daysInMonth;
-                return round($base * ($days / $periodDaysInMonth), 2);
+            case 5: // Monthly
+                // Standard Philippine Semi-Monthly Period (typically 13-17 calendar days)
+                if ($days >= 13 && $days <= 17) {
+                    return round($base / 2, 2);
+                }
+                
+                // Standard Full Month Period (typically 28-31 calendar days)
+                if ($days >= 28 && $days <= 31) {
+                    return round($base, 2);
+                }
+                
+                // For custom periods (e.g. final pay or mid-cycle hiring)
+                // Use the employee's configured daily rate divisor (21.8 for 5-day, 26.1667 for 6-day)
+                $divisor = (float) ($record->daily_divisor ?? 21.8);
+                $dailyRate = $base / $divisor;
+                return round($dailyRate * $days, 2);
+                
             case 6:
                 return round($base * ($days / 365), 2);
             default:
-                // fallback: treat as monthly
-                return round($base * ($days / $periodStart->daysInMonth), 2);
+                // fallback: use the employee's configured divisor
+                $divisor = (float) ($record->daily_divisor ?? 21.8);
+                return round(($base / $divisor) * $days, 2);
         }
     }
 

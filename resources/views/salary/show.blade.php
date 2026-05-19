@@ -26,7 +26,7 @@
     @endphp
 
     @if ($activeSalary)
-        <div class="mb-6 grid gap-4 sm:grid-cols-4">
+        <div class="mb-6 grid gap-4 sm:grid-cols-5">
             <div class="card p-5 border-l-4 border-l-green-500">
                 <p class="text-sm text-slate-500">Current Salary</p>
                 <p class="mt-2 text-3xl font-bold text-slate-900">₱{{ number_format($activeSalary->amount, 2) }}</p>
@@ -34,6 +34,11 @@
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Pay Frequency</p>
                 <p class="mt-2 text-lg font-semibold text-slate-900">{{ $payFrequencies[$activeSalary->pay_frequency] ?? $activeSalary->pay_frequency }}</p>
+            </div>
+            <div class="card p-5">
+                <p class="text-sm text-slate-500">Daily Divisor</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900">{{ number_format($activeSalary->daily_divisor, 4) }}</p>
+                <p class="text-xs text-slate-400">{{ $activeSalary->daily_divisor == 21.8 ? '5-day/week' : ($activeSalary->daily_divisor == 26.1667 ? '6-day/week' : 'Custom') }}</p>
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Effective From</p>
@@ -65,6 +70,7 @@
                         <tr>
                             <th class="px-6 py-3">Salary Amount</th>
                             <th class="px-6 py-3">Frequency</th>
+                            <th class="px-6 py-3">Daily Divisor</th>
                             <th class="px-6 py-3">Effective From</th>
                             <th class="px-6 py-3">End Date</th>
                             <th class="px-6 py-3">Reason</th>
@@ -77,6 +83,7 @@
                             <tr>
                                 <td class="px-6 py-4 font-medium text-slate-900">₱{{ number_format($salary->amount, 2) }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $payFrequencies[$salary->pay_frequency] ?? $salary->pay_frequency }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ number_format($salary->daily_divisor, 4) }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $salary->effective_date->format('M d, Y') }}</td>
                                 <td class="px-6 py-4 text-slate-600">
                                     @if ($salary->end_date)

@@ -49,6 +49,16 @@
                 @enderror
             </div>
 
+            <!-- Daily Rate Divisor -->
+            <div>
+                <label for="daily_divisor" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Daily Rate Divisor</label>
+                <input type="number" id="daily_divisor" name="daily_divisor" step="0.0001" min="1" value="{{ old('daily_divisor', $salaryRecord->daily_divisor) }}" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="21.8">
+                <p class="mt-1 text-xs text-slate-500">Usually 21.8 (5-day week) or 26.1667 (6-day week)</p>
+                @error('daily_divisor')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Effective Date -->
             <div>
                 <label for="effective_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Effective From *</label>

@@ -182,7 +182,8 @@ class SalaryController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
-            'pay_frequency' => 'required|integer|in:1,2,3,4,5',
+            'daily_divisor' => 'nullable|numeric|min:1',
+            'pay_frequency' => 'required|integer|in:1,2,3,4,5,6',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
             'reason' => 'nullable|string|max:255',
@@ -226,6 +227,7 @@ class SalaryController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
+            'daily_divisor' => 'nullable|numeric|min:1',
             'pay_frequency' => 'required|integer|in:1,2,3,4,5,6',
             'effective_date' => 'required|date',
             'end_date' => 'nullable|date|after:effective_date',
