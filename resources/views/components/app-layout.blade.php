@@ -25,8 +25,8 @@
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
                 ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event'],
-                ['label' => 'Salaries', 'icon' => 'coins', 'children' => [
-                    ['route' => 'salary.index', 'path' => '/salaries', 'label' => 'Salary Records'],
+                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'children' => [
+                    ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
                 ]],
                 ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'children' => [
