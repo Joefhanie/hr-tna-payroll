@@ -122,8 +122,48 @@ class TimekeepingController extends Controller
 
     public function shiftSchedule()
     {
-        $employees = \App\Models\Employee::with('department')->get();
+        $employees = \App\Models\Employee::with(['department', 'currentShift.shift'])->get();
         return view('timekeeping.shift-schedule', compact('employees'));
+    }
+
+    public function saveShiftSchedule(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'start_time' => 'required',
+            'end_time' => 'required',
+            'days' => 'array',
+            'days.*' => 'string',
+        ]);
+
+        $days = $validated['days'] ?? [];
+        
+        $start = date('H:i:s', strtotime($validated['start_time']));
+        $end = date('H:i:s', strtotime($validated['end_time']));
+
+        $shift = \App\Models\Shift::where('start_time', $start)
+            ->where('end_time', $end)
+            ->where('days_of_week', json_encode($days))
+            ->first();
+
+        if (!$shift) {
+            $shift = \App\Models\Shift::create([
+                'name' => 'Shift ' . $start . '-' . $end,
+                'start_time' => $start,
+                'end_time' => $end,
+                'break_minutes' => 60,
+                'is_night_shift' => false,
+                'days_of_week' => $days,
+                'is_active' => true,
+            ]);
+        }
+
+        \App\Models\ShiftAssignment::updateOrCreate(
+            ['employee_id' => $validated['employee_id'], 'effective_to' => null],
+            ['shift_id' => $shift->id, 'effective_from' => now()->toDateString()]
+        );
+
+        return response()->json(['success' => true]);
     }
 
     public function show(User $user)
