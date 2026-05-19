@@ -127,10 +127,38 @@
                                         4 => 'badge-red',
                                     ];
                                     $userRole = $employee->user?->role;
-                                    $roleLabel = $roleLabels[$userRole] ?? 'N/A';
-                                    $roleBadgeColor = $roleColors[$userRole] ?? 'badge-gray';
+                                    $temporaryAssignment = $employee->user
+                                        ? \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
+                                            ->latest('to_date')
+                                            ->first()
+                                        : null;
+
+                                    $now = now();
+                                    $isScheduledTemporary = $temporaryAssignment
+                                        && $temporaryAssignment->is_active
+                                        && $temporaryAssignment->from_date
+                                        && $temporaryAssignment->from_date->greaterThan($now);
+                                    $isCurrentTemporary = $temporaryAssignment
+                                        && $temporaryAssignment->is_active
+                                        && $temporaryAssignment->from_date
+                                        && $temporaryAssignment->to_date
+                                        && $now->between($temporaryAssignment->from_date, $temporaryAssignment->to_date);
+
+                                    if ($isCurrentTemporary || $isScheduledTemporary) {
+                                        $prefix = $isScheduledTemporary ? 'Scheduled Temporary ' : 'Temporary ';
+                                        $roleLabel = $prefix . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
+                                        $roleBadgeColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
+                                    } else {
+                                        $roleLabel = $roleLabels[$userRole] ?? 'N/A';
+                                        $roleBadgeColor = $roleColors[$userRole] ?? 'badge-gray';
+                                    }
                                 @endphp
                                 <span class="badge {{ $roleBadgeColor }}">{{ $roleLabel }}</span>
+                                @if($isCurrentTemporary || $isScheduledTemporary)
+                                    <div class="text-xs text-slate-500 mt-1">
+                                        {{ $isScheduledTemporary ? 'Scheduled' : 'Temporary' }} from {{ $temporaryAssignment->from_date->format('M d, Y H:i') }} to {{ $temporaryAssignment->to_date->format('M d, Y H:i') }}
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <div class="relative">
@@ -228,6 +256,34 @@
                         <option value="2">Supervisor</option>
                         <option value="4">HR</option>
                     </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Temporary Assignment</label>
+                    @can('assign-temporary-role-with-time')
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date & time)</label>
+                                <input id="fromDate" name="from_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date & time)</label>
+                                <input id="toDate" name="to_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                    @else
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date)</label>
+                                <input id="fromDate" name="from_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date)</label>
+                                <input id="toDate" name="to_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                    @endcan
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="closeRoleModal()" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">

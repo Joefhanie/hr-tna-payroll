@@ -19,8 +19,8 @@ class TemporaryAssignment extends Model
     ];
 
     protected $casts = [
-        'from_date' => 'date',
-        'to_date' => 'date',
+        'from_date' => 'datetime',
+        'to_date' => 'datetime',
         'is_active' => 'boolean',
     ];
 
@@ -38,8 +38,8 @@ class TemporaryAssignment extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-                     ->where('from_date', '<=', now()->toDateString())
-                     ->where('to_date', '>=', now()->toDateString());
+                     ->where('from_date', '<=', now())
+                     ->where('to_date', '>=', now());
     }
 
     /**
@@ -48,6 +48,6 @@ class TemporaryAssignment extends Model
     public function scopeExpired($query)
     {
         return $query->where('is_active', true)
-                     ->where('to_date', '<', now()->toDateString());
+                     ->where('to_date', '<', now());
     }
 }

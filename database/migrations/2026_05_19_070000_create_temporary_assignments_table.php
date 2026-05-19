@@ -13,18 +13,19 @@ return new class extends Migration
     {
         if (!Schema::hasTable('temporary_assignments')) {
             Schema::create('temporary_assignments', function (Blueprint $table) {
-            $table->id();
-            // Use unsignedBigInteger for user_id and index it instead of adding a foreign key
-            // to avoid compatibility issues with existing users.id column types on some setups.
-            $table->unsignedBigInteger('user_id')->index();
-            $table->tinyInteger('temporary_role');
-            $table->tinyInteger('original_role');
-            $table->date('from_date');
-            $table->date('to_date');
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+                // Use INT primary key to match existing databases that use INT for users.id
+                $table->increments('id');
+                // Match users.id (INT) — use signed INT unless your users.id is unsigned
+                $table->integer('user_id')->index();
+                $table->tinyInteger('temporary_role');
+                $table->tinyInteger('original_role');
+                // Use DATETIME to allow time precision
+                $table->dateTime('from_date');
+                $table->dateTime('to_date');
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
 
-            $table->index(['user_id', 'is_active', 'to_date']);
+                $table->index(['user_id', 'is_active', 'to_date']);
             });
         }
     }

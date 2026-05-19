@@ -207,8 +207,8 @@ class EmployeeController extends Controller
     {
         $validated = $request->validate([
             'role' => ['required', 'in:1,2,4'],
-            'from_date' => ['nullable', 'date'],
-            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+            'from_date' => ['required', 'date'], // accepts date or datetime-local ISO formats
+            'to_date' => ['required', 'date', 'after_or_equal:from_date'],
         ]);
 
         // Only proceed if employee has a user account
@@ -217,38 +217,34 @@ class EmployeeController extends Controller
                 ->with('error', 'Employee does not have a user account.');
         }
 
-        $fromDate = $validated['from_date'] ? \Carbon\Carbon::createFromFormat('Y-m-d', $validated['from_date']) : now();
-        $toDate = $validated['to_date'] ? \Carbon\Carbon::createFromFormat('Y-m-d', $validated['to_date']) : null;
+        $fromDate = isset($validated['from_date']) ? \Carbon\Carbon::parse($validated['from_date']) : now();
+        $toDate = isset($validated['to_date']) ? \Carbon\Carbon::parse($validated['to_date']) : now();
 
-        // If no end date, make it permanent
-        if (!$toDate) {
-            $employee->user->update([
-                'role' => $validated['role'],
-            ]);
+        \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
+            ->update(['is_active' => false]);
 
-            return redirect()->route('employees.index')
-                ->with('success', 'Role granted permanently.');
-        }
-
-        // Save temporary assignment into temporary_assignments table
+        // Save the new temporary assignment as the only active one for this user.
         \App\Models\TemporaryAssignment::create([
             'user_id' => $employee->user->id,
             'temporary_role' => $validated['role'],
             'original_role' => $employee->user->role,
-            'from_date' => $fromDate->toDateString(),
-            'to_date' => $toDate->toDateString(),
+            'from_date' => $fromDate->toDateTimeString(),
+            'to_date' => $toDate->toDateTimeString(),
             'is_active' => true,
         ]);
 
         // Update user's role immediately if from_date is today or earlier
-        if ($fromDate->toDateString() <= now()->toDateString()) {
+        if ($fromDate->lessThanOrEqualTo(now())) {
             $employee->user->update([
                 'role' => $validated['role'],
             ]);
         }
 
+        $fromLabel = $fromDate->format('M d, Y' . ($fromDate->format('H:i') !== '00:00' ? ' H:i' : ''));
+        $toLabel = $toDate->format('M d, Y' . ($toDate->format('H:i') !== '00:00' ? ' H:i' : ''));
+
         return redirect()->route('employees.index')
-            ->with('success', 'Temporary role access granted from ' . $fromDate->format('M d, Y') . ' to ' . $toDate->format('M d, Y') . '.');
+            ->with('success', 'Temporary role access granted from ' . $fromLabel . ' to ' . $toLabel . '.');
     }
 
     /**
