@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\PayRun;
 use App\Models\Payslip;
@@ -53,18 +54,18 @@ class PayrollService
                 if ($days >= 13 && $days <= 17) {
                     return round($base / 2, 2);
                 }
-                
+
                 // Standard Full Month Period (typically 28-31 calendar days)
                 if ($days >= 28 && $days <= 31) {
                     return round($base, 2);
                 }
-                
+
                 // For custom periods (e.g. final pay or mid-cycle hiring)
                 // Use the employee's configured daily rate divisor (21.8 for 5-day, 26.1667 for 6-day)
                 $divisor = (float) ($record->daily_divisor ?? 21.8);
                 $dailyRate = $base / $divisor;
                 return round($dailyRate * $days, 2);
-                
+
             case 6:
                 return round($base * ($days / 365), 2);
             default:
@@ -192,6 +193,125 @@ class PayrollService
     }
 
     /**
+     * Calculate attendance-based bonuses and deductions for a pay period.
+     */
+    public function calculateAttendanceAdjustments(Employee $employee, Carbon $periodStart, Carbon $periodEnd, float $baseGross): array
+    {
+        $employee->loadMissing('user');
+
+        $empty = [
+            'earnings' => [],
+            'deductions' => [],
+            'earnings_total' => 0.0,
+            'deductions_total' => 0.0,
+            'summary' => [
+                'absent_days' => 0,
+                'late_minutes' => 0,
+                'undertime_minutes' => 0,
+                'overtime_minutes' => 0,
+                'premium_minutes' => 0,
+            ],
+        ];
+
+        if (!$employee->user) {
+            return $empty;
+        }
+
+        $attendanceRecords = Attendance::where('user_id', $employee->user->id)
+            ->whereBetween('attendance_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->orderBy('attendance_date')
+            ->get();
+
+        if ($attendanceRecords->isEmpty()) {
+            return $empty;
+        }
+
+        $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
+        $dailyRate = round($baseGross / $periodDays, 2);
+        $hourlyRate = round($dailyRate / 8, 2);
+
+        $summary = [
+            'absent_days' => 0,
+            'late_minutes' => 0,
+            'undertime_minutes' => 0,
+            'overtime_minutes' => 0,
+            'premium_minutes' => 0,
+        ];
+
+        foreach ($attendanceRecords as $attendance) {
+            $attendanceDate = Carbon::parse($attendance->attendance_date->toDateString());
+            $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
+            $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
+            $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
+            $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
+
+            $checkIn = $attendance->check_in ? Carbon::parse($attendance->check_in) : null;
+            $checkOut = $attendance->check_out ? Carbon::parse($attendance->check_out) : null;
+            $isAbsent = (int) $attendance->status === 3 || (!$checkIn && !$checkOut);
+
+            if ($isAbsent) {
+                $summary['absent_days']++;
+                continue;
+            }
+
+            if ($checkIn && $checkIn->gt($shiftStart)) {
+                $summary['late_minutes'] += $shiftStart->diffInMinutes($checkIn);
+            }
+
+            if ($checkOut && $checkOut->lt($shiftEnd)) {
+                $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
+            }
+
+            if ($checkOut && $checkOut->gt($shiftEnd)) {
+                $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+            }
+
+            if ($checkOut && $checkOut->gt($premiumStart)) {
+                $nightStart = $checkIn && $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
+                $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
+
+                if ($nightEnd->gt($nightStart)) {
+                    $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                }
+            }
+        }
+
+        $lateDeduction = round(($summary['late_minutes'] / 60) * $hourlyRate, 2);
+        $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate, 2);
+        $absenceDeduction = round($summary['absent_days'] * $dailyRate, 2);
+
+        $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * 1.25, 2);
+        $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * 0.10, 2);
+
+        $earnings = [];
+        if ($overtimePay > 0) {
+            $earnings[] = ['description' => 'Attendance: Overtime Pay', 'amount' => $overtimePay, 'is_taxable' => true];
+        }
+        if ($nightDifferential > 0) {
+            $earnings[] = ['description' => 'Attendance: Night Differential', 'amount' => $nightDifferential, 'is_taxable' => true];
+        }
+
+        $deductions = [];
+        if ($lateDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Late Deduction', 'amount' => $lateDeduction, 'is_taxable' => false];
+        }
+        if ($undertimeDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Undertime Deduction', 'amount' => $undertimeDeduction, 'is_taxable' => false];
+        }
+        if ($absenceDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Absence Deduction', 'amount' => $absenceDeduction, 'is_taxable' => false];
+        }
+
+        return [
+            'earnings' => $earnings,
+            'deductions' => $deductions,
+            'earnings_total' => round($overtimePay + $nightDifferential, 2),
+            'deductions_total' => round($lateDeduction + $undertimeDeduction + $absenceDeduction, 2),
+            'summary' => $summary,
+        ];
+    }
+
+    /**
      * Generate a payslip for an employee within a pay run.
      *
      * Component Type: 1=Earning, 2=Deduction, 3=Tax, 4=Government
@@ -212,6 +332,10 @@ class PayrollService
                 $gross = $this->computeGrossForPeriod($salaryRecord, $periodStart, $periodEnd);
             }
 
+            $attendanceAdjustments = $this->calculateAttendanceAdjustments($employee, $periodStart, $periodEnd, $gross);
+            $attendanceEarningsTotal = $attendanceAdjustments['earnings_total'];
+            $attendanceDeductionsTotal = $attendanceAdjustments['deductions_total'];
+
             $payslip = Payslip::create([
                 'pay_run_id' => $payRun->id,
                 'employee_id' => $employee->id,
@@ -231,12 +355,33 @@ class PayrollService
                 'is_taxable' => true,
             ]);
 
+            foreach ($attendanceAdjustments['earnings'] as $earning) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 1,
+                    'description' => $earning['description'],
+                    'amount' => $earning['amount'],
+                    'is_taxable' => $earning['is_taxable'] ?? true,
+                ]);
+            }
+
+            foreach ($attendanceAdjustments['deductions'] as $deduction) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 2,
+                    'description' => $deduction['description'],
+                    'amount' => $deduction['amount'],
+                    'is_taxable' => $deduction['is_taxable'] ?? false,
+                ]);
+            }
+
             // Bonuses
             $bonuses = $options['bonuses'] ?? [];
             $bonusTotal = $this->applyBonuses($payslip, $bonuses);
 
             // Calculate taxable amount
-            $taxable = $gross + $bonusTotal;
+            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal, 2);
+            $taxable = $totalGross;
 
             // Tax — using employee's assigned brackets
             $tax = $this->calculateTax($taxable, $employee);
@@ -285,9 +430,10 @@ class PayrollService
             }
 
             // Finalize totals
-            $totalDeductions = $tax + $totalGovEmployee + $totalDeductionRules;
-            $net = round($taxable - $totalDeductions, 2);
+            $totalDeductions = $tax + $totalGovEmployee + $totalDeductionRules + $attendanceDeductionsTotal;
+            $net = round($totalGross - $totalDeductions, 2);
 
+            $payslip->gross_pay = $totalGross;
             $payslip->total_deductions = $totalDeductions;
             $payslip->net_pay = $net;
             $payslip->save();
