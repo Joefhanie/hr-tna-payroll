@@ -227,6 +227,39 @@ class Shift extends Model
     }
 
     /**
+     * Get a friendly time range for display.
+     */
+    public function getDisplayTimeRange(): string
+    {
+        $start = Carbon::createFromFormat('H:i:s', $this->start_time)->format('g:i A');
+        $end = Carbon::createFromFormat('H:i:s', $this->end_time)->format('g:i A');
+
+        return "{$start} - {$end}";
+    }
+
+    /**
+     * Calculate the attendance status for a clock-in based on this shift.
+     */
+    public function getAttendanceStatusForClockIn($clockInTime, $gracePeriodMinutes = 10): array
+    {
+        $lateMinutes = $this->checkIfLate($clockInTime, $gracePeriodMinutes);
+
+        if ($lateMinutes >= 61) {
+            return ['key' => 3, 'label' => 'Absent', 'late_minutes' => $lateMinutes];
+        }
+
+        if ($lateMinutes >= 31) {
+            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
+        }
+
+        if ($lateMinutes >= 11) {
+            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
+        }
+
+        return ['key' => 1, 'label' => 'Present', 'late_minutes' => $lateMinutes];
+    }
+
+    /**
      * Relationships
      */
     public function shiftAssignments()

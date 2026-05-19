@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -139,14 +140,37 @@ class Employee extends Model
         ])));
     }
 
-    public function currentShift()
+    public function currentShift(): HasOne
     {
-        return $this->hasOne(ShiftAssignment::class)->whereNull('effective_to')->orWhere('effective_to', '>=', now()->toDateString())->latest('effective_from');
+        return $this->hasOne(ShiftAssignment::class)
+            ->where('effective_from', '<=', now()->toDateString())
+            ->where(function ($query) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', now()->toDateString());
+            })
+            ->latest('effective_from');
     }
 
     public function shiftAssignments()
     {
         return $this->hasMany(ShiftAssignment::class);
+    }
+
+    public function getActiveShiftForDate($date): ?Shift
+    {
+        $date = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+        $assignment = $this->shiftAssignments()
+            ->with('shift')
+            ->where('effective_from', '<=', $date->toDateString())
+            ->where(function ($query) use ($date) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', $date->toDateString());
+            })
+            ->orderByDesc('effective_from')
+            ->first();
+
+        return $assignment?->shift;
     }
 
     /**

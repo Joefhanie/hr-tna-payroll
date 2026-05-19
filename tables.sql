@@ -972,6 +972,7 @@ CREATE TABLE audit_logs (
 CREATE TABLE attendance (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id             INT UNSIGNED     NOT NULL,
+    shift_id            INT UNSIGNED     NULL,
     attendance_date     DATE             NOT NULL,
     check_in            DATETIME         NULL,
     check_out           DATETIME         NULL,
