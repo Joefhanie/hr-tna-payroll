@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('supervisor_assignments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('supervisor_id');
+            $table->unsignedInteger('supervisor_id');
             $table->string('location', 120);
             $table->date('date');
             $table->timestamps();
@@ -24,8 +24,8 @@ return new class extends Migration
 
         Schema::create('employee_plottings', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('employee_id');
-            $table->unsignedBigInteger('supervisor_id')->nullable();
+            $table->unsignedInteger('employee_id');
+            $table->unsignedInteger('supervisor_id')->nullable();
             $table->date('date');
             $table->string('location', 120)->nullable();
             $table->decimal('amount', 14, 2)->default(0.00);

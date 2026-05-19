@@ -13,57 +13,33 @@ return new class extends Migration
     {
         if (!Schema::hasTable('employees')) {
             Schema::create('employees', function (Blueprint $table) {
-            $table->id();
-            $table->string('employee_id')->unique();
-
-            // Personal Details
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->date('date_of_birth')->nullable();
-            $table->enum('gender', ['male', 'female', 'other'])->nullable();
-
-            // Contact Information
-            $table->string('email')->unique();
-            $table->string('phone')->nullable();
-            $table->string('phone_alt')->nullable();
-            $table->text('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('zip_code')->nullable();
-            $table->string('country')->nullable();
-
-            // Employment Information
-            $table->string('job_title')->nullable();
-            $table->string('department')->nullable();
-            $table->string('manager_name')->nullable();
-            $table->date('hire_date')->nullable();
-            $table->date('termination_date')->nullable();
-            $table->enum('employment_status', ['active', 'inactive', 'terminated', 'on_leave'])->default('active');
-            $table->enum('employment_type', ['full_time', 'part_time', 'contract', 'temporary'])->default('full_time');
-
-            // Government IDs and Compliance
-            $table->string('ssn')->nullable()->unique();
-            $table->string('tax_id')->nullable()->unique();
-            $table->string('driver_license')->nullable()->unique();
-            $table->string('passport_number')->nullable()->nullable();
-
-            // Salary Information
-            $table->decimal('base_salary', 10, 2)->nullable();
-            $table->enum('pay_frequency', ['weekly', 'bi_weekly', 'monthly', 'annual'])->default('monthly');
-            $table->decimal('hourly_rate', 8, 2)->nullable();
-
-            // Bank Information
-            $table->string('bank_name')->nullable();
-            $table->string('account_holder_name')->nullable();
-            $table->string('account_number')->nullable();
-            $table->string('routing_number')->nullable();
-
-            // Additional Information
-            $table->text('notes')->nullable();
-            $table->string('profile_photo')->nullable();
-
-            $table->timestamps();
-            $table->softDeletes();
+                $table->id();
+                $table->string('employee_code', 30)->unique();
+                $table->string('first_name', 80);
+                $table->string('last_name', 80);
+                $table->string('middle_name', 80)->nullable();
+                $table->string('email', 160)->unique();
+                $table->string('phone', 30)->nullable();
+                $table->date('birth_date')->nullable();
+                $table->enum('gender', ['Male', 'Female', 'Non-binary', 'Prefer not to say'])->nullable();
+                $table->string('nationality', 80)->nullable();
+                $table->enum('marital_status', ['Single', 'Married', 'Widowed', 'Divorced', 'Separated'])->nullable();
+                $table->string('address_line1', 200)->nullable();
+                $table->string('address_line2', 200)->nullable();
+                $table->string('city', 100)->nullable();
+                $table->string('province', 100)->nullable();
+                $table->string('postal_code', 20)->nullable();
+                $table->string('country', 80)->default('Philippines')->nullable();
+                $table->integer('status')->default(2);
+                $table->integer('employment_type')->default(1);
+                $table->date('hire_date');
+                $table->date('regularization_date')->nullable();
+                $table->date('termination_date')->nullable();
+                $table->text('termination_reason')->nullable();
+                $table->unsignedBigInteger('position_id')->nullable();
+                $table->unsignedBigInteger('department_id')->nullable();
+                $table->unsignedBigInteger('manager_id')->nullable();
+                $table->timestamps();
             });
         }
     }
@@ -76,4 +52,3 @@ return new class extends Migration
         Schema::dropIfExists('employees');
     }
 };
-
