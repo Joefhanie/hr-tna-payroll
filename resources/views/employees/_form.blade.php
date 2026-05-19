@@ -137,8 +137,23 @@
             @error('email')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="phone">Phone Number</label>
-            <input id="phone" name="phone" type="text" value="{{ old('phone', $employee->phone ?? '') }}" placeholder="e.g. 09xxxxxxxxx" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="phone_display">Phone Number</label>
+            <div class="relative flex rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20">
+                <div class="flex items-center border-r border-slate-200 bg-slate-100/50 rounded-l-lg overflow-hidden">
+                    <select id="phone_country" class="bg-transparent px-3 py-3 text-sm font-semibold text-slate-700 outline-none border-none cursor-pointer focus:ring-0 focus:outline-none">
+                        <option value="PH">🇵🇭 +63</option>
+                        <option value="US">🇺🇸 +1</option>
+                        <option value="SG">🇸🇬 +65</option>
+                        <option value="JP">🇯🇵 +81</option>
+                        <option value="AU">🇦🇺 +61</option>
+                        <option value="GB">🇬🇧 +44</option>
+                        <option value="AE">🇦🇪 +971</option>
+                        <option value="CA">🇨🇦 +1</option>
+                    </select>
+                </div>
+                <input id="phone_display" type="text" placeholder="e.g. 917 123 4567" class="w-full bg-transparent px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none">
+                <input id="phone" name="phone" type="hidden" value="{{ old('phone', $employee->phone ?? '') }}">
+            </div>
             @error('phone')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div class="sm:col-span-2">
@@ -168,7 +183,16 @@
         </div>
         <div>
             <label class="{{ $lbl }}" for="country">Country</label>
-            <input id="country" name="country" type="text" value="{{ old('country', $employee->country ?? '') }}" placeholder="e.g. Philippines" class="{{ $inp }}">
+            <select id="country" name="country" class="{{ $sel }}">
+                <option value="Philippines" @selected(old('country', $employee->country ?? 'Philippines') === 'Philippines')>Philippines</option>
+                <option value="United States" @selected(old('country', $employee->country ?? '') === 'United States')>United States</option>
+                <option value="Singapore" @selected(old('country', $employee->country ?? '') === 'Singapore')>Singapore</option>
+                <option value="Japan" @selected(old('country', $employee->country ?? '') === 'Japan')>Japan</option>
+                <option value="Australia" @selected(old('country', $employee->country ?? '') === 'Australia')>Australia</option>
+                <option value="United Kingdom" @selected(old('country', $employee->country ?? '') === 'United Kingdom')>United Kingdom</option>
+                <option value="United Arab Emirates" @selected(old('country', $employee->country ?? '') === 'United Arab Emirates')>United Arab Emirates</option>
+                <option value="Canada" @selected(old('country', $employee->country ?? '') === 'Canada')>Canada</option>
+            </select>
             @error('country')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
     </div>
@@ -436,21 +460,148 @@
     
     if (deptSelect && posSelect) {
         deptSelect.addEventListener('change', updatePositionDropdown);
-        
         posSelect.addEventListener('change', () => {
             const selectedOpt = posSelect.options[posSelect.selectedIndex];
             if (selectedOpt && selectedOpt.value) {
                 const optDeptId = selectedOpt.dataset.departmentId;
                 if (optDeptId && deptSelect.value !== optDeptId) {
                     deptSelect.value = optDeptId;
-                    // Re-run the dropdown update to ensure UI consistency
                     updatePositionDropdown();
                 }
             }
         });
-        
-        // Delay initial run slightly to ensure selected values are populated
-        setTimeout(updatePositionDropdown, 0);
+    }
+
+    // --- Country Flag and Phone Prefix Logic ---
+    const phoneCountrySelect = document.getElementById('phone_country');
+    const phoneDisplay = document.getElementById('phone_display');
+    const phoneHidden = document.getElementById('phone');
+
+    const phoneConfigs = {
+        'PH': { prefix: '+63', format: formatPh, placeholder: '917 123 4567' },
+        'US': { prefix: '+1', format: formatUs, placeholder: '(555) 000-0000' },
+        'CA': { prefix: '+1', format: formatUs, placeholder: '(555) 000-0000' },
+        'SG': { prefix: '+65', format: formatSg, placeholder: '8123 4567' },
+        'JP': { prefix: '+81', format: formatJp, placeholder: '90-1234-5678' },
+        'AU': { prefix: '+61', format: formatAu, placeholder: '412 345 678' },
+        'GB': { prefix: '+44', format: formatUk, placeholder: '7123 456789' },
+        'AE': { prefix: '+971', format: formatUae, placeholder: '50 123 4567' }
+    };
+
+    function formatPh(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+
+    function formatUs(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    }
+
+    function formatSg(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+
+    function formatJp(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+    }
+
+    function formatAu(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 1) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 1)} ${digits.slice(1)}`;
+        return `${digits.slice(0, 1)} ${digits.slice(1, 5)} ${digits.slice(5, 9)}`;
+    }
+
+    function formatUk(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+    }
+
+    function formatUae(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+        return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    }
+
+    function updatePhonePrefix() {
+        const code = phoneCountrySelect.value;
+        const config = phoneConfigs[code] || phoneConfigs['PH'];
+        phoneDisplay.placeholder = config.placeholder;
+        phoneDisplay.value = config.format(phoneDisplay.value);
+        updateHiddenValue();
+    }
+
+    function updateHiddenValue() {
+        const code = phoneCountrySelect.value;
+        const config = phoneConfigs[code] || phoneConfigs['PH'];
+        const prefix = config.prefix;
+        const rawBody = phoneDisplay.value.trim();
+        if (rawBody === '') {
+            phoneHidden.value = '';
+        } else {
+            phoneHidden.value = `${prefix} ${rawBody}`;
+        }
+    }
+
+    function parseExistingPhone() {
+        const initialVal = phoneHidden.value.trim();
+        if (initialVal.startsWith('+')) {
+            let matchedCode = null;
+            let matchedPrefix = '';
+            const sortedCodes = Object.keys(phoneConfigs).sort((a, b) => {
+                return phoneConfigs[b].prefix.length - phoneConfigs[a].prefix.length;
+            });
+            for (const code of sortedCodes) {
+                const prefix = phoneConfigs[code].prefix;
+                if (initialVal.startsWith(prefix)) {
+                    matchedCode = code;
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+            if (matchedCode) {
+                phoneCountrySelect.value = matchedCode;
+                const config = phoneConfigs[matchedCode];
+                phoneDisplay.placeholder = config.placeholder;
+                let body = initialVal.slice(matchedPrefix.length).trim();
+                phoneDisplay.value = config.format(body);
+            } else {
+                phoneDisplay.value = initialVal;
+            }
+        } else {
+            const code = phoneCountrySelect.value || 'PH';
+            const config = phoneConfigs[code] || phoneConfigs['PH'];
+            phoneDisplay.value = config.format(initialVal);
+        }
+        updatePhonePrefix();
+    }
+
+    if (phoneCountrySelect && phoneDisplay && phoneHidden) {
+        phoneCountrySelect.addEventListener('change', updatePhonePrefix);
+        phoneDisplay.addEventListener('input', (e) => {
+            const code = phoneCountrySelect.value;
+            const config = phoneConfigs[code] || phoneConfigs['PH'];
+            const selectionStart = e.target.selectionStart;
+            const prevLength = e.target.value.length;
+            e.target.value = config.format(e.target.value);
+            const postLength = e.target.value.length;
+            const diff = postLength - prevLength;
+            e.target.setSelectionRange(selectionStart + diff, selectionStart + diff);
+            updateHiddenValue();
+        });
+        parseExistingPhone();
     }
 })();
 </script>
