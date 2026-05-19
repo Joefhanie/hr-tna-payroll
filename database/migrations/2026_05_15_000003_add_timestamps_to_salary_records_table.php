@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('salary_records', function (Blueprint $table) {
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            if (!Schema::hasColumn('salary_records', 'created_at')) {
+                $table->timestamp('created_at')->nullable();
+            }
+            if (!Schema::hasColumn('salary_records', 'updated_at')) {
+                $table->timestamp('updated_at')->nullable();
+            }
         });
     }
 

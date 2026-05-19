@@ -14,9 +14,9 @@ return new class extends Migration
         // 1. Create Departments Table if not exists
         if (!Schema::hasTable('departments')) {
             Schema::create('departments', function (Blueprint $table) {
-                $table->id();
+                $table->increments('id');
                 $table->string('name');
-                $table->unsignedBigInteger('parent_dept_id')->nullable();
+                $table->unsignedInteger('parent_dept_id')->nullable();
                 $table->timestamps();
 
                 $table->foreign('parent_dept_id')->references('id')->on('departments')->onDelete('set null');
@@ -26,10 +26,10 @@ return new class extends Migration
         // 2. Create Positions Table if not exists
         if (!Schema::hasTable('positions')) {
             Schema::create('positions', function (Blueprint $table) {
-                $table->id();
+                $table->increments('id');
                 $table->string('title');
                 $table->string('level');
-                $table->unsignedBigInteger('department_id');
+                $table->unsignedInteger('department_id');
                 $table->decimal('min_salary', 10, 2);
                 $table->decimal('max_salary', 10, 2);
                 $table->timestamps();
@@ -73,15 +73,15 @@ return new class extends Migration
                 $table->string('marital_status')->nullable()->after('nationality');
             }
             if (!Schema::hasColumn('employees', 'department_id')) {
-                $table->unsignedBigInteger('department_id')->nullable();
+                $table->unsignedInteger('department_id')->nullable();
                 $table->foreign('department_id')->references('id')->on('departments')->onDelete('set null');
             }
             if (!Schema::hasColumn('employees', 'position_id')) {
-                $table->unsignedBigInteger('position_id')->nullable();
+                $table->unsignedInteger('position_id')->nullable();
                 $table->foreign('position_id')->references('id')->on('positions')->onDelete('set null');
             }
             if (!Schema::hasColumn('employees', 'manager_id')) {
-                $table->unsignedBigInteger('manager_id')->nullable();
+                $table->unsignedInteger('manager_id')->nullable();
                 $table->foreign('manager_id')->references('id')->on('employees')->onDelete('set null');
             }
         });
