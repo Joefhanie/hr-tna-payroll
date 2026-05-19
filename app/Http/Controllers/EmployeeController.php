@@ -17,42 +17,10 @@ class EmployeeController extends Controller
      */
     public function index(): View
     {
-        $employees = Employee::with(['department', 'position', 'manager'])
+        $employees = Employee::with(['department', 'position', 'manager', 'user'])
             ->paginate(15);
 
         return view('employees.index', compact('employees'));
-    }
-
-    /**
-     * Display the Work Assignment listing.
-     */
-    public function workAssignment(): View
-    {
-        $employees = Employee::with(['department', 'position', 'manager'])
-            ->paginate(15);
-
-        return view('employees.work-assignment', compact('employees'));
-    }
-
-    /**
-     * Save the supervisor and work assignment type for a given employee.
-     */
-    public function saveWorkAssignment(Request $request, Employee $employee): RedirectResponse
-    {
-        $validated = $request->validate([
-            'manager_id'      => ['nullable', 'exists:employees,id'],
-            'employment_type' => ['required', 'in:1,2,3,4'],
-        ]);
-
-        // Prevent an employee from being their own supervisor
-        if (!empty($validated['manager_id']) && $validated['manager_id'] == $employee->id) {
-            return back()->withErrors(['manager_id' => 'An employee cannot be their own supervisor.']);
-        }
-
-        $employee->update($validated);
-
-        return redirect()->route('employees.work-assignment')
-            ->with('success', "Work assignment updated for {$employee->full_name}.");
     }
 
     /**
@@ -110,6 +78,10 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', 'exists:employees,id'],
         ]);
 
+        // Extract role for user update
+        $role = $validated['role'] ?? null;
+        unset($validated['role']);
+
         $validated['employee_code'] = $this->generateTemporaryEmployeeCode();
 
         $employee = Employee::create($validated);
@@ -127,7 +99,8 @@ class EmployeeController extends Controller
             $fullName = str_replace('  ', ' ', $fullName);
             User::whereKey($pendingUserId)->update([
                 'employee_id' => $employee->id,
-                'name' => $fullName
+                'name' => $fullName,
+                'role' => $role,
             ]);
         }
 
@@ -209,7 +182,7 @@ class EmployeeController extends Controller
         $fullName = trim($employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name);
         $fullName = str_replace('  ', ' ', $fullName);
         User::where('employee_id', $employee->id)->update([
-            'name' => $fullName
+            'name' => $fullName,
         ]);
 
         return redirect()->route('employees.show', $employee)
@@ -225,6 +198,57 @@ class EmployeeController extends Controller
 
         return redirect()->route('employees.index')
             ->with('success', 'Employee deleted successfully.');
+    }
+
+    /**
+     * Grant or update role for an employee.
+     */
+    public function grantRole(Request $request, Employee $employee): RedirectResponse
+    {
+        $validated = $request->validate([
+            'role' => ['required', 'in:1,2,4'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+
+        // Only proceed if employee has a user account
+        if (!$employee->user) {
+            return redirect()->route('employees.index')
+                ->with('error', 'Employee does not have a user account.');
+        }
+
+        $fromDate = $validated['from_date'] ? \Carbon\Carbon::createFromFormat('Y-m-d', $validated['from_date']) : now();
+        $toDate = $validated['to_date'] ? \Carbon\Carbon::createFromFormat('Y-m-d', $validated['to_date']) : null;
+
+        // If no end date, make it permanent
+        if (!$toDate) {
+            $employee->user->update([
+                'role' => $validated['role'],
+            ]);
+
+            return redirect()->route('employees.index')
+                ->with('success', 'Role granted permanently.');
+        }
+
+        // Save temporary assignment into temporary_assignments table
+        \App\Models\TemporaryAssignment::create([
+            'user_id' => $employee->user->id,
+            'temporary_role' => $validated['role'],
+            'original_role' => $employee->user->role,
+            'from_date' => $fromDate->toDateString(),
+            'to_date' => $toDate->toDateString(),
+            'is_active' => true,
+        ]);
+
+        // Update user's role immediately if from_date is today or earlier
+        if ($fromDate->toDateString() <= now()->toDateString()) {
+            $employee->user->update([
+                'role' => $validated['role'],
+            ]);
+        }
+
+        return redirect()->route('employees.index')
+            ->with('success', 'Temporary role access granted from ' . $fromDate->format('M d, Y') . ' to ' . $toDate->format('M d, Y') . '.');
     }
 
     /**
