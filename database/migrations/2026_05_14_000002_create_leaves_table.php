@@ -11,18 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('leave_requests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('type'); // sick, vacation, personal, etc.
-            $table->date('start_date');
-            $table->date('end_date');
-            // status codes: 1=pending, 2=approved, 3=rejected
-            $table->tinyInteger('status')->default(1);
-            $table->text('reason')->nullable();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->cascadeOnDelete();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('leave_requests')) {
+            Schema::create('leave_requests', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->string('type'); // sick, vacation, personal, etc.
+                $table->date('start_date');
+                $table->date('end_date');
+                // status codes: 1=pending, 2=approved, 3=rejected
+                $table->tinyInteger('status')->default(1);
+                $table->text('reason')->nullable();
+                $table->foreignId('approved_by')->nullable()->constrained('users')->cascadeOnDelete();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

@@ -142,6 +142,7 @@
 
             @php
                 $assignedTaxIds = $employee->taxBrackets->pluck('id')->toArray();
+                $assignedTaxId = $assignedTaxIds[0] ?? null;
                 $assignedContribIds = $employee->governmentContributionRates->pluck('id')->toArray();
                 $assignedDeductionIds = $employee->deductionRules->pluck('id')->toArray();
             @endphp
@@ -162,7 +163,7 @@
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ($allTaxBrackets as $bracket)
                             <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($bracket->id, $assignedTaxIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
-                                <input type="checkbox" name="tax_brackets[]" value="{{ $bracket->id }}" {{ in_array($bracket->id, $assignedTaxIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <input type="radio" name="tax_bracket_id" value="{{ $bracket->id }}" {{ (int) $assignedTaxId === (int) $bracket->id ? 'checked' : '' }} class="border-slate-300 text-indigo-600 focus:ring-indigo-500">
                                 <div class="min-w-0">
                                     <p class="text-sm font-medium text-slate-800 truncate">{{ $bracket->label ?: 'Bracket #' . $bracket->id }}</p>
                                     <p class="text-xs text-slate-500">Threshold: ₱{{ number_format($bracket->threshold, 2) }} · Rate: {{ $bracket->rate * 100 }}%</p>
@@ -188,10 +189,15 @@
                 </div>
 
                 @if ($allContributions->count() > 0)
+                    <div class="mb-3 flex justify-end">
+                        <button type="button" class="select-all-group rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-target="contributions-group">
+                            Select All
+                        </button>
+                    </div>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ($allContributions as $contrib)
                             <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($contrib->id, $assignedContribIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
-                                <input type="checkbox" name="contributions[]" value="{{ $contrib->id }}" {{ in_array($contrib->id, $assignedContribIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <input type="checkbox" name="contributions[]" value="{{ $contrib->id }}" {{ in_array($contrib->id, $assignedContribIds) ? 'checked' : '' }} class="group-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" data-group="contributions-group">
                                 <div class="min-w-0">
                                     <p class="text-sm font-medium text-slate-800 truncate">{{ $contrib->name }}</p>
                                     <p class="text-xs text-slate-500">Employee: {{ $contrib->employee_rate * 100 }}% · Employer: {{ $contrib->employer_rate * 100 }}%</p>
@@ -217,10 +223,15 @@
                 </div>
 
                 @if ($allDeductionRules->count() > 0)
+                    <div class="mb-3 flex justify-end">
+                        <button type="button" class="select-all-group rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-target="deductions-group">
+                            Select All
+                        </button>
+                    </div>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ($allDeductionRules as $rule)
                             <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($rule->id, $assignedDeductionIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
-                                <input type="checkbox" name="deduction_rules[]" value="{{ $rule->id }}" {{ in_array($rule->id, $assignedDeductionIds) ? 'checked' : '' }} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <input type="checkbox" name="deduction_rules[]" value="{{ $rule->id }}" {{ in_array($rule->id, $assignedDeductionIds) ? 'checked' : '' }} class="group-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" data-group="deductions-group">
                                 <div class="min-w-0">
                                     <p class="text-sm font-medium text-slate-800 truncate">{{ $rule->name }}</p>
                                     <p class="text-xs text-slate-500">{{ $rule->type }} · {{ $rule->type === 'Fixed' ? '₱' . number_format($rule->amount, 2) : ($rule->amount ?? 0) . '%' }}</p>
@@ -241,5 +252,18 @@
             </div>
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.select-all-group').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const target = button.dataset.target;
+                    document.querySelectorAll(`[data-group="${target}"]`).forEach((checkbox) => {
+                        checkbox.checked = true;
+                    });
+                });
+            });
+        });
+    </script>
 
 </x-app-layout>

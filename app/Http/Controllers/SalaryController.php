@@ -10,6 +10,7 @@ use App\Models\GovernmentContributionRate;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class SalaryController extends Controller
 {
@@ -190,20 +191,25 @@ class SalaryController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['employee_id'] = $employee->id;
-        $validated['created_by'] = $request->user()->id;
+        DB::transaction(function () use ($request, $employee, $validated): void {
+            $validated['employee_id'] = $employee->id;
+            $validated['created_by'] = $request->user()->id;
 
-        // Ensure pay_frequency is stored as integer
-        if (isset($validated['pay_frequency'])) {
-            $validated['pay_frequency'] = (int) $validated['pay_frequency'];
-        }
+            // Ensure pay_frequency is stored as integer
+            if (isset($validated['pay_frequency'])) {
+                $validated['pay_frequency'] = (int) $validated['pay_frequency'];
+            }
 
-        // End any existing active salary record
-        $employee->salaryRecords()
-            ->whereNull('end_date')
-            ->update(['end_date' => now()->subDay()]);
+            // End any existing active salary record before creating the new one
+            $employee->salaryRecords()
+                ->whereNull('end_date')
+                ->update(['end_date' => now()->subDay()]);
 
-        SalaryRecord::create($validated);
+            $salaryRecord = SalaryRecord::create($validated);
+
+            $this->syncTaxBracketFromSalaryRecord($employee, $salaryRecord);
+            $this->syncGovernmentContributionsForEmployeeType($employee);
+        });
 
         return redirect()->route('salary.show', $employee)
             ->with('success', 'Salary record created successfully.');
@@ -262,11 +268,38 @@ class SalaryController extends Controller
      */
     public function saveAssignments(Request $request, Employee $employee): RedirectResponse
     {
-        $employee->taxBrackets()->sync($request->input('tax_brackets', []));
+        $taxBracketId = $request->input('tax_bracket_id');
+        $employee->taxBrackets()->sync($taxBracketId ? [$taxBracketId] : []);
         $employee->governmentContributionRates()->sync($request->input('contributions', []));
         $employee->deductionRules()->sync($request->input('deduction_rules', []));
 
         return redirect()->route('salary.show', $employee)
             ->with('success', 'Tax & deduction assignments updated successfully.');
+    }
+
+    private function syncTaxBracketFromSalaryRecord(Employee $employee, SalaryRecord $salaryRecord): void
+    {
+        $taxBracket = TaxBracket::where('is_active', true)
+            ->where('threshold', '<=', $salaryRecord->amount)
+            ->orderByDesc('threshold')
+            ->first();
+
+        if ($taxBracket) {
+            $employee->taxBrackets()->sync([$taxBracket->id]);
+        }
+    }
+
+    private function syncGovernmentContributionsForEmployeeType(Employee $employee): void
+    {
+        if (in_array((int) $employee->employment_type, [3, 4], true)) {
+            return;
+        }
+
+        $contributionIds = GovernmentContributionRate::where('is_active', true)
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->all();
+
+        $employee->governmentContributionRates()->sync($contributionIds);
     }
 }
