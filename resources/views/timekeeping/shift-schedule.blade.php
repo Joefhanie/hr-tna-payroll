@@ -48,7 +48,7 @@
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">
                                     {{ $employee->department->name ?? 'Unassigned' }}
                                 </td>
-                                
+
                                 <!-- VIEW MODE -->
                                 <td class="whitespace-nowrap px-4 py-3 view-mode-{{ $employee->id }}">
                                     <div class="shift-container">
@@ -152,9 +152,9 @@
                             </div>
                             <div id="employee_suggestions" class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg hidden">
                                 @foreach($employees as $emp)
-                                    <button type="button" class="suggestion-item w-full px-4 py-2 text-left text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors text-slate-700" 
-                                            data-id="{{ $emp->id }}" 
-                                            data-name="{{ $emp->full_name }}" 
+                                    <button type="button" class="suggestion-item w-full px-4 py-2 text-left text-sm hover:bg-slate-50 focus:bg-slate-50 focus:outline-none transition-colors text-slate-700"
+                                            data-id="{{ $emp->id }}"
+                                            data-name="{{ $emp->full_name }}"
                                             data-search="{{ strtolower($emp->full_name . ' ' . $emp->employee_code) }}">
                                         {{ $emp->full_name }}
                                     </button>
@@ -215,15 +215,15 @@
                 searchInput.addEventListener('input', function(e) {
                     const term = e.target.value.toLowerCase().trim();
                     hiddenIdInput.value = ''; // Reset on typing
-                    
+
                     if (!term) {
                         suggestionsContainer.classList.add('hidden');
                         return;
                     }
-                    
+
                     suggestionsContainer.classList.remove('hidden');
                     let found = false;
-                    
+
                     suggestionItems.forEach(item => {
                         if (item.getAttribute('data-search').includes(term)) {
                             item.classList.remove('hidden');
@@ -232,7 +232,7 @@
                             item.classList.add('hidden');
                         }
                     });
-                    
+
                     if (found) {
                         noSuggestions.classList.add('hidden');
                     } else {
@@ -260,10 +260,10 @@
             const employeeId = document.getElementById('modal_employee_id').value;
             const startTime = document.querySelector('#addShiftModal input[name="start_time"]').value;
             const endTime = document.querySelector('#addShiftModal input[name="end_time"]').value;
-            
+
             // Get checked days
             const checkedDays = Array.from(document.querySelectorAll('#addShiftModal input[name="days[]"]:checked')).map(cb => cb.value);
-            
+
             // Sync to the row's hidden inputs
             const rowStartTime = document.querySelector(`input[name="start_time_${employeeId}"]`);
             const rowEndTime = document.querySelector(`input[name="end_time_${employeeId}"]`);
@@ -271,19 +271,19 @@
                 rowStartTime.value = startTime;
                 rowEndTime.value = endTime;
             }
-            
+
             const rowCheckboxes = document.querySelectorAll(`input[name="days_${employeeId}[]"]`);
             rowCheckboxes.forEach(cb => {
                 cb.checked = checkedDays.includes(cb.value);
             });
-            
+
             createShift(employeeId, true);
 
             const m = document.getElementById('addShiftModal');
             m.classList.add('hidden');
             m.classList.remove('flex');
             showToast();
-            
+
             document.querySelector('#addShiftModal form').reset();
         }
 
@@ -345,7 +345,7 @@
                             h = h % 12 || 12;
                             return `${String(h).padStart(2, '0')}:${m} ${ampm}`;
                         };
-                        
+
                         const timeDisplay = document.querySelector(`.view-mode-${id} .time-display`);
                         if (timeDisplay) {
                             timeDisplay.innerText = `${formatTime(startTimeInput.value)} - ${formatTime(endTimeInput.value)}`;
@@ -355,13 +355,13 @@
                             if (timeBadge) timeBadge.classList.remove('hidden');
                         }
                     }
-                    
+
                     // Update days display
                     const daysContainer = document.querySelector(`.view-mode-${id} .days-display`);
-                    
+
                     if (daysContainer) {
                         daysContainer.innerHTML = '';
-                        
+
                         if (checkedDays.length === 0) {
                             const noDaysSpan = document.createElement('span');
                             noDaysSpan.className = 'text-slate-400 italic text-xs no-days';
@@ -377,12 +377,12 @@
                                 { value: 'Sat', label: 'S' },
                                 { value: 'Sun', label: 'S' }
                             ];
-                            
+
                             allDays.forEach(day => {
                                 const isChecked = checkedDays.includes(day.value);
-                                
+
                                 const span = document.createElement('span');
-                                span.className = isChecked 
+                                span.className = isChecked
                                     ? 'flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700'
                                     : 'flex h-6 w-6 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-400';
                                 span.innerText = day.label;
