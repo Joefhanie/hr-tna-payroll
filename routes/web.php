@@ -28,6 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
     Route::post('/timekeeping/manual', [TimekeepingController::class, 'storeManual'])->name('timekeeping.manual.store');
     Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
+    Route::post('/timekeeping/shift-schedule/save', [TimekeepingController::class, 'saveShiftSchedule'])->name('timekeeping.shift-schedule.save');
+    Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::view('/onboarding', 'onboarding')->name('onboarding');

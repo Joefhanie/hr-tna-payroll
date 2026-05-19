@@ -139,6 +139,16 @@ class Employee extends Model
         ])));
     }
 
+    public function currentShift()
+    {
+        return $this->hasOne(ShiftAssignment::class)->whereNull('effective_to')->orWhere('effective_to', '>=', now()->toDateString())->latest('effective_from');
+    }
+
+    public function shiftAssignments()
+    {
+        return $this->hasMany(ShiftAssignment::class);
+    }
+
     /**
      * Get the employee's full name with full middle name.
      */

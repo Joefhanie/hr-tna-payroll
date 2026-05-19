@@ -205,6 +205,13 @@ class EmployeeController extends Controller
 
         $employee->update($validated);
 
+        // Sync the name to the associated User account, if one exists
+        $fullName = trim($employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name);
+        $fullName = str_replace('  ', ' ', $fullName);
+        User::where('employee_id', $employee->id)->update([
+            'name' => $fullName
+        ]);
+
         return redirect()->route('employees.show', $employee)
             ->with('success', 'Employee updated successfully.');
     }
