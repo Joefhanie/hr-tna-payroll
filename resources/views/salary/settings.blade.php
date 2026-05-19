@@ -12,6 +12,52 @@
         <a href="{{ route('salary.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Salary Records</a>
     </div>
 
+    <!-- Attendance Rate Defaults -->
+    <div class="card p-6 shadow-sm mb-6">
+        <div class="flex items-center justify-between gap-3 mb-5">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Attendance Rate Defaults</h2>
+                <p class="mt-1 text-sm text-slate-500">Company-wide defaults for attendance multipliers. Leave empty to use hardcoded defaults.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('salary.save-payroll-settings') }}" id="payroll-settings-form" class="space-y-4">
+            @csrf
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Overtime Multiplier (OT)</label>
+                    <input type="number" name="attendance_overtime_multiplier" step="0.0001" min="0" value="{{ old('attendance_overtime_multiplier', $global->attendance_overtime_multiplier ?? 1.25) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Night Differential Multiplier</label>
+                    <input type="number" name="attendance_night_differential_multiplier" step="0.0001" min="0" value="{{ old('attendance_night_differential_multiplier', $global->attendance_night_differential_multiplier ?? 0.10) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Late Deduction Multiplier</label>
+                    <input type="number" name="attendance_late_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_late_deduction_multiplier', $global->attendance_late_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Undertime Deduction Multiplier</label>
+                    <input type="number" name="attendance_undertime_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_undertime_deduction_multiplier', $global->attendance_undertime_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Absence Deduction Multiplier</label>
+                    <input type="number" name="attendance_absence_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_absence_deduction_multiplier', $global->attendance_absence_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                    Save Payroll Defaults
+                </button>
+            </div>
+        </form>
+    </div>
+
     @if (session('success'))
         <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
             {{ session('success') }}

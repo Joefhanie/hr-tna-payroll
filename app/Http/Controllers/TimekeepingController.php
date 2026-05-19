@@ -19,6 +19,17 @@ class TimekeepingController extends Controller
                 ->get()
             : collect();
 
+        $recentAttendance = Schema::hasTable('attendance')
+            ? Attendance::with('user')
+                ->whereIn('user_id', $todayAttendance->pluck('user_id')->unique())
+                ->where('attendance_date', '>=', Carbon::now()->subDays(30)->toDateString())
+                ->orderByDesc('attendance_date')
+                ->orderByDesc('check_in')
+                ->get()
+                ->unique(fn ($attendance) => $attendance->user_id.'|'.$attendance->attendance_date->toDateString())
+                ->groupBy('user_id')
+            : collect();
+
         $attendanceStatusLabels = [
             1 => 'Present',
             2 => 'Late',
@@ -60,6 +71,7 @@ class TimekeepingController extends Controller
             'absentToday' => $absentToday,
             'activeAttendance' => $activeAttendance,
             'todayDate' => Carbon::now(),
+            'recentAttendance' => $recentAttendance,
         ]);
     }
 }

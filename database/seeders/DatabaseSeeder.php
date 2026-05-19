@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Disable Foreign Keys & Truncate existing tables
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
+
         User::truncate();
         Employee::truncate();
         Department::truncate();
@@ -41,17 +41,17 @@ class DatabaseSeeder extends Seeder
         DB::table('employee_tax_bracket')->truncate();
         DB::table('employee_government_contribution')->truncate();
         DB::table('employee_deduction_rule')->truncate();
-        
+
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         // 1b. Seed Default Salary Settings
         $taxBrackets = [
-            ['threshold' => 0.00, 'rate' => 0.00, 'label' => 'Exempt', 'is_active' => true, 'sort_order' => 0],
-            ['threshold' => 250000.00, 'rate' => 0.15, 'label' => 'Low Income', 'is_active' => true, 'sort_order' => 1],
-            ['threshold' => 400000.00, 'rate' => 0.20, 'label' => 'Middle Income', 'is_active' => true, 'sort_order' => 2],
-            ['threshold' => 800000.00, 'rate' => 0.25, 'label' => 'Upper Middle', 'is_active' => true, 'sort_order' => 3],
-            ['threshold' => 2000000.00, 'rate' => 0.30, 'label' => 'High Income', 'is_active' => true, 'sort_order' => 4],
-            ['threshold' => 8000000.00, 'rate' => 0.35, 'label' => 'Ultra High', 'is_active' => true, 'sort_order' => 5],
+            ['threshold' => 0.00, 'rate' => 0.00, 'label' => 'Exempt', 'notes' => '₱20,833 and below', 'is_active' => true, 'sort_order' => 0],
+            ['threshold' => 20833.00, 'rate' => 0.15, 'label' => 'Bracket 2', 'notes' => 'Over ₱20,833 to ₱33,333', 'is_active' => true, 'sort_order' => 1],
+            ['threshold' => 33333.00, 'rate' => 0.20, 'label' => 'Bracket 3', 'notes' => 'Over ₱33,333 to ₱66,667', 'is_active' => true, 'sort_order' => 2],
+            ['threshold' => 66667.00, 'rate' => 0.25, 'label' => 'Bracket 4', 'notes' => 'Over ₱66,667 to ₱166,667', 'is_active' => true, 'sort_order' => 3],
+            ['threshold' => 166667.00, 'rate' => 0.30, 'label' => 'Bracket 5', 'notes' => 'Over ₱166,667 to ₱666,667', 'is_active' => true, 'sort_order' => 4],
+            ['threshold' => 666667.00, 'rate' => 0.35, 'label' => 'Bracket 6', 'notes' => 'Over ₱666,667', 'is_active' => true, 'sort_order' => 5],
         ];
         foreach ($taxBrackets as $tb) {
             TaxBracket::create($tb);
@@ -74,6 +74,16 @@ class DatabaseSeeder extends Seeder
             DeductionRule::create($d);
         }
 
+        // Seed company-wide attendance defaults
+        \App\Models\PayrollSetting::truncate();
+        \App\Models\PayrollSetting::create([
+            'attendance_overtime_multiplier' => 1.25,
+            'attendance_night_differential_multiplier' => 0.10,
+            'attendance_late_deduction_multiplier' => 1.00,
+            'attendance_undertime_deduction_multiplier' => 1.00,
+            'attendance_absence_deduction_multiplier' => 1.00,
+        ]);
+
         // 2. Seed Departments
         $deptHr = Department::create(['name' => 'Human Resources']);
         $deptOps = Department::create(['name' => 'Operations']);
@@ -87,7 +97,7 @@ class DatabaseSeeder extends Seeder
             'min_salary' => 50000.00,
             'max_salary' => 90000.00,
         ]);
-        
+
         $posOpsSv = Position::create([
             'title' => 'Operations Supervisor',
             'level' => 'Manager',
@@ -140,11 +150,11 @@ class DatabaseSeeder extends Seeder
         $createEmployeeWithInitialsCode = function ($attributes) {
             $attributes['employee_code'] = 'TMP' . str_pad((string) rand(1, 999999), 6, '0', STR_PAD_LEFT);
             $emp = Employee::create($attributes);
-            
+
             $firstInitial = strtoupper(substr(trim($emp->first_name), 0, 1));
             $lastInitial = strtoupper(substr(trim($emp->last_name), 0, 1));
             $code = $firstInitial . $lastInitial . str_pad((string) $emp->id, 3, '0', STR_PAD_LEFT);
-            
+
             $emp->update(['employee_code' => $code]);
 
             // Add active SalaryRecord
@@ -197,7 +207,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::create([
-            'name' => 'Joefhanie Perez',
+            'name' => 'Joefhanie Diaz',
             'username' => 'hr_admin',
             'email' => 'hr@example.com',
             'password' => $hashedPassword,
@@ -369,7 +379,7 @@ class DatabaseSeeder extends Seeder
 
         // 7. Seed Plotting Data for the week of May 18 - May 22, 2026
         $dates = ['2026-05-18', '2026-05-19', '2026-05-20', '2026-05-21', '2026-05-22'];
-        
+
         // Supervisor location assignments for this week
         $svLocations = [
             $svEmployees[0]->id => [
@@ -409,24 +419,24 @@ class DatabaseSeeder extends Seeder
         // Create Employee Plottings (QR Scans + Plotted Payments)
         // Let's seed varying amounts to make it realistic
         $baseAmounts = [500.00, 600.00, 450.00, 550.00, 700.00, 650.00];
-        
+
         foreach ($employees as $empIdx => $emp) {
             foreach ($dates as $dateIdx => $date) {
                 $svId = $emp->manager_id;
-                
+
                 // Special case: Princess Mendoza (empIdx == 1) works under Ramon Valenzuela (svEmployees[1]->id) on May 19
                 if ($empIdx === 1 && $date === '2026-05-19') {
                     $svId = $svEmployees[1]->id;
                 }
 
                 $location = $svLocations[$svId][$date] ?? 'General';
-                
+
                 // Some days might not have time-ins (e.g. absent/rest day)
                 // Let's make John Doe (empIdx 0) have time-ins on all days, Charlie Green (empIdx 4) absent on Wednesday (dateIdx 2), etc.
                 if ($empIdx == 4 && $dateIdx == 2) {
                     continue; // Skip seeding Charlie Green's time-in for Wednesday
                 }
-                
+
                 // Plotted Payment amount is typically around their base salary rate
                 // Let's set some default amounts
                 $amount = $baseAmounts[$empIdx] + (float) rand(-50, 50);

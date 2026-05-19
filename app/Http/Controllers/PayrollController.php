@@ -475,7 +475,7 @@ class PayrollController extends Controller
      */
     public function show(PayRun $payRun): View
     {
-        $payRun->load('payslips.employee');
+        $payRun->load('payslips.employee.salaryRecords', 'payslips.lineItems');
         $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
 
         return view('payroll.show', compact('payRun', 'statusLabels'));

@@ -11,30 +11,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('supervisor_assignments', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedInteger('supervisor_id');
-            $table->string('location', 120);
-            $table->date('date');
-            $table->timestamps();
+        if (!Schema::hasTable('supervisor_assignments')) {
+            Schema::create('supervisor_assignments', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedInteger('supervisor_id');
+                $table->string('location', 120);
+                $table->date('date');
+                $table->timestamps();
 
-            $table->unique(['supervisor_id', 'date'], 'uq_sv_date');
-            $table->foreign('supervisor_id')->references('id')->on('employees')->onDelete('cascade');
-        });
+                $table->unique(['supervisor_id', 'date'], 'uq_sv_date');
+                $table->foreign('supervisor_id')->references('id')->on('employees')->onDelete('cascade');
+            });
+        }
 
-        Schema::create('employee_plottings', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedInteger('employee_id');
-            $table->unsignedInteger('supervisor_id')->nullable();
-            $table->date('date');
-            $table->string('location', 120)->nullable();
-            $table->decimal('amount', 14, 2)->default(0.00);
-            $table->timestamps();
+        if (!Schema::hasTable('employee_plottings')) {
+            Schema::create('employee_plottings', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedInteger('employee_id');
+                $table->unsignedInteger('supervisor_id')->nullable();
+                $table->date('date');
+                $table->string('location', 120)->nullable();
+                $table->decimal('amount', 14, 2)->default(0.00);
+                $table->timestamps();
 
-            $table->unique(['employee_id', 'date'], 'uq_emp_date');
-            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('supervisor_id')->references('id')->on('employees')->onDelete('set null');
-        });
+                $table->unique(['employee_id', 'date'], 'uq_emp_date');
+                $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
+                $table->foreign('supervisor_id')->references('id')->on('employees')->onDelete('set null');
+            });
+        }
     }
 
     /**

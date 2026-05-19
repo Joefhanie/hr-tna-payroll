@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payrolls', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->date('payroll_date');
-            $table->decimal('gross_salary', 12, 2);
-            $table->decimal('deductions', 12, 2)->default(0);
-            $table->decimal('net_salary', 12, 2);
-            // status codes: 1=processing, 2=completed, 3=failed
-            $table->tinyInteger('status')->default(1);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('payrolls')) {
+            Schema::create('payrolls', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->date('payroll_date');
+                $table->decimal('gross_salary', 12, 2);
+                $table->decimal('deductions', 12, 2)->default(0);
+                $table->decimal('net_salary', 12, 2);
+                // status codes: 1=processing, 2=completed, 3=failed
+                $table->tinyInteger('status')->default(1);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
