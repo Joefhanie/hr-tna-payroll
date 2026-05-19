@@ -84,6 +84,7 @@
                         <th class="px-4 py-3">Time In</th>
                         <th class="px-4 py-3">Time Out</th>
                         <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -110,6 +111,14 @@
                             <td class="px-4 py-3 text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ $pillClass }}">{{ $statusLabel }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <a href="{{ route('timekeeping.show', $attendance->user) }}" class="text-slate-600 hover:text-slate-900 transition" title="View All Records">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </a>
                             </td>
                         </tr>
                     @empty

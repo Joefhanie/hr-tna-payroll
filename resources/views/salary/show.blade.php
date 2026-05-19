@@ -29,7 +29,7 @@
         <div class="mb-6 grid gap-4 sm:grid-cols-6">
             <div class="card p-5 border-l-4 border-l-green-500">
                 <p class="text-sm text-slate-500">Current Salary</p>
-                <p class="mt-2 text-3xl font-bold text-slate-900">₱{{ number_format($activeSalary->amount, 2) }}</p>
+                <p class="mt-2 text-2xl font-bold text-slate-900 break-all">₱{{ number_format($activeSalary->amount, 2) }}</p>
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Pay Frequency</p>
@@ -42,8 +42,23 @@
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Attendance Rates</p>
-                <p class="mt-2 text-sm font-semibold text-slate-900">OT {{ number_format($activeSalary->attendance_overtime_multiplier ?? $global->attendance_overtime_multiplier ?? 1.25, 4) }}x</p>
-                <p class="text-xs text-slate-400">Night {{ number_format($activeSalary->attendance_night_differential_multiplier ?? $global->attendance_night_differential_multiplier ?? 0.10, 4) }}x · Late {{ number_format($activeSalary->attendance_late_deduction_multiplier ?? $global->attendance_late_deduction_multiplier ?? 1.00, 4) }}x</p>
+                <div class="mt-2 space-y-1">
+                    @php
+                        $rates = [
+                            'OT'        => $activeSalary->attendance_overtime_multiplier         ?? $global->attendance_overtime_multiplier         ?? 1.25,
+                            'Night'     => $activeSalary->attendance_night_differential_multiplier ?? $global->attendance_night_differential_multiplier ?? 0.10,
+                            'Late'      => $activeSalary->attendance_late_deduction_multiplier    ?? $global->attendance_late_deduction_multiplier    ?? 1.00,
+                            'Undertime' => $activeSalary->attendance_undertime_deduction_multiplier ?? $global->attendance_undertime_deduction_multiplier ?? 1.00,
+                            'Absence'   => $activeSalary->attendance_absence_deduction_multiplier ?? $global->attendance_absence_deduction_multiplier  ?? 1.00,
+                        ];
+                    @endphp
+                    @foreach($rates as $label => $value)
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs text-slate-400">{{ $label }}</span>
+                            <span class="text-xs font-semibold text-slate-700">{{ number_format($value, 2) }}x</span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
             <div class="card p-5">
                 <p class="text-sm text-slate-500">Effective From</p>
@@ -94,7 +109,7 @@
                                     @if ($salary->end_date)
                                         {{ $salary->end_date->format('M d, Y') }}
                                     @else
-                                        <span class="badge badge-green">Active</span>
+                                        <span class="text-slate-400">—</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 text-slate-600">{{ $salary->reason ?? '—' }}</td>

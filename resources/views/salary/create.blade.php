@@ -58,16 +58,24 @@
                 @enderror
             </div>
 
+            {{-- Attendance Rate Overrides toggle --}}
             <div class="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div class="mb-4">
-                    <h2 class="text-sm font-semibold text-slate-800">Attendance Rate Overrides</h2>
-                    <p class="mt-1 text-xs text-slate-500">Set employee-specific attendance bonus and deduction multipliers. Leave the defaults unless this employee needs a custom policy.</p>
-                </div>
+                <label class="flex cursor-pointer items-center justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Attendance Rate Overrides</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Set employee-specific multipliers. Leave the defaults unless this employee needs a custom policy.</p>
+                    </div>
+                    <input type="checkbox" id="attendance_overrides_toggle"
+                           class="h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                           @if(old('attendance_overtime_multiplier') !== null) checked @endif
+                           onchange="document.getElementById('attendance_overrides_fields').classList.toggle('hidden', !this.checked)">
+                </label>
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div id="attendance_overrides_fields"
+                     class="mt-4 grid gap-4 sm:grid-cols-2 {{ old('attendance_overtime_multiplier') !== null ? '' : 'hidden' }}">
                     <div>
                         <label for="attendance_overtime_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Overtime Pay Multiplier</label>
-                            <input type="number" id="attendance_overtime_multiplier" name="attendance_overtime_multiplier" step="0.0001" min="0" value="{{ old('attendance_overtime_multiplier', $global->attendance_overtime_multiplier ?? 1.25) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <input type="number" id="attendance_overtime_multiplier" name="attendance_overtime_multiplier" step="0.0001" min="0" value="{{ old('attendance_overtime_multiplier', $global->attendance_overtime_multiplier ?? 1.25) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
                         <p class="mt-1 text-xs text-slate-500">Default 1.2500 = 125% of hourly rate.</p>
                         @error('attendance_overtime_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
