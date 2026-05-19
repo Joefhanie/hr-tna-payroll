@@ -62,7 +62,7 @@
                                     $hasActiveChild = collect($item['children'])->contains(function ($child) {
                                         $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                         if ($childRouteExists) {
-                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date')));
+                                            return request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))) || ($child['route'] === 'payroll.index' && request()->routeIs('payroll.show', 'payroll.edit'));
                                         }
                                         return request()->is(ltrim($child['path'], '/'));
                                     });
@@ -87,7 +87,7 @@
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                                 $childIsActive = $childRouteExists
-                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))))
+                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))) || ($child['route'] === 'payroll.index' && request()->routeIs('payroll.show', 'payroll.edit')))
                                                     : request()->is(ltrim($child['path'], '/'));
                                                 $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
                                             @endphp
@@ -132,6 +132,10 @@
                         $usersRouteExists = \Illuminate\Support\Facades\Route::has('organization.users.index');
                         $usersHref = $usersRouteExists ? route('organization.users.index') : url('/organization/users');
                         $usersActive = $usersRouteExists ? request()->routeIs('organization.users.*') : request()->is('organization/users*');
+
+                        $settingsRouteExists = \Illuminate\Support\Facades\Route::has('organization.settings');
+                        $settingsHref = $settingsRouteExists ? route('organization.settings') : url('/organization/settings');
+                        $settingsActive = $settingsRouteExists ? request()->routeIs('organization.settings') : request()->is('organization/settings*');
                     @endphp
 
                     <a href="{{ $usersHref }}" class="sidebar-link {{ $usersActive ? 'sidebar-link-active' : '' }}">
@@ -146,6 +150,13 @@
                             <i class="ti ti-building sidebar-icon text-xl"></i>
                         </span>
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
+                    </a>
+
+                      <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
+                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                            <i class="ti ti-settings sidebar-icon text-xl"></i>
+                        </span>
+                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Settings</span>
                     </a>
                 </nav>
             </div>

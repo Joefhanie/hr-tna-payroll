@@ -75,8 +75,33 @@
     </div>
 
     <section class="card p-6">
+        <!-- Search and Filter Bar -->
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex-1">
+                <label for="search-employee" class="mb-1.5 block text-sm font-medium text-slate-700">Search Employee</label>
+                <div class="relative">
+                    <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text"
+                           id="search-employee"
+                           placeholder="Search by employee name…"
+                           class="w-full rounded-lg border border-slate-300 pl-10 pr-3 py-2.5 text-sm transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex-1 sm:max-w-xs">
+                <label for="filter-status" class="mb-1.5 block text-sm font-medium text-slate-700">Filter by Status</label>
+                <select id="filter-status"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm transition focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                    <option value="excused">Excused</option>
+                </select>
+            </div>
+        </div>
+
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <table class="min-w-full text-sm">
+            <table class="min-w-full text-sm" id="attendance-table">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Employee</th>
@@ -92,6 +117,7 @@
                         @php
                             $statusKey = is_numeric($attendance->status) ? (int) $attendance->status : strtolower((string) $attendance->status);
                             $statusLabel = $attendanceStatusLabels[$statusKey] ?? ucfirst((string) $attendance->status);
+                            $statusLabelLower = strtolower($statusLabel);
                             $statusClasses = [
                                 1 => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                                 2 => 'bg-amber-100 text-amber-700 border-amber-200',
@@ -104,7 +130,9 @@
                             ];
                             $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                         @endphp
-                        <tr class="group hover:bg-slate-50/50 transition">
+                        <tr class="group hover:bg-slate-50/50 transition attendance-row"
+                            data-employee-name="{{ $attendance->user->display_name }}"
+                            data-status="{{ $statusLabelLower }}">
                             <td class="px-4 py-3 font-medium text-slate-900">{{ $attendance->user->display_name }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $attendance->attendance_date->format('M d, Y') }}</td>
                             <td class="px-4 py-3 text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</td>
@@ -122,12 +150,56 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
+                        <tr id="empty-state">
                             <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500">No attendance records yet.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-employee');
+            const statusFilter = document.getElementById('filter-status');
+            const attendanceTable = document.getElementById('attendance-table');
+
+            function filterTable() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const selectedStatus = statusFilter.value.toLowerCase().trim();
+
+                const rows = attendanceTable.querySelectorAll('tbody tr.attendance-row');
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const employeeName = row.getAttribute('data-employee-name').toLowerCase();
+                    const status = row.getAttribute('data-status').toLowerCase();
+
+                    const matchesSearch = employeeName.includes(searchTerm);
+                    const matchesStatus = !selectedStatus || status === selectedStatus;
+
+                    if (matchesSearch && matchesStatus) {
+                        row.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                });
+
+                // Show or hide empty state
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    if (visibleCount === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        emptyState.classList.add('hidden');
+                    }
+                }
+            }
+
+            searchInput.addEventListener('input', filterTable);
+            statusFilter.addEventListener('change', filterTable);
+        });
+    </script>
+
         </div>
     </section>
 
