@@ -92,15 +92,15 @@ class TimekeepingController extends Controller
         ]);
 
         $checkInDateTime = Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_in']);
-        
+
         // Auto-determine status if not explicitly provided
         if (empty($validated['status'])) {
             $cutoff  = Carbon::parse($validated['attendance_date'] . ' 08:00');
             $validated['status'] = $checkInDateTime->gt($cutoff) ? 2 : 1; // 2=late, 1=present
         }
 
-        $checkOutDateTime = !empty($validated['check_out']) 
-            ? Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_out']) 
+        $checkOutDateTime = !empty($validated['check_out'])
+            ? Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_out'])
             : null;
 
         Attendance::updateOrCreate(
