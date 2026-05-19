@@ -2,18 +2,31 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE `payrolls` ADD COLUMN `status_new` TINYINT NOT NULL DEFAULT 1");
+        if (Schema::hasColumn('payrolls', 'status')) {
+            $type = Schema::getColumnType('payrolls', 'status');
+            if (in_array(strtolower($type), ['integer', 'tinyint', 'int'])) {
+                return;
+            }
+        }
 
-        DB::table('payrolls')->where('status', 'processing')->update(['status_new' => 1]);
-        DB::table('payrolls')->where('status', 'completed')->update(['status_new' => 2]);
-        DB::table('payrolls')->where('status', 'failed')->update(['status_new' => 3]);
+        if (!Schema::hasColumn('payrolls', 'status_new')) {
+            DB::statement("ALTER TABLE `payrolls` ADD COLUMN `status_new` TINYINT NOT NULL DEFAULT 1");
 
-        DB::statement("ALTER TABLE `payrolls` DROP COLUMN `status`");
+            DB::table('payrolls')->where('status', 'processing')->update(['status_new' => 1]);
+            DB::table('payrolls')->where('status', 'completed')->update(['status_new' => 2]);
+            DB::table('payrolls')->where('status', 'failed')->update(['status_new' => 3]);
+        }
+
+        if (Schema::hasColumn('payrolls', 'status')) {
+            DB::statement("ALTER TABLE `payrolls` DROP COLUMN `status`");
+        }
+
         DB::statement("ALTER TABLE `payrolls` CHANGE `status_new` `status` TINYINT NOT NULL DEFAULT 1");
     }
 

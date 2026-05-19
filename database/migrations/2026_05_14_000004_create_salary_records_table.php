@@ -13,15 +13,17 @@ return new class extends Migration
     {
         if (!Schema::hasTable('salary_records')) {
             Schema::create('salary_records', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->decimal('amount', 10, 2);
-            $table->enum('pay_frequency', ['weekly', 'bi_weekly', 'monthly', 'annual']);
-            $table->date('effective_date');
-            $table->date('end_date')->nullable();
-            $table->string('reason')->nullable(); // e.g., 'Raise', 'Promotion', 'Adjustment'
-            $table->text('notes')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->unsignedBigInteger('employee_id');
+                $table->decimal('amount', 14, 2);
+                $table->char('currency', 3)->default('PHP');
+                $table->integer('pay_frequency')->default(4); // 1=Hourly, 2=Daily, 3=Semi-monthly, 4=Monthly
+                $table->date('effective_date');
+                $table->date('end_date')->nullable();
+                $table->string('reason', 200)->nullable();
+                $table->string('notes', 300)->nullable();
+                $table->unsignedBigInteger('created_by')->nullable();
+                $table->timestamps();
             });
         }
     }
@@ -34,4 +36,3 @@ return new class extends Migration
         Schema::dropIfExists('salary_records');
     }
 };
-

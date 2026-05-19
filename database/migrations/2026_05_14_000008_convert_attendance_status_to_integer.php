@@ -2,19 +2,32 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE `attendance` ADD COLUMN `status_new` TINYINT NOT NULL DEFAULT 1");
+        if (Schema::hasColumn('attendance', 'status')) {
+            $type = Schema::getColumnType('attendance', 'status');
+            if (in_array(strtolower($type), ['integer', 'tinyint', 'int'])) {
+                return;
+            }
+        }
 
-        DB::table('attendance')->where('status', 'present')->update(['status_new' => 1]);
-        DB::table('attendance')->where('status', 'late')->update(['status_new' => 2]);
-        DB::table('attendance')->where('status', 'absent')->update(['status_new' => 3]);
-        DB::table('attendance')->where('status', 'excused')->update(['status_new' => 4]);
+        if (!Schema::hasColumn('attendance', 'status_new')) {
+            DB::statement("ALTER TABLE `attendance` ADD COLUMN `status_new` TINYINT NOT NULL DEFAULT 1");
 
-        DB::statement("ALTER TABLE `attendance` DROP COLUMN `status`");
+            DB::table('attendance')->where('status', 'present')->update(['status_new' => 1]);
+            DB::table('attendance')->where('status', 'late')->update(['status_new' => 2]);
+            DB::table('attendance')->where('status', 'absent')->update(['status_new' => 3]);
+            DB::table('attendance')->where('status', 'excused')->update(['status_new' => 4]);
+        }
+
+        if (Schema::hasColumn('attendance', 'status')) {
+            DB::statement("ALTER TABLE `attendance` DROP COLUMN `status`");
+        }
+
         DB::statement("ALTER TABLE `attendance` CHANGE `status_new` `status` TINYINT NOT NULL DEFAULT 1");
     }
 

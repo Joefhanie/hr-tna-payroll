@@ -8,6 +8,10 @@ use App\Models\Department;
 use App\Models\Position;
 use App\Models\SupervisorAssignment;
 use App\Models\EmployeePlotting;
+use App\Models\TaxBracket;
+use App\Models\GovernmentContributionRate;
+use App\Models\DeductionRule;
+use App\Models\SalaryRecord;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -29,9 +33,46 @@ class DatabaseSeeder extends Seeder
         Position::truncate();
         SupervisorAssignment::truncate();
         EmployeePlotting::truncate();
+        TaxBracket::truncate();
+        GovernmentContributionRate::truncate();
+        DeductionRule::truncate();
+        SalaryRecord::truncate();
         DB::table('sessions')->truncate();
+        DB::table('employee_tax_bracket')->truncate();
+        DB::table('employee_government_contribution')->truncate();
+        DB::table('employee_deduction_rule')->truncate();
         
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+
+        // 1b. Seed Default Salary Settings
+        $taxBrackets = [
+            ['threshold' => 0.00, 'rate' => 0.00, 'label' => 'Exempt', 'is_active' => true, 'sort_order' => 0],
+            ['threshold' => 250000.00, 'rate' => 0.15, 'label' => 'Low Income', 'is_active' => true, 'sort_order' => 1],
+            ['threshold' => 400000.00, 'rate' => 0.20, 'label' => 'Middle Income', 'is_active' => true, 'sort_order' => 2],
+            ['threshold' => 800000.00, 'rate' => 0.25, 'label' => 'Upper Middle', 'is_active' => true, 'sort_order' => 3],
+            ['threshold' => 2000000.00, 'rate' => 0.30, 'label' => 'High Income', 'is_active' => true, 'sort_order' => 4],
+            ['threshold' => 8000000.00, 'rate' => 0.35, 'label' => 'Ultra High', 'is_active' => true, 'sort_order' => 5],
+        ];
+        foreach ($taxBrackets as $tb) {
+            TaxBracket::create($tb);
+        }
+
+        $govContributions = [
+            ['name' => 'SSS', 'employee_rate' => 0.045, 'employer_rate' => 0.095, 'is_active' => true, 'sort_order' => 0],
+            ['name' => 'PhilHealth', 'employee_rate' => 0.025, 'employer_rate' => 0.025, 'is_active' => true, 'sort_order' => 1],
+            ['name' => 'Pag-IBIG', 'employee_rate' => 0.020, 'employer_rate' => 0.020, 'is_active' => true, 'sort_order' => 2],
+        ];
+        foreach ($govContributions as $gc) {
+            GovernmentContributionRate::create($gc);
+        }
+
+        $deductions = [
+            ['name' => 'Late Deduction', 'type' => 'Prorated', 'amount' => null, 'rate' => 0.001, 'scope' => 'Attendance linked', 'is_active' => true, 'sort_order' => 0],
+            ['name' => 'Absent Deduction', 'type' => 'Fixed', 'amount' => 1000.00, 'rate' => null, 'scope' => 'Attendance linked', 'is_active' => true, 'sort_order' => 1],
+        ];
+        foreach ($deductions as $d) {
+            DeductionRule::create($d);
+        }
 
         // 2. Seed Departments
         $deptHr = Department::create(['name' => 'Human Resources']);
@@ -105,6 +146,27 @@ class DatabaseSeeder extends Seeder
             $code = $firstInitial . $lastInitial . str_pad((string) $emp->id, 3, '0', STR_PAD_LEFT);
             
             $emp->update(['employee_code' => $code]);
+
+            // Add active SalaryRecord
+            $position = Position::find($emp->position_id);
+            $salaryAmount = 30000.00;
+            if ($position) {
+                $salaryAmount = $position->min_salary + (($position->max_salary - $position->min_salary) / 2);
+            }
+            SalaryRecord::create([
+                'employee_id' => $emp->id,
+                'amount' => $salaryAmount,
+                'currency' => 'PHP',
+                'pay_frequency' => 4, // Monthly
+                'effective_date' => $emp->hire_date ?? now()->toDateString(),
+                'reason' => 'Initial Salary',
+            ]);
+
+            // Sync default tax, contribution and deduction settings
+            $emp->taxBrackets()->sync(TaxBracket::pluck('id')->all());
+            $emp->governmentContributionRates()->sync(GovernmentContributionRate::pluck('id')->all());
+            $emp->deductionRules()->sync(DeductionRule::pluck('id')->all());
+
             return $emp;
         };
 
