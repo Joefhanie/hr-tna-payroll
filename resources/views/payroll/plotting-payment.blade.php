@@ -97,14 +97,23 @@
                                                 data-employee="{{ $employee->id }}"
                                                 oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
                                                 class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden">
-                                            <!-- Comment indicator triangle -->
+
+                                            <!-- Payroll note indicator triangle (Excel-style, top-right, green) -->
                                             <div
-                                                class="absolute top-1 right-1 w-0 h-0 border-l-3 border-b-3 border-l-transparent border-b-gray-400 pointer-events-none">
+                                                class="note-indicator hidden absolute top-0 right-0 w-0 h-0 pointer-events-none"
+                                                style="border-style:solid;border-width:0 7px 7px 0;border-color:transparent #16a34a transparent transparent;">
                                             </div>
 
-                                            <!-- Comment bubble (Excel/Sheets style) -->
+                                            <!-- Hidden payroll note value (submitted with form) -->
+                                            <input type="hidden"
+                                                name="payroll_notes[{{ $employee->id }}][{{ $dateString }}]"
+                                                class="payroll-note-input"
+                                                value="">
+
+                                            <!-- Workplace comment bubble (shows on amount-input focus) -->
                                             <div
-                                                class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-48 text-left">
+                                                class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-52 text-left">
+                                                <!-- Work info rows -->
                                                 <div class="space-y-1">
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Work Assignment:</span>
@@ -115,29 +124,38 @@
                                                     </div>
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Supervisor:</span>
-                                                        <span class="text-slate-600">
-                                                            {{ $dayData['supervisor_name'] }}
-                                                        </span>
+                                                        <span class="text-slate-600">{{ $dayData['supervisor_name'] }}</span>
                                                     </div>
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Supervisor's note:</span>
-                                                        <span
-                                                            class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
-                                                    </div>
-                                                    <div class="pt-1 mt-1 border-t border-slate-200 flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg"
-                                                            class="h-3 w-3 text-slate-400 shrink-0" viewBox="0 0 20 20"
-                                                            fill="currentColor">
-                                                            <path fill-rule="evenodd"
-                                                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                                                clip-rule="evenodd" />
-                                                        </svg>
-                                                        <input type="text"
-                                                            name="payroll_notes[{{ $employee->id }}][{{ $dateString }}]"
-                                                            placeholder="Add a payroll note" autocomplete="off"
-                                                            class="w-full bg-transparent border-0 p-0 text-xs text-slate-700 italic placeholder:text-slate-400 placeholder:italic focus:ring-0 focus:outline-none">
+                                                        <span class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
                                                     </div>
                                                 </div>
+
+                                                <!-- Divider + payroll note toggle row -->
+                                                <div class="pt-1.5 mt-1.5 border-t border-slate-200 flex items-center justify-between gap-2">
+                                                    <span class="text-xs text-slate-400 italic note-preview-text">No payroll note</span>
+                                                    <button type="button"
+                                                        class="note-add-btn flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
+                                                        title="Add payroll note">+</button>
+                                                </div>
+
+                                                <!-- Inline payroll note panel (expands below on "+" click) -->
+                                                <div class="note-inline-panel hidden pt-2 mt-1 border-t border-blue-100">
+                                                    <p class="text-xs font-semibold text-blue-700 mb-1.5 flex items-center gap-1">
+                                                        <i class="ti ti-pencil text-xs"></i> Payroll Note
+                                                    </p>
+                                                    <textarea rows="3"
+                                                        class="note-bubble-textarea w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                                                        placeholder="Type a note…"></textarea>
+                                                    <div class="mt-1.5 flex justify-end gap-1.5">
+                                                        <button type="button"
+                                                            class="note-cancel-btn rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                                                        <button type="button"
+                                                            class="note-save-btn rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition shadow-sm">Save</button>
+                                                    </div>
+                                                </div>
+
                                                 <!-- Comment pointer -->
                                                 <div
                                                     class="bubble-pointer absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50">
@@ -193,61 +211,117 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const GAP = 8;
-            const BUBBLE_W = 192; // w-48
+            const BUBBLE_W = 208; // w-52
 
+            // ── Payroll note inline panel (expands inside the workplace bubble) ──
+            // NOTE: This block MUST run before the workplace-comment block below,
+            // because that block moves .workplace-comment to document.body, which
+            // breaks .closest('.relative') lookups for btns inside it.
+            document.querySelectorAll('.note-add-btn').forEach(function (btn) {
+                // Capture all refs while .workplace-comment is still inside .relative
+                const workplaceBubble = btn.closest('.workplace-comment');
+                const wrapper         = workplaceBubble ? workplaceBubble.closest('.relative') : null;
+                const notePanel       = workplaceBubble ? workplaceBubble.querySelector('.note-inline-panel') : null;
+                const noteInput       = wrapper ? wrapper.querySelector('.payroll-note-input') : null;
+                const indicator       = wrapper ? wrapper.querySelector('.note-indicator') : null;
+                const previewText     = workplaceBubble ? workplaceBubble.querySelector('.note-preview-text') : null;
+                if (!notePanel || !noteInput) return;
+
+                const textarea  = notePanel.querySelector('.note-bubble-textarea');
+                const saveBtn   = notePanel.querySelector('.note-save-btn');
+                const cancelBtn = notePanel.querySelector('.note-cancel-btn');
+
+                function closePanel() {
+                    notePanel.classList.add('hidden');
+                    btn.classList.remove('bg-blue-200', 'text-blue-700');
+                    btn.textContent = '+';
+                }
+
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const isOpen = !notePanel.classList.contains('hidden');
+                    if (isOpen) {
+                        closePanel();
+                    } else {
+                        textarea.value = noteInput.value;
+                        notePanel.classList.remove('hidden');
+                        btn.classList.add('bg-blue-200', 'text-blue-700');
+                        btn.textContent = '−';
+                        setTimeout(() => textarea.focus(), 30);
+                    }
+                });
+
+                saveBtn.addEventListener('click', function () {
+                    noteInput.value = textarea.value.trim();
+                    if (noteInput.value) {
+                        if (indicator) indicator.classList.remove('hidden');
+                        if (previewText) {
+                            previewText.textContent = noteInput.value;
+                            previewText.classList.remove('text-slate-400', 'italic');
+                            previewText.classList.add('text-slate-600', 'font-medium');
+                        }
+                        btn.title = 'Edit payroll note';
+                        btn.classList.add('bg-green-100', 'text-green-700');
+                        btn.classList.remove('bg-slate-200', 'text-slate-500');
+                    } else {
+                        if (indicator) indicator.classList.add('hidden');
+                        if (previewText) {
+                            previewText.textContent = 'No payroll note';
+                            previewText.classList.add('text-slate-400', 'italic');
+                            previewText.classList.remove('text-slate-600', 'font-medium');
+                        }
+                        btn.title = 'Add payroll note';
+                        btn.classList.remove('bg-green-100', 'text-green-700');
+                        btn.classList.add('bg-slate-200', 'text-slate-500');
+                    }
+                    closePanel();
+                    const form = document.getElementById('plotting-form');
+                    if (form) form.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+
+                cancelBtn.addEventListener('click', closePanel);
+            });
+
+            // ── Workplace comment bubble (shows on amount-input focus) ──────────
+            // NOTE: This runs AFTER note-add-btn setup so that .workplace-comment
+            // elements are still inside .relative when note-add-btn captures refs above.
             document.querySelectorAll('.workplace-comment').forEach(function (bubble) {
                 const wrapper = bubble.closest('.relative');
-                const input = wrapper ? wrapper.querySelector('input[type="text"]') : null;
+                const input = wrapper ? wrapper.querySelector('input[name^="entries["]') : null;
                 if (!input) return;
 
-                // Move bubble to body to avoid overflow clipping from table container
                 document.body.appendChild(bubble);
 
                 function positionBubble() {
                     if (bubble.classList.contains('hidden')) return;
-
                     const inputRect = input.getBoundingClientRect();
                     const spaceRight = window.innerWidth - inputRect.right;
                     const pointer = bubble.querySelector('.bubble-pointer');
-
                     const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
                     const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-
-                    let leftPos = 0;
-                    let topPos = inputRect.top + scrollY;
+                    let leftPos = 0, topPos = inputRect.top + scrollY;
 
                     if (spaceRight < BUBBLE_W + GAP) {
-                        // Flip to the LEFT of the cell
                         leftPos = inputRect.left + scrollX - BUBBLE_W - GAP;
                         if (pointer) {
                             pointer.className = 'bubble-pointer absolute left-full top-1 w-0 h-0 border-l-4 border-t-4 border-t-transparent border-l-gray-50';
-                            pointer.style.marginLeft = '-1px';
-                            pointer.style.marginRight = '';
+                            pointer.style.marginLeft = '-1px'; pointer.style.marginRight = '';
                         }
                     } else {
-                        // Default: RIGHT of the cell
                         leftPos = inputRect.right + scrollX + GAP;
                         if (pointer) {
                             pointer.className = 'bubble-pointer absolute right-full top-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50';
-                            pointer.style.marginLeft = '';
-                            pointer.style.marginRight = '-1px';
+                            pointer.style.marginLeft = ''; pointer.style.marginRight = '-1px';
                         }
                     }
+                    bubble.style.left = leftPos + 'px'; bubble.style.top = topPos + 'px';
+                    bubble.style.right = 'auto'; bubble.style.bottom = 'auto';
+                    bubble.style.marginLeft = '0px'; bubble.style.marginRight = '0px';
 
-                    bubble.style.left = leftPos + 'px';
-                    bubble.style.top = topPos + 'px';
-                    bubble.style.right = 'auto';
-                    bubble.style.bottom = 'auto';
-                    bubble.style.marginLeft = '0px';
-                    bubble.style.marginRight = '0px';
-
-                    // After render, check bottom overflow and shift up if needed
                     requestAnimationFrame(function () {
                         if (bubble.classList.contains('hidden')) return;
                         const bubbleRect = bubble.getBoundingClientRect();
                         const viewportBottom = window.innerHeight;
-
-                        // Compare bounding client rect (viewport relative) with viewport height
                         if (bubbleRect.bottom > viewportBottom - GAP) {
                             const overflow = bubbleRect.bottom - viewportBottom + GAP;
                             bubble.style.top = (topPos - overflow) + 'px';
@@ -275,20 +349,13 @@
                     window.addEventListener('scroll', positionBubble, true);
                     window.addEventListener('resize', positionBubble);
                 });
-
                 input.addEventListener('blur', checkFocus);
                 bubble.addEventListener('focusout', checkFocus);
-
-                // Prevent blur when clicking non-focusable elements inside the bubble
                 bubble.addEventListener('mousedown', function (e) {
                     const tag = e.target.tagName;
-                    if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-                        e.preventDefault();
-                    }
+                    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'BUTTON') e.preventDefault();
                 });
             });
-
-            // Auto-save & confirmation logic:
             const form = document.getElementById('plotting-form');
             const restoreBanner = document.getElementById('restore-banner');
             const restoreConfirmBtn = document.getElementById('restore-confirm-btn');
@@ -301,7 +368,7 @@
             if (!form) return;
 
             // Inputs to track: amount text inputs and notes inputs
-            const gridInputs = Array.from(form.querySelectorAll('input[name^="entries["], input[name^="payroll_notes["], input[name^="payroll_notes["]'));
+            const gridInputs = Array.from(form.querySelectorAll('input[name^="entries["], input[name^="payroll_notes["]'));
 
             // Capture initial database values
             const originalValues = {};

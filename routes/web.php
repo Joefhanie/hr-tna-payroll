@@ -26,6 +26,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
+    Route::post('/timekeeping/manual', [TimekeepingController::class, 'storeManual'])->name('timekeeping.manual.store');
     Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 

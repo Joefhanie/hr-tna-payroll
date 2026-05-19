@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
 class TimekeepingController extends Controller
@@ -63,6 +65,8 @@ class TimekeepingController extends Controller
             return in_array($status, [1, 'present', 2, 'late'], true) && $attendance->check_in;
         }) ?? $todayAttendance->first();
 
+        $users = User::orderBy('name')->get();
+
         return view('timekeeping.index', [
             'todayAttendance' => $todayAttendance,
             'attendanceStatusLabels' => $attendanceStatusLabels,
@@ -72,7 +76,43 @@ class TimekeepingController extends Controller
             'activeAttendance' => $activeAttendance,
             'todayDate' => Carbon::now(),
             'recentAttendance' => $recentAttendance,
+            'users' => $users,
         ]);
+    }
+
+    public function storeManual(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id'         => 'required|exists:users,id',
+            'attendance_date' => 'required|date',
+            'check_in'        => 'required|date_format:H:i',
+            'check_out'       => 'nullable|date_format:H:i|after:check_in',
+            'status'          => 'nullable|integer|in:1,2,3,4',
+            'notes'           => 'nullable|string|max:500',
+        ]);
+
+        // Auto-determine status if not explicitly provided
+        if (empty($validated['status'])) {
+            $cutoff  = Carbon::parse($validated['attendance_date'] . ' 08:00');
+            $checkIn = Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_in']);
+            $validated['status'] = $checkIn->gt($cutoff) ? 2 : 1; // 2=late, 1=present
+        }
+
+        Attendance::updateOrCreate(
+            [
+                'user_id'         => $validated['user_id'],
+                'attendance_date' => $validated['attendance_date'],
+            ],
+            [
+                'check_in'  => $validated['check_in'],
+                'check_out' => $validated['check_out'] ?? null,
+                'status'    => $validated['status'],
+                'notes'     => $validated['notes'] ?? null,
+            ]
+        );
+
+        return redirect()->route('timekeeping.index')
+            ->with('success', 'Attendance record saved successfully.');
     }
 
     public function shiftSchedule()
