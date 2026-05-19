@@ -37,7 +37,7 @@
                             </td>
                             @foreach ($weekData as $dayIndex => $day)
                                 <td class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative">
-                                    <div class="relative group">
+                                    <div class="relative">
                                         <input
                                             type="text"
                                             inputmode="text"
@@ -53,7 +53,7 @@
                                         <div class="absolute top-1 right-1 w-0 h-0 border-l-3 border-b-3 border-l-transparent border-b-gray-400 pointer-events-none"></div>
 
                                             <!-- Comment bubble (Excel/Sheets style) -->
-                                            <div class="workplace-comment hidden group-focus-within:block absolute left-full top-0 ml-2 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-20 w-48 text-left">
+                                            <div class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-48 text-left">
                                                 <div class="space-y-1">
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Work location:</span>
@@ -73,7 +73,7 @@
                                                     </div>
                                                 </div>
                                                 <!-- Comment pointer -->
-                                                <div class="absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>
+                                                <div class="bubble-pointer absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50"></div>
                                             </div>
                                         </div>
                                     </td>
@@ -92,4 +92,70 @@
             </div>
         </form>
     </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const GAP = 8;
+    const BUBBLE_W = 192; // w-48
+
+    document.querySelectorAll('.workplace-comment').forEach(function (bubble) {
+        const wrapper = bubble.closest('.relative');
+        const input   = wrapper ? wrapper.querySelector('input[type="text"]') : null;
+        if (!input) return;
+
+        function positionBubble() {
+            const inputRect  = input.getBoundingClientRect();
+            const spaceRight = window.innerWidth - inputRect.right;
+            const pointer    = bubble.querySelector('.bubble-pointer');
+
+            // Reset inline styles
+            bubble.style.left = bubble.style.right =
+            bubble.style.top  = bubble.style.bottom =
+            bubble.style.marginLeft = bubble.style.marginRight = '';
+
+            if (spaceRight < BUBBLE_W + GAP) {
+                // Flip to the LEFT of the cell
+                bubble.style.right      = '100%';
+                bubble.style.left       = 'auto';
+                bubble.style.marginRight = GAP + 'px';
+                if (pointer) {
+                    pointer.className = 'bubble-pointer absolute left-full top-1 w-0 h-0 border-l-4 border-t-4 border-t-transparent border-l-gray-50';
+                    pointer.style.marginLeft = '-1px';
+                }
+            } else {
+                // Default: RIGHT of the cell
+                bubble.style.left      = '100%';
+                bubble.style.right     = 'auto';
+                bubble.style.marginLeft = GAP + 'px';
+                if (pointer) {
+                    pointer.className = 'bubble-pointer absolute right-full top-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50';
+                    pointer.style.marginLeft = '';
+                    pointer.style.marginRight = '-1px';
+                }
+            }
+
+            // Default: align top with the input
+            bubble.style.top    = '0';
+            bubble.style.bottom = 'auto';
+
+            // After render, check bottom overflow and shift up if needed
+            requestAnimationFrame(function () {
+                const bubbleRect = bubble.getBoundingClientRect();
+                if (bubbleRect.bottom > window.innerHeight - GAP) {
+                    const overflow = bubbleRect.bottom - window.innerHeight + GAP;
+                    bubble.style.top = (-overflow) + 'px';
+                }
+            });
+        }
+
+        input.addEventListener('focus', function () {
+            bubble.classList.remove('hidden');
+            positionBubble();
+        });
+
+        input.addEventListener('blur', function () {
+            bubble.classList.add('hidden');
+        });
+    });
+});
+</script>
 </x-app-layout>
