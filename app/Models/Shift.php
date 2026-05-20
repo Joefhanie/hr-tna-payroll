@@ -291,21 +291,17 @@ class Shift extends Model
      */
     public function getAttendanceStatusForClockIn($clockInTime, $gracePeriodMinutes = 10): array
     {
-        $lateMinutes = $this->checkIfLate($clockInTime, $gracePeriodMinutes);
+        $actualLateMinutes = $this->checkIfLate($clockInTime, 0);
 
-        if ($lateMinutes >= 61) {
-            return ['key' => 3, 'label' => 'Absent', 'late_minutes' => $lateMinutes];
+        if ($actualLateMinutes >= 61) {
+            return ['key' => 3, 'label' => 'Absent', 'late_minutes' => $actualLateMinutes];
         }
 
-        if ($lateMinutes >= 31) {
-            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
+        if ($actualLateMinutes >= 1) {
+            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $actualLateMinutes];
         }
 
-        if ($lateMinutes >= 11) {
-            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
-        }
-
-        return ['key' => 1, 'label' => 'Present', 'late_minutes' => $lateMinutes];
+        return ['key' => 1, 'label' => 'Present', 'late_minutes' => 0];
     }
 
     /**

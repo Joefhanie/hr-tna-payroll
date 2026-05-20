@@ -268,6 +268,8 @@ class PayrollService
             'premium_minutes' => 0,
         ];
 
+        $totalLateDeductionHours = 0.0;
+
         foreach ($attendanceRecords as $attendance) {
             $attendanceDate = Carbon::parse($attendance->attendance_date->toDateString());
             
@@ -295,7 +297,17 @@ class PayrollService
             }
 
             if ($checkIn && $checkIn->gt($shiftStart)) {
-                $summary['late_minutes'] += $shiftStart->diffInMinutes($checkIn);
+                $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
+                $summary['late_minutes'] += $dayLateMinutes;
+
+                // Apply late policy thresholds:
+                if ($dayLateMinutes >= 11 && $dayLateMinutes <= 30) {
+                    $totalLateDeductionHours += 1.0;
+                } elseif ($dayLateMinutes >= 31 && $dayLateMinutes <= 60) {
+                    $totalLateDeductionHours += 4.0;
+                } elseif ($dayLateMinutes >= 61) {
+                    $totalLateDeductionHours += 8.0;
+                }
             }
 
             if ($checkOut && $checkOut->lt($shiftEnd)) {
@@ -316,7 +328,7 @@ class PayrollService
             }
         }
 
-        $lateDeduction = round(($summary['late_minutes'] / 60) * $hourlyRate * $lateDeductionMultiplier, 2);
+        $lateDeduction = round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
         $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
         $absenceDeduction = round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
 
