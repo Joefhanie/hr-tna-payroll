@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `hr-tna-payroll` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `hr-tna-payroll`;
 -- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
 --
 -- Host: localhost    Database: hr-tna-payroll
@@ -57,6 +55,7 @@ DROP TABLE IF EXISTS `attendance`;
 CREATE TABLE `attendance` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int unsigned NOT NULL,
+  `shift_id` int unsigned DEFAULT NULL,
   `attendance_date` date NOT NULL,
   `check_in` datetime DEFAULT NULL,
   `check_out` datetime DEFAULT NULL,
@@ -65,8 +64,10 @@ CREATE TABLE `attendance` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_att_user_date` (`user_id`,`attendance_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_att_user_date` (`user_id`,`attendance_date`),
+  KEY `idx_attendance_shift_id` (`shift_id`),
+  CONSTRAINT `attendance_shift_id_foreign` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -75,7 +76,7 @@ CREATE TABLE `attendance` (
 
 LOCK TABLES `attendance` WRITE;
 /*!40000 ALTER TABLE `attendance` DISABLE KEYS */;
-INSERT INTO `attendance` VALUES (1,4,'2026-05-19','2026-05-19 09:00:00','2026-05-19 18:00:00',1,NULL,'2026-05-19 02:07:27','2026-05-19 02:07:27'),(2,4,'2026-05-19','2026-05-19 07:55:00','2026-05-19 17:05:00',1,'On time','2026-05-19 10:13:43','2026-05-19 10:13:43'),(3,4,'2026-05-20','2026-05-20 08:37:00','2026-05-20 17:00:00',2,'Late arrival','2026-05-19 10:13:43','2026-05-19 10:13:43'),(4,4,'2026-05-21',NULL,NULL,3,'Absent','2026-05-19 10:13:43','2026-05-19 10:13:43'),(5,4,'2026-05-22','2026-05-22 07:58:00','2026-05-22 16:15:00',1,'Undertime example','2026-05-19 10:13:43','2026-05-19 10:13:43'),(6,4,'2026-05-23','2026-05-23 08:00:00','2026-05-23 19:30:00',1,'Overtime example','2026-05-19 10:13:43','2026-05-19 10:13:43'),(7,4,'2026-05-19','2026-05-19 07:55:00','2026-05-19 17:05:00',1,'On time','2026-05-19 10:14:48','2026-05-19 10:14:48'),(8,4,'2026-05-20','2026-05-20 08:37:00','2026-05-20 17:00:00',2,'Late arrival','2026-05-19 10:14:48','2026-05-19 10:14:48'),(9,4,'2026-05-21',NULL,NULL,3,'Absent','2026-05-19 10:14:48','2026-05-19 10:14:48'),(10,4,'2026-05-22','2026-05-22 07:58:00','2026-05-22 16:15:00',1,'Undertime example','2026-05-19 10:14:48','2026-05-19 10:14:48'),(11,4,'2026-05-23','2026-05-23 08:00:00','2026-05-23 19:30:00',1,'Overtime example','2026-05-19 10:14:48','2026-05-19 10:14:48');
+INSERT INTO `attendance` VALUES (1,1,NULL,'2026-05-19','2026-05-19 22:00:00','2026-05-19 07:00:00',1,NULL,'2026-05-19 08:34:55','2026-05-19 08:37:08'),(2,2,NULL,'2026-05-19','2026-05-19 09:30:00','2026-05-19 18:00:00',2,NULL,'2026-05-19 09:30:44','2026-05-19 09:30:44'),(3,2,NULL,'2026-05-20','2026-05-20 09:00:00','2026-05-20 18:00:00',1,NULL,'2026-05-20 01:40:14','2026-05-20 01:40:14'),(4,1,NULL,'2026-05-20','2026-05-20 22:00:00','2026-05-20 08:00:00',1,NULL,'2026-05-20 01:40:40','2026-05-20 01:53:02'),(5,2,NULL,'2026-05-21','2026-05-21 09:00:00',NULL,2,NULL,'2026-05-20 01:54:35','2026-05-20 07:14:00'),(6,1,NULL,'2026-05-22','2026-05-22 03:00:00','2026-05-22 07:00:00',1,NULL,'2026-05-20 03:06:14','2026-05-20 03:15:18'),(7,6,9,'2026-05-20','2026-05-20 09:00:00','2026-05-20 18:00:00',1,'first day on time','2026-05-20 06:00:02','2026-05-20 06:00:02'),(8,6,24,'2026-05-23','2026-05-23 22:00:00','2026-05-24 07:00:00',1,NULL,'2026-05-20 06:20:49','2026-05-20 06:20:49'),(9,6,9,'2026-05-25','2026-05-25 09:10:00','2026-05-25 18:00:00',2,'GRACE PERIOD!','2026-05-20 06:25:58','2026-05-20 07:14:00'),(10,6,9,'2026-05-26','2026-05-26 09:13:00','2026-05-26 18:00:00',2,NULL,'2026-05-20 06:29:07','2026-05-20 07:14:00'),(11,6,9,'2026-05-27','2026-05-27 21:25:00','2026-05-27 18:00:00',3,NULL,'2026-05-20 06:31:39','2026-05-20 06:31:39'),(12,6,9,'2026-05-28','2026-05-28 09:40:00','2026-05-28 18:00:00',2,NULL,'2026-05-20 06:32:55','2026-05-20 06:32:55'),(13,6,9,'2026-05-29','2026-05-29 10:00:00','2026-05-29 18:00:00',2,NULL,'2026-05-20 06:34:42','2026-05-20 06:34:42'),(14,2,17,'2026-05-25','2026-05-25 09:05:00','2026-05-25 18:00:00',2,NULL,'2026-05-20 06:45:51','2026-05-20 06:45:51'),(15,6,9,'2026-06-01','2026-06-01 10:05:00','2026-06-01 18:00:00',3,NULL,'2026-05-20 06:53:38','2026-05-20 06:53:38'),(16,6,9,'2026-06-02','2026-06-02 09:25:00','2026-06-02 18:00:00',2,NULL,'2026-05-20 07:08:04','2026-05-20 07:08:04'),(17,1,16,'2026-06-01','2026-06-01 22:10:00','2026-06-02 07:03:00',2,NULL,'2026-05-20 07:14:57','2026-05-20 07:15:32');
 /*!40000 ALTER TABLE `attendance` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -204,7 +205,10 @@ CREATE TABLE `break_logs` (
   `break_start` datetime NOT NULL,
   `break_end` datetime DEFAULT NULL,
   `break_type` enum('Lunch','Rest','Other') NOT NULL DEFAULT 'Lunch',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_bl_timelog` (`time_log_id`),
+  KEY `idx_bl_type` (`break_type`),
+  CONSTRAINT `break_logs_time_log_id_foreign` FOREIGN KEY (`time_log_id`) REFERENCES `time_logs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -268,6 +272,42 @@ LOCK TABLES `cache_locks` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `company_settings`
+--
+
+DROP TABLE IF EXISTS `company_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `company_settings` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `company_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tagline` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` text COLLATE utf8mb4_unicode_ci,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tin` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `industry` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `logo_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `logo_dark_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `company_settings`
+--
+
+LOCK TABLES `company_settings` WRITE;
+/*!40000 ALTER TABLE `company_settings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `company_settings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `dashboard_widgets`
 --
 
@@ -326,7 +366,7 @@ CREATE TABLE `deduction_rules` (
 
 LOCK TABLES `deduction_rules` WRITE;
 /*!40000 ALTER TABLE `deduction_rules` DISABLE KEYS */;
-INSERT INTO `deduction_rules` VALUES (1,'Late Deduction','Prorated',NULL,0.0010,'Attendance linked',NULL,1,0,'2026-05-19 04:35:27','2026-05-19 04:35:27',NULL),(2,'Absent Deduction','Fixed',1000.00,NULL,'Attendance linked',NULL,1,1,'2026-05-19 04:35:27','2026-05-19 04:35:27',NULL);
+INSERT INTO `deduction_rules` VALUES (1,'Late Deduction','Prorated',NULL,NULL,'Attendance linked',NULL,0,0,'2026-05-19 04:35:27','2026-05-20 08:08:35',NULL),(2,'Absent Deduction','Fixed',1000.00,NULL,'Attendance linked',NULL,0,1,'2026-05-19 04:35:27','2026-05-20 01:48:58',NULL);
 /*!40000 ALTER TABLE `deduction_rules` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -344,7 +384,7 @@ CREATE TABLE `departments` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -353,7 +393,7 @@ CREATE TABLE `departments` (
 
 LOCK TABLES `departments` WRITE;
 /*!40000 ALTER TABLE `departments` DISABLE KEYS */;
-INSERT INTO `departments` VALUES (1,'Human Resources',NULL,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(2,'Operations',NULL,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(3,'Information Technology',NULL,'2026-05-19 04:35:27','2026-05-19 04:35:27');
+INSERT INTO `departments` VALUES (1,'IT Department',NULL,'2026-05-19 08:07:43','2026-05-19 08:07:43'),(2,'Human Resources',NULL,'2026-05-19 08:07:50','2026-05-19 08:07:50'),(3,'Hiring',2,'2026-05-19 08:08:01','2026-05-19 08:08:01'),(4,'Development',1,'2026-05-19 08:08:12','2026-05-19 08:08:19');
 /*!40000 ALTER TABLE `departments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -409,7 +449,7 @@ CREATE TABLE `employee_deduction_rule` (
 
 LOCK TABLES `employee_deduction_rule` WRITE;
 /*!40000 ALTER TABLE `employee_deduction_rule` DISABLE KEYS */;
-INSERT INTO `employee_deduction_rule` VALUES (1,1,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(2,1,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(5,3,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(6,3,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(7,4,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(8,4,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(9,5,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(10,5,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(11,6,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(12,6,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(13,7,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(14,7,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(15,8,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(16,8,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(17,9,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(18,9,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(19,10,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(20,10,2,'2026-05-18 20:35:29','2026-05-18 20:35:29');
+INSERT INTO `employee_deduction_rule` VALUES (7,4,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(8,4,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(9,5,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(10,5,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(11,6,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(13,7,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(14,7,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(15,8,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(16,8,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(17,9,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(18,9,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(19,10,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(20,10,2,'2026-05-18 20:35:29','2026-05-18 20:35:29');
 /*!40000 ALTER TABLE `employee_deduction_rule` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -518,7 +558,7 @@ CREATE TABLE `employee_tax_bracket` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `employee_tax_bracket_employee_id_tax_bracket_id_unique` (`employee_id`,`tax_bracket_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,7 +567,7 @@ CREATE TABLE `employee_tax_bracket` (
 
 LOCK TABLES `employee_tax_bracket` WRITE;
 /*!40000 ALTER TABLE `employee_tax_bracket` DISABLE KEYS */;
-INSERT INTO `employee_tax_bracket` VALUES (1,1,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(2,1,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(3,1,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(4,1,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(5,1,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(6,1,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(9,2,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(13,3,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(14,3,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(15,3,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(16,3,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(17,3,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(18,3,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(19,4,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(20,4,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(21,4,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(22,4,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(23,4,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(24,4,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(25,5,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(26,5,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(27,5,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(28,5,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(29,5,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(30,5,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(31,6,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(32,6,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(33,6,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(34,6,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(35,6,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(36,6,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(37,7,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(38,7,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(39,7,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(40,7,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(41,7,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(42,7,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(43,8,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(44,8,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(45,8,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(46,8,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(47,8,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(48,8,6,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(49,9,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(50,9,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(51,9,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(52,9,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(53,9,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(54,9,6,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(55,10,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(56,10,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(57,10,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(58,10,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(59,10,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(60,10,6,'2026-05-18 20:35:29','2026-05-18 20:35:29');
+INSERT INTO `employee_tax_bracket` VALUES (9,2,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(19,4,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(20,4,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(21,4,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(22,4,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(23,4,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(24,4,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(25,5,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(26,5,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(27,5,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(28,5,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(29,5,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(30,5,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(32,6,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(37,7,1,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(38,7,2,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(39,7,3,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(40,7,4,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(41,7,5,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(42,7,6,'2026-05-18 20:35:28','2026-05-18 20:35:28'),(43,8,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(44,8,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(45,8,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(46,8,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(47,8,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(48,8,6,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(49,9,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(50,9,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(51,9,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(52,9,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(53,9,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(54,9,6,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(55,10,1,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(56,10,2,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(57,10,3,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(58,10,4,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(59,10,5,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(60,10,6,'2026-05-18 20:35:29','2026-05-18 20:35:29'),(62,1,2,'2026-05-19 01:57:15','2026-05-19 01:57:15'),(63,3,3,'2026-05-19 17:48:15','2026-05-19 17:48:15');
 /*!40000 ALTER TABLE `employee_tax_bracket` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -573,7 +613,7 @@ CREATE TABLE `employees` (
   KEY `idx_emp_status` (`status`),
   KEY `idx_emp_dept` (`department_id`),
   KEY `idx_emp_manager` (`manager_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -582,7 +622,7 @@ CREATE TABLE `employees` (
 
 LOCK TABLES `employees` WRITE;
 /*!40000 ALTER TABLE `employees` DISABLE KEYS */;
-INSERT INTO `employees` VALUES (1,'JP001','Joefhanie','Perez','Cruz','hr@example.com','+63 917 123 4567','1988-05-12','Female','Filipino','Single','888 Taft Ave',NULL,'Manila','Metro Manila','1000','Philippines',1,1,'2020-01-15',NULL,NULL,NULL,1,1,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(2,'AD002','Andrei','Dilag',NULL,'sv1@example.com','+63 917 222 0001','1985-08-20','Male','Filipino','Married','Supervisor St',NULL,'Makati','Metro Manila','1200','Philippines',1,1,'2021-06-10',NULL,NULL,NULL,2,2,1,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(3,'RV003','Ramon','Valenzuela',NULL,'sv2@example.com','+63 917 222 0002','1985-08-20','Male','Filipino','Married','Supervisor St',NULL,'Makati','Metro Manila','1200','Philippines',1,1,'2021-06-10',NULL,NULL,NULL,3,2,1,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(4,'MS004','Maria Clara','Santos',NULL,'sv3@example.com','+63 917 222 0003','1985-08-20','Female','Filipino','Married','Supervisor St',NULL,'Makati','Metro Manila','1200','Philippines',1,1,'2021-06-10',NULL,NULL,NULL,4,3,1,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(5,'JD005','Juan','dela Cruz',NULL,'emp1@example.com','+63 917 333 0001','1995-10-05','Male','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,5,2,2,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(6,'PM006','Princess','Mendoza',NULL,'emp2@example.com','+63 917 333 0002','1995-10-05','Female','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,5,2,2,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(7,'JM007','Jose Rizal','Macaraeg',NULL,'emp3@example.com','+63 917 333 0003','1995-10-05','Male','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,6,2,3,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(8,'AP008','Arnel','Pineda',NULL,'emp4@example.com','+63 917 333 0004','1995-10-05','Female','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,6,2,3,'2026-05-19 04:35:29','2026-05-19 04:35:29'),(9,'GA009','Gloc Nine','Alimario',NULL,'emp5@example.com','+63 917 333 0005','1995-10-05','Male','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,7,3,4,'2026-05-19 04:35:29','2026-05-19 04:35:29'),(10,'CG010','Catriona','Gray',NULL,'emp6@example.com','+63 917 333 0006','1995-10-05','Female','Filipino','Single','Employee Rd',NULL,'Quezon City','Metro Manila','1100','Philippines',1,1,'2023-01-10',NULL,NULL,NULL,7,3,4,'2026-05-19 04:35:29','2026-05-19 04:35:29');
+INSERT INTO `employees` VALUES (1,'JD001','JM','Diaz','Junio','admin@admin.com','+63 912 345 6789','2003-12-05','Female','Filipino','Single','sdasd','asdsd','asdasd','asdasd','asdsad','Philippines',1,1,'2026-05-19','2026-05-19',NULL,NULL,2,2,NULL,'2026-05-19 08:01:25','2026-05-19 08:10:34'),(2,'KN002','Kenneth','Neri','Linga','wufupuqihu@mailinator.com','+63 123 456 789','2003-12-11','Male','Filipino','Single','188 Fabien Lane','Adipisicing quaerat','Quibusdam aut ut ull','Doloribus et volupta','Soluta exercitation','Philippines',1,1,'2026-05-19','2026-05-19',NULL,NULL,1,4,1,'2026-05-19 09:17:42','2026-05-19 09:17:42'),(3,'HN003','Hiroko','Norman','Barrett Foreman','pyzozyqy@mailinator.com','+1 (120) 378-8238','1980-10-05','Male','Laboris deserunt ver','Divorced','641 North White New Road','Omnis velit non sed','Cillum velit et non','Qui quia architecto','Dolore nulla aliquip','Canada',1,1,'2026-05-20','2026-05-20',NULL,NULL,1,4,1,'2026-05-20 01:35:17','2026-05-20 01:35:17'),(4,'TA004','Test','Admin','Middle','admin_test@example.com','09123456789','1990-01-01','Female','Filipino','Single','123 Main St','Apt 4B','Quezon City','Metro Manila','1100','Philippines',2,1,'2020-12-01',NULL,NULL,NULL,1,1,NULL,'2026-05-20 02:12:39','2026-05-20 02:12:39'),(5,'LT005','luwi','tester','da','luwi@email.com','9213401239','2004-02-03','Male','Filipino','Widowed','KJB98907','098','KH988B','90H','U0H1234','IJASDDFFJ',1,1,'2026-05-20','2026-05-20',NULL,NULL,2,2,NULL,'2026-05-20 05:24:16','2026-05-20 05:24:16'),(6,'LT006','luwi employee','test',NULL,'fekyd@mailinator.com','+1 (131) 133-9856','2026-01-01','Non-binary','123','Married','585 East Oak Parkway','Voluptas rerum dolor','Anim numquam et anim','Minima dolor consequ','Pariatur Nam conseq','United Kingdom',1,1,'2026-05-20',NULL,NULL,NULL,1,4,5,'2026-05-20 05:34:21','2026-05-20 05:34:48');
 /*!40000 ALTER TABLE `employees` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -617,6 +657,45 @@ LOCK TABLES `failed_jobs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `field_records`
+--
+
+DROP TABLE IF EXISTS `field_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `field_records` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `empid` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
+  `Date` date DEFAULT NULL,
+  `sup_id` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
+  `company_id` int NOT NULL,
+  `time` datetime NOT NULL,
+  `function` int NOT NULL,
+  `status` int NOT NULL,
+  `remarks` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` int NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` int DEFAULT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `deleted_by` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_field_records_empid` (`empid`),
+  KEY `idx_field_records_sup_id` (`sup_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `field_records`
+--
+
+LOCK TABLES `field_records` WRITE;
+/*!40000 ALTER TABLE `field_records` DISABLE KEYS */;
+INSERT INTO `field_records` VALUES (1,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:00',1,1,'Developing Websites','2026-05-19 16:41:00',2,NULL,NULL,NULL,NULL),(2,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:01',1,1,'Developing Websites','2026-05-19 16:41:01',2,NULL,NULL,NULL,NULL),(3,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:04',1,1,'Developing Websites','2026-05-19 16:41:04',2,NULL,NULL,NULL,NULL),(4,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:05',1,1,'Developing Websites','2026-05-19 16:41:05',2,NULL,NULL,NULL,NULL),(5,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:08',1,1,'Developing Websites','2026-05-19 16:41:08',2,NULL,NULL,NULL,NULL),(6,'JP001','2026-05-20','AD002',1,'2026-05-19 16:41:11',1,1,'Developing Websites','2026-05-19 16:41:11',2,NULL,NULL,NULL,NULL),(7,'CG010','2026-05-20','AD002',1,'2026-05-19 16:41:36',1,1,'Developing Websites','2026-05-19 16:41:36',2,NULL,NULL,NULL,NULL),(8,'PM006','2026-05-20','AD002',1,'2026-05-19 16:41:44',1,1,'Developing Websites','2026-05-19 16:41:44',2,NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `field_records` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `government_contribution_rates`
 --
 
@@ -644,7 +723,7 @@ CREATE TABLE `government_contribution_rates` (
 
 LOCK TABLES `government_contribution_rates` WRITE;
 /*!40000 ALTER TABLE `government_contribution_rates` DISABLE KEYS */;
-INSERT INTO `government_contribution_rates` VALUES (1,'SSS',0.0450,0.0950,NULL,1,0,'2026-05-19 04:35:27','2026-05-19 04:35:27',NULL),(2,'PhilHealth',0.0250,0.0250,NULL,1,1,'2026-05-19 04:35:27','2026-05-19 04:35:27',NULL),(3,'Pag-IBIG',0.0200,0.0200,NULL,1,2,'2026-05-19 04:35:27','2026-05-19 04:35:27',NULL);
+INSERT INTO `government_contribution_rates` VALUES (1,'SSS',0.0450,0.0950,NULL,1,0,'2026-05-19 04:35:27','2026-05-20 08:08:29',NULL),(2,'PhilHealth',0.0250,0.0250,NULL,1,1,'2026-05-19 04:35:27','2026-05-20 08:08:29',NULL),(3,'Pag-IBIG',0.0200,0.0200,NULL,1,2,'2026-05-19 04:35:27','2026-05-20 08:08:29',NULL);
 /*!40000 ALTER TABLE `government_contribution_rates` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -662,7 +741,7 @@ CREATE TABLE `government_contributions` (
   `employee_share` decimal(10,2) NOT NULL DEFAULT '0.00',
   `employer_share` decimal(10,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=130 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -671,7 +750,7 @@ CREATE TABLE `government_contributions` (
 
 LOCK TABLES `government_contributions` WRITE;
 /*!40000 ALTER TABLE `government_contributions` DISABLE KEYS */;
-INSERT INTO `government_contributions` VALUES (1,1,'SSS',0.00,0.00),(2,2,'SSS',0.00,0.00),(3,3,'SSS',0.00,0.00),(4,5,'SSS',450.00,750.00),(5,6,'SSS',72.00,120.00),(6,7,'SSS',375.00,625.00),(7,9,'SSS',450.00,750.00),(8,10,'SSS',72.00,120.00),(9,11,'SSS',375.00,625.00),(10,13,'SSS',875.00,1750.00),(11,13,'PhilHealth',437.50,437.50),(12,13,'Pag-IBIG',350.00,350.00),(13,14,'SSS',3600.00,7600.00),(14,14,'PhilHealth',2000.00,2000.00),(15,14,'Pag-IBIG',1600.00,1600.00),(16,15,'SSS',1282.50,2707.50),(17,15,'PhilHealth',712.50,712.50),(18,15,'Pag-IBIG',570.00,570.00),(19,16,'SSS',2828.57,5971.43),(20,16,'PhilHealth',1571.43,1571.43),(21,16,'Pag-IBIG',1257.14,1257.14),(22,17,'SSS',3214.29,6785.71),(23,17,'PhilHealth',1785.71,1785.71),(24,17,'Pag-IBIG',1428.57,1428.57),(25,18,'SSS',1414.29,2985.71),(26,18,'PhilHealth',785.71,785.71),(27,18,'Pag-IBIG',628.57,628.57),(28,19,'SSS',1414.29,2985.71),(29,19,'PhilHealth',785.71,785.71),(30,19,'Pag-IBIG',628.57,628.57),(31,20,'SSS',1414.29,2985.71),(32,20,'PhilHealth',785.71,785.71),(33,20,'Pag-IBIG',628.57,628.57),(34,21,'SSS',1414.29,2985.71),(35,21,'PhilHealth',785.71,785.71),(36,21,'Pag-IBIG',628.57,628.57),(37,22,'SSS',1800.00,3800.00),(38,22,'PhilHealth',1000.00,1000.00),(39,22,'Pag-IBIG',800.00,800.00),(40,23,'SSS',1800.00,3800.00),(41,23,'PhilHealth',1000.00,1000.00),(42,23,'Pag-IBIG',800.00,800.00);
+INSERT INTO `government_contributions` VALUES (1,1,'SSS',0.00,0.00),(2,2,'SSS',0.00,0.00),(3,3,'SSS',0.00,0.00),(4,5,'SSS',450.00,750.00),(5,6,'SSS',72.00,120.00),(6,7,'SSS',375.00,625.00),(7,9,'SSS',450.00,750.00),(8,10,'SSS',72.00,120.00),(9,11,'SSS',375.00,625.00),(10,13,'SSS',875.00,1750.00),(11,13,'PhilHealth',437.50,437.50),(12,13,'Pag-IBIG',350.00,350.00),(13,14,'SSS',3600.00,7600.00),(14,14,'PhilHealth',2000.00,2000.00),(15,14,'Pag-IBIG',1600.00,1600.00),(16,15,'SSS',1282.50,2707.50),(17,15,'PhilHealth',712.50,712.50),(18,15,'Pag-IBIG',570.00,570.00),(19,16,'SSS',2828.57,5971.43),(20,16,'PhilHealth',1571.43,1571.43),(21,16,'Pag-IBIG',1257.14,1257.14),(22,17,'SSS',3214.29,6785.71),(23,17,'PhilHealth',1785.71,1785.71),(24,17,'Pag-IBIG',1428.57,1428.57),(25,18,'SSS',1414.29,2985.71),(26,18,'PhilHealth',785.71,785.71),(27,18,'Pag-IBIG',628.57,628.57),(28,19,'SSS',1414.29,2985.71),(29,19,'PhilHealth',785.71,785.71),(30,19,'Pag-IBIG',628.57,628.57),(31,20,'SSS',1414.29,2985.71),(32,20,'PhilHealth',785.71,785.71),(33,20,'Pag-IBIG',628.57,628.57),(34,21,'SSS',1414.29,2985.71),(35,21,'PhilHealth',785.71,785.71),(36,21,'Pag-IBIG',628.57,628.57),(37,22,'SSS',1800.00,3800.00),(38,22,'PhilHealth',1000.00,1000.00),(39,22,'Pag-IBIG',800.00,800.00),(40,23,'SSS',1800.00,3800.00),(41,23,'PhilHealth',1000.00,1000.00),(42,23,'Pag-IBIG',800.00,800.00),(43,24,'SSS',3600.00,7600.00),(44,24,'PhilHealth',2000.00,2000.00),(45,24,'Pag-IBIG',1600.00,1600.00),(46,25,'SSS',1282.50,2707.50),(47,25,'PhilHealth',712.50,712.50),(48,25,'Pag-IBIG',570.00,570.00),(49,26,'SSS',2828.57,5971.43),(50,26,'PhilHealth',1571.43,1571.43),(51,26,'Pag-IBIG',1257.14,1257.14),(52,27,'SSS',3214.29,6785.71),(53,27,'PhilHealth',1785.71,1785.71),(54,27,'Pag-IBIG',1428.57,1428.57),(55,28,'SSS',1414.29,2985.71),(56,28,'PhilHealth',785.71,785.71),(57,28,'Pag-IBIG',628.57,628.57),(58,29,'SSS',1414.29,2985.71),(59,29,'PhilHealth',785.71,785.71),(60,29,'Pag-IBIG',628.57,628.57),(61,30,'SSS',1414.29,2985.71),(62,30,'PhilHealth',785.71,785.71),(63,30,'Pag-IBIG',628.57,628.57),(64,31,'SSS',1414.29,2985.71),(65,31,'PhilHealth',785.71,785.71),(66,31,'Pag-IBIG',628.57,628.57),(67,32,'SSS',1800.00,3800.00),(68,32,'PhilHealth',1000.00,1000.00),(69,32,'Pag-IBIG',800.00,800.00),(70,33,'SSS',1800.00,3800.00),(71,33,'PhilHealth',1000.00,1000.00),(72,33,'Pag-IBIG',800.00,800.00),(73,34,'SSS',2250.00,4750.00),(74,34,'PhilHealth',1250.00,1250.00),(75,34,'Pag-IBIG',1000.00,1000.00),(76,35,'SSS',2250.00,4750.00),(77,35,'PhilHealth',1250.00,1250.00),(78,35,'Pag-IBIG',1000.00,1000.00),(79,36,'SSS',1125.00,2375.00),(80,36,'PhilHealth',625.00,625.00),(81,36,'Pag-IBIG',500.00,500.00),(82,37,'SSS',1282.50,2707.50),(83,37,'PhilHealth',712.50,712.50),(84,37,'Pag-IBIG',570.00,570.00),(85,38,'SSS',2828.57,5971.43),(86,38,'PhilHealth',1571.43,1571.43),(87,38,'Pag-IBIG',1257.14,1257.14),(88,39,'SSS',3214.29,6785.71),(89,39,'PhilHealth',1785.71,1785.71),(90,39,'Pag-IBIG',1428.57,1428.57),(91,40,'SSS',1414.29,2985.71),(92,40,'PhilHealth',785.71,785.71),(93,40,'Pag-IBIG',628.57,628.57),(94,41,'SSS',1414.29,2985.71),(95,41,'PhilHealth',785.71,785.71),(96,41,'Pag-IBIG',628.57,628.57),(97,42,'SSS',1414.29,2985.71),(98,42,'PhilHealth',785.71,785.71),(99,42,'Pag-IBIG',628.57,628.57),(100,43,'SSS',1414.29,2985.71),(101,43,'PhilHealth',785.71,785.71),(102,43,'Pag-IBIG',628.57,628.57),(103,44,'SSS',1800.00,3800.00),(104,44,'PhilHealth',1000.00,1000.00),(105,44,'Pag-IBIG',800.00,800.00),(106,45,'SSS',1800.00,3800.00),(107,45,'PhilHealth',1000.00,1000.00),(108,45,'Pag-IBIG',800.00,800.00),(109,1,'SSS',1125.00,2375.00),(110,1,'PhilHealth',625.00,625.00),(111,1,'Pag-IBIG',500.00,500.00),(112,2,'SSS',0.00,0.00),(113,2,'PhilHealth',0.00,0.00),(114,2,'Pag-IBIG',0.00,0.00),(115,3,'SSS',562.50,1187.50),(116,3,'PhilHealth',312.50,312.50),(117,3,'Pag-IBIG',250.00,250.00),(118,4,'SSS',0.00,0.00),(119,4,'PhilHealth',0.00,0.00),(120,4,'Pag-IBIG',0.00,0.00),(121,5,'SSS',787.50,1662.50),(122,5,'PhilHealth',437.50,437.50),(123,5,'Pag-IBIG',350.00,350.00),(124,6,'SSS',0.00,0.00),(125,6,'PhilHealth',0.00,0.00),(126,6,'Pag-IBIG',0.00,0.00),(127,7,'SSS',61.93,130.73),(128,7,'PhilHealth',34.40,34.40),(129,7,'Pag-IBIG',27.52,27.52);
 /*!40000 ALTER TABLE `government_contributions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -789,6 +868,83 @@ LOCK TABLES `jobs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `late_deduction_rules`
+--
+
+DROP TABLE IF EXISTS `late_deduction_rules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `late_deduction_rules` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `max_minutes` int NOT NULL,
+  `deduction_hours` decimal(8,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `late_deduction_rules`
+--
+
+LOCK TABLES `late_deduction_rules` WRITE;
+/*!40000 ALTER TABLE `late_deduction_rules` DISABLE KEYS */;
+INSERT INTO `late_deduction_rules` VALUES (2,'Tier 1',15,0.50,0,'2026-05-19 23:54:52','2026-05-19 23:58:15'),(3,'Tier 2',30,1.00,1,'2026-05-19 23:54:52','2026-05-19 23:58:15'),(4,'Tier 3',60,4.00,2,'2026-05-19 23:54:52','2026-05-19 23:58:15'),(5,'Tier 4',99999,8.00,3,'2026-05-19 23:54:52','2026-05-19 23:58:15'),(7,'Grace Period',10,0.00,4,'2026-05-20 00:04:25','2026-05-20 00:04:25');
+/*!40000 ALTER TABLE `late_deduction_rules` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `late_deductions`
+--
+
+DROP TABLE IF EXISTS `late_deductions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `late_deductions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `time_log_id` int unsigned DEFAULT NULL COMMENT 'Reference to time_logs table',
+  `employee_id` int unsigned DEFAULT NULL COMMENT 'Reference to employees table',
+  `attendance_date` date NOT NULL COMMENT 'Date of the late attendance',
+  `expected_time` time NOT NULL COMMENT 'Expected clock-in time (shift start)',
+  `actual_time` time NOT NULL COMMENT 'Actual clock-in time',
+  `late_minutes` int NOT NULL COMMENT 'Total minutes late',
+  `deduction_type` enum('none','grace_period','one_hour','half_day','absent') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'none' COMMENT 'Type of deduction applied',
+  `deduction_hours` decimal(5,2) NOT NULL DEFAULT '0.00' COMMENT 'Hours deducted from pay',
+  `hourly_rate` decimal(10,2) DEFAULT NULL COMMENT 'Hourly rate for calculation',
+  `deduction_amount` decimal(10,2) DEFAULT NULL COMMENT 'Amount deducted from salary',
+  `policy_version` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '1.0' COMMENT 'Version of late policy applied',
+  `is_excused` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether late was excused/waived',
+  `excuse_reason` text COLLATE utf8mb4_unicode_ci COMMENT 'Reason for excuse if applicable',
+  `approved_by` int unsigned DEFAULT NULL COMMENT 'HR/Manager who approved/waived',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_time_log_deduction` (`time_log_id`),
+  KEY `late_deductions_employee_id_index` (`employee_id`),
+  KEY `late_deductions_attendance_date_index` (`attendance_date`),
+  KEY `late_deductions_deduction_type_index` (`deduction_type`),
+  KEY `late_deductions_approved_by_foreign` (`approved_by`),
+  CONSTRAINT `late_deductions_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `late_deductions_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `late_deductions_time_log_id_foreign` FOREIGN KEY (`time_log_id`) REFERENCES `time_logs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `late_deductions`
+--
+
+LOCK TABLES `late_deductions` WRITE;
+/*!40000 ALTER TABLE `late_deductions` DISABLE KEYS */;
+INSERT INTO `late_deductions` VALUES (1,NULL,1,'2026-05-19','22:00:00','22:00:00',0,'grace_period',0.00,0.00,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 00:28:54','2026-05-19 00:37:08'),(2,NULL,2,'2026-05-19','09:00:00','09:30:00',30,'one_hour',1.00,0.00,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 01:30:44','2026-05-19 01:30:44'),(3,NULL,2,'2026-05-20','09:00:00','09:00:00',0,'grace_period',0.00,0.00,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 17:40:14','2026-05-19 17:40:14'),(4,NULL,1,'2026-05-20','22:00:00','22:00:00',0,'grace_period',0.00,142.05,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 17:40:40','2026-05-19 17:53:02'),(5,NULL,2,'2026-05-21','09:00:00','09:00:00',0,'grace_period',0.00,0.00,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 17:54:35','2026-05-19 17:54:35'),(6,NULL,1,'2026-05-22','22:00:00','03:00:00',0,'grace_period',0.00,142.05,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 19:06:14','2026-05-19 19:15:18'),(7,NULL,6,'2026-05-20','09:00:00','09:00:00',0,'grace_period',0.00,170.45,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:00:02','2026-05-19 22:00:02'),(8,NULL,6,'2026-05-23','22:00:00','22:00:00',0,'grace_period',0.00,170.45,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:20:49','2026-05-19 22:20:49'),(9,NULL,6,'2026-05-25','09:00:00','09:10:00',10,'grace_period',0.00,170.45,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:25:59','2026-05-19 22:25:59'),(10,NULL,6,'2026-05-26','09:00:00','09:13:00',13,'one_hour',1.00,170.45,170.45,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:29:07','2026-05-19 22:29:07'),(11,NULL,6,'2026-05-27','09:00:00','21:25:00',745,'absent',8.00,170.45,1363.60,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:31:39','2026-05-19 22:31:39'),(12,NULL,6,'2026-05-28','09:00:00','09:40:00',40,'half_day',4.00,170.45,681.80,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:32:55','2026-05-19 22:32:55'),(13,NULL,6,'2026-05-29','09:00:00','10:00:00',60,'half_day',4.00,170.45,681.80,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:34:42','2026-05-19 22:34:42'),(14,NULL,2,'2026-05-25','09:00:00','09:05:00',5,'grace_period',0.00,0.00,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:45:52','2026-05-19 22:45:52'),(15,NULL,6,'2026-06-01','09:00:00','10:05:00',65,'absent',8.00,170.45,1363.60,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 22:53:38','2026-05-19 22:53:38'),(16,NULL,6,'2026-06-02','09:00:00','09:25:00',25,'one_hour',1.00,170.45,170.45,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 23:08:05','2026-05-19 23:08:05'),(17,NULL,1,'2026-06-01','22:00:00','22:10:00',10,'grace_period',0.00,142.05,0.00,'1.0',0,NULL,NULL,'Auto-generated from manual attendance entry.','2026-05-19 23:14:57','2026-05-19 23:14:57');
+/*!40000 ALTER TABLE `late_deductions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `leave_balances`
 --
 
@@ -899,7 +1055,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -908,7 +1064,7 @@ CREATE TABLE `migrations` (
 
 LOCK TABLES `migrations` WRITE;
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES (1,'2026_05_19_015331_add_daily_divisor_to_salary_records_table',1),(2,'0001_01_01_000000_create_users_table',2),(3,'0001_01_01_000001_create_cache_table',2),(4,'0001_01_01_000002_create_jobs_table',2),(5,'2026_05_13_000000_create_salary_settings_tables',2),(6,'2026_05_14_000000_add_username_to_users_table',3),(7,'2026_05_14_000001_create_employees_table',3),(8,'2026_05_14_000001_create_sessions_table',3),(9,'2026_05_14_000002_create_emergency_contacts_table',3),(10,'2026_05_14_000002_create_leaves_table',4),(11,'2026_05_14_000003_create_employee_documents_table',4),(12,'2026_05_14_000003_create_payrolls_table',5),(13,'2026_05_14_000004_add_employee_fields_to_users_table',6),(14,'2026_05_14_000004_create_salary_records_table',6),(15,'2026_05_14_000005_create_attendance_table',6),(16,'2026_05_14_000006_convert_leaves_status_to_integer',6),(17,'2026_05_14_000006_create_pay_runs_table',6),(18,'2026_05_14_000007_convert_payrolls_status_to_integer',6),(19,'2026_05_14_000007_create_payslips_table',6),(20,'2026_05_14_000008_convert_attendance_status_to_integer',6),(21,'2026_05_14_000008_create_payslip_line_items_table',6),(22,'2026_05_14_000009_create_government_contributions_table',6),(23,'2026_05_15_000000_add_timestamps_to_pay_runs_table',6),(24,'2026_05_15_000001_add_timestamps_to_payslips_table',6),(25,'2026_05_15_000002_convert_enums_to_int',6),(26,'2026_05_15_000003_add_timestamps_to_salary_records_table',6),(27,'2026_05_15_090633_create_employee_tax_deduction_pivots',6),(28,'2026_05_18_000001_add_role_to_users_table',6),(29,'2026_05_18_000002_drop_users_table',6),(30,'2026_05_18_000003_drop_all_foreign_keys',6),(31,'2026_05_18_100000_create_plotting_tables',7),(32,'2026_05_18_200000_add_departments_and_positions_tables',7),(33,'2026_05_19_000000_seed_default_government_contribution_rates',7),(34,'2026_05_19_000001_seed_default_tax_brackets',8),(35,'2026_05_19_015332_add_attendance_rate_overrides_to_salary_records_table',9),(36,'2026_05_19_020000_create_payroll_settings_table',9);
+INSERT INTO `migrations` VALUES (1,'2026_05_19_015331_add_daily_divisor_to_salary_records_table',1),(2,'0001_01_01_000000_create_users_table',2),(3,'0001_01_01_000001_create_cache_table',2),(4,'0001_01_01_000002_create_jobs_table',2),(5,'2026_05_13_000000_create_salary_settings_tables',2),(6,'2026_05_14_000000_add_username_to_users_table',3),(7,'2026_05_14_000001_create_employees_table',3),(8,'2026_05_14_000001_create_sessions_table',3),(9,'2026_05_14_000002_create_emergency_contacts_table',3),(10,'2026_05_14_000002_create_leaves_table',4),(11,'2026_05_14_000003_create_employee_documents_table',4),(12,'2026_05_14_000003_create_payrolls_table',5),(13,'2026_05_14_000004_add_employee_fields_to_users_table',6),(14,'2026_05_14_000004_create_salary_records_table',6),(15,'2026_05_14_000005_create_attendance_table',6),(16,'2026_05_14_000006_convert_leaves_status_to_integer',6),(17,'2026_05_14_000006_create_pay_runs_table',6),(18,'2026_05_14_000007_convert_payrolls_status_to_integer',6),(19,'2026_05_14_000007_create_payslips_table',6),(20,'2026_05_14_000008_convert_attendance_status_to_integer',6),(21,'2026_05_14_000008_create_payslip_line_items_table',6),(22,'2026_05_14_000009_create_government_contributions_table',6),(23,'2026_05_15_000000_add_timestamps_to_pay_runs_table',6),(24,'2026_05_15_000001_add_timestamps_to_payslips_table',6),(25,'2026_05_15_000002_convert_enums_to_int',6),(26,'2026_05_15_000003_add_timestamps_to_salary_records_table',6),(27,'2026_05_15_090633_create_employee_tax_deduction_pivots',6),(28,'2026_05_18_000001_add_role_to_users_table',6),(29,'2026_05_18_000002_drop_users_table',6),(30,'2026_05_18_000003_drop_all_foreign_keys',6),(31,'2026_05_18_100000_create_plotting_tables',7),(32,'2026_05_18_200000_add_departments_and_positions_tables',7),(33,'2026_05_19_000000_seed_default_government_contribution_rates',7),(34,'2026_05_19_000001_seed_default_tax_brackets',8),(35,'2026_05_19_015332_add_attendance_rate_overrides_to_salary_records_table',9),(36,'2026_05_19_020000_create_payroll_settings_table',9),(37,'2026_05_19_030000_increase_days_of_week_column_size',10),(40,'2026_05_19_040000_add_flexible_shift_support',11),(41,'2026_05_19_050000_create_late_deductions_table',11),(42,'2026_05_19_050001_add_late_deductions_foreign_keys',12),(43,'2026_05_19_050002_add_timelog_break_log_foreign_keys',12),(44,'2026_05_19_050003_add_shift_assignment_foreign_keys',12),(45,'2026_05_19_050004_seed_default_shifts',12),(46,'2026_05_19_060000_truncate_data_tables',12),(47,'2026_05_19_070000_add_shift_id_to_attendance_table',13),(48,'2026_05_19_070000_create_temporary_assignments_table',13),(49,'2026_05_19_090618_create_company_settings_table',13),(50,'2026_05_20_045919_add_is_flexible_to_shifts_table',13),(51,'2026_05_20_052146_add_flexible_until_time_to_shifts_table',14),(52,'2026_05_20_052227_add_flexible_until_time_to_shifts_table',14),(53,'2026_05_20_073600_add_late_deductions_to_payroll_settings_table',15),(54,'2026_05_20_074703_add_late_minutes_thresholds_to_payroll_settings_table',16),(55,'2026_05_20_075439_create_late_deduction_rules_table',17),(56,'2026_05_20_081957_add_permissions_to_users_table',18),(57,'2026_05_20_000000_create_profile_update_requests_table',19);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -987,7 +1143,7 @@ CREATE TABLE `pay_runs` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `finalized_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -996,7 +1152,7 @@ CREATE TABLE `pay_runs` (
 
 LOCK TABLES `pay_runs` WRITE;
 /*!40000 ALTER TABLE `pay_runs` DISABLE KEYS */;
-INSERT INTO `pay_runs` VALUES (1,'May 01 - May 15, 2026','2026-05-01','2026-05-15','2026-05-15',4,13,2,'2026-05-19 01:46:50','2026-05-19 03:48:33',NULL),(2,'May 16 - May 31, 2026','2026-05-16','2026-05-31','2026-05-31',4,13,2,'2026-05-19 01:47:18','2026-05-19 03:48:38',NULL),(3,'May 16 - May 31, 2026','2026-05-16','2026-05-31','2026-05-31',4,13,2,'2026-05-19 02:27:35','2026-05-19 03:48:41',NULL),(4,'May 16 - May 31, 2026','2026-05-16','2026-05-31','2026-05-31',4,13,2,'2026-05-19 03:48:58','2026-05-19 05:10:27',NULL),(5,'May 16 - May 31, 2026','2026-05-16','2026-05-31','2026-05-31',4,2,1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL);
+INSERT INTO `pay_runs` VALUES (1,'May 01 - May 31, 2026','2026-05-01','2026-05-31','2026-05-31',4,13,1,'2026-05-19 09:57:29','2026-05-20 05:44:32',NULL),(2,'May 16 - May 31, 2026','2026-05-16','2026-05-31','2026-05-31',4,13,1,'2026-05-20 01:50:42','2026-05-20 05:44:36',NULL),(3,'May 01 - May 31, 2026','2026-05-01','2026-05-31','2026-05-31',4,13,5,'2026-05-20 05:46:46','2026-05-20 05:47:10','2026-05-20 05:47:00'),(4,'May 25 - May 25, 2026','2026-05-25','2026-05-25','2026-05-25',4,13,5,'2026-05-20 06:39:34','2026-05-20 06:45:00',NULL),(5,'May 25 - May 25, 2026','2026-05-25','2026-05-25','2026-05-25',4,2,5,'2026-05-20 06:45:27','2026-05-20 06:45:27',NULL),(6,'May 26 - May 26, 2026','2026-05-26','2026-05-26','2026-05-26',4,13,5,'2026-05-20 06:47:57','2026-05-20 07:19:04',NULL),(7,'May 27 - May 27, 2026','2026-05-27','2026-05-27','2026-05-27',4,2,5,'2026-05-20 06:48:33','2026-05-20 06:48:33',NULL),(8,'May 28 - May 28, 2026','2026-05-28','2026-05-28','2026-05-28',4,2,5,'2026-05-20 06:49:01','2026-05-20 06:49:01',NULL),(9,'May 29 - May 29, 2026','2026-05-29','2026-05-29','2026-05-29',4,2,5,'2026-05-20 06:49:17','2026-05-20 06:49:17',NULL),(10,'Jun 01 - Jun 01, 2026','2026-06-01','2026-06-01','2026-06-01',4,2,5,'2026-05-20 06:55:13','2026-05-20 06:55:13',NULL),(11,'Jun 02 - Jun 02, 2026','2026-06-02','2026-06-02','2026-06-02',4,2,5,'2026-05-20 07:08:25','2026-05-20 07:08:25',NULL),(12,'May 26 - May 26, 2026','2026-05-26','2026-05-26','2026-05-26',4,2,5,'2026-05-20 07:19:12','2026-05-20 07:19:12',NULL);
 /*!40000 ALTER TABLE `pay_runs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1014,6 +1170,14 @@ CREATE TABLE `payroll_settings` (
   `attendance_late_deduction_multiplier` decimal(8,4) NOT NULL DEFAULT '1.0000',
   `attendance_undertime_deduction_multiplier` decimal(8,4) NOT NULL DEFAULT '1.0000',
   `attendance_absence_deduction_multiplier` decimal(8,4) NOT NULL DEFAULT '1.0000',
+  `late_grace_period_minutes` int NOT NULL DEFAULT '10',
+  `late_tier1_max_minutes` int NOT NULL DEFAULT '15',
+  `late_tier2_max_minutes` int NOT NULL DEFAULT '30',
+  `late_tier3_max_minutes` int NOT NULL DEFAULT '60',
+  `late_11_15_deduction_hours` decimal(8,4) NOT NULL DEFAULT '0.5000',
+  `late_16_30_deduction_hours` decimal(8,4) NOT NULL DEFAULT '1.0000',
+  `late_31_60_deduction_hours` decimal(8,4) NOT NULL DEFAULT '4.0000',
+  `late_61_plus_deduction_hours` decimal(8,4) NOT NULL DEFAULT '8.0000',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
@@ -1026,7 +1190,7 @@ CREATE TABLE `payroll_settings` (
 
 LOCK TABLES `payroll_settings` WRITE;
 /*!40000 ALTER TABLE `payroll_settings` DISABLE KEYS */;
-INSERT INTO `payroll_settings` VALUES (1,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-18 20:35:27','2026-05-18 20:35:27');
+INSERT INTO `payroll_settings` VALUES (1,1.2500,0.1000,1.0000,1.0000,1.0000,15,12,25,60,0.4500,0.9000,4.0000,8.0000,'2026-05-18 20:35:27','2026-05-19 23:51:40');
 /*!40000 ALTER TABLE `payroll_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1078,7 +1242,7 @@ CREATE TABLE `payslip_line_items` (
   `is_taxable` tinyint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `idx_pli_payslip` (`payslip_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=113 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1087,7 +1251,7 @@ CREATE TABLE `payslip_line_items` (
 
 LOCK TABLES `payslip_line_items` WRITE;
 /*!40000 ALTER TABLE `payslip_line_items` DISABLE KEYS */;
-INSERT INTO `payslip_line_items` VALUES (1,1,1,'Base salary',0.00,1),(2,1,1,'SSS',0.00,0),(3,2,1,'Base salary',0.00,1),(4,2,1,'SSS',0.00,0),(5,3,1,'Base salary',0.00,1),(6,3,1,'SSS',0.00,0),(7,4,1,'Base salary',0.00,1),(8,5,1,'Base salary',15000.00,1),(9,5,1,'SSS',450.00,0),(10,6,1,'Base salary',2400.00,1),(11,6,1,'SSS',72.00,0),(12,7,1,'Base salary',12500.00,1),(13,7,1,'SSS',375.00,0),(14,8,1,'Base salary',15000.00,1),(15,1,1,'Basic Pay',15000.00,1),(16,1,1,'Overtime Pay',850.00,1),(17,1,1,'Night Differential / Premium',300.00,1),(18,1,1,'Late Differential Bonus',150.00,1),(19,1,1,'Late Deduction',180.00,0),(20,1,1,'Undertime Deduction',450.00,0),(21,1,1,'Absence Deduction',750.00,0),(22,1,1,'Basic Pay',15000.00,1),(23,1,1,'Overtime Pay',850.00,1),(24,1,1,'Night Differential / Premium',300.00,1),(25,1,1,'Late Differential Bonus',150.00,1),(26,1,1,'Late Deduction',180.00,0),(27,1,1,'Undertime Deduction',450.00,0),(28,1,1,'Absence Deduction',750.00,0),(29,9,1,'Base salary',15000.00,1),(30,9,1,'SSS',450.00,0),(31,10,1,'Base salary',2400.00,1),(32,10,1,'SSS',72.00,0),(33,11,1,'Base salary',12500.00,1),(34,11,1,'Attendance: Overtime Pay',752.80,1),(35,11,1,'Attendance: Night Differential',29.30,1),(36,11,1,'Attendance: Late Deduction',218.11,0),(37,11,1,'Attendance: Undertime Deduction',146.49,0),(38,11,1,'Attendance: Absence Deduction',1562.50,0),(39,11,1,'SSS',375.00,0),(40,12,1,'Base salary',15000.00,1),(41,13,1,'Base salary',17500.00,1),(42,13,1,'Attendance: Overtime Pay',1053.88,1),(43,13,1,'Attendance: Night Differential',41.02,1),(44,13,2,'Attendance: Late Deduction',305.34,0),(45,13,2,'Attendance: Undertime Deduction',205.08,0),(46,13,2,'Attendance: Absence Deduction',2187.50,0),(47,13,4,'SSS',875.00,0),(48,13,4,'PhilHealth',437.50,0),(49,13,4,'Pag-IBIG',350.00,0),(50,14,1,'Base salary',80000.00,1),(51,14,3,'Income Tax',11875.05,0),(52,14,4,'SSS',3600.00,0),(53,14,4,'PhilHealth',2000.00,0),(54,14,4,'Pag-IBIG',1600.00,0),(55,14,2,'Absent Deduction',1000.00,0),(56,15,1,'Base salary',28500.00,1),(57,15,4,'SSS',1282.50,0),(58,15,4,'PhilHealth',712.50,0),(59,15,4,'Pag-IBIG',570.00,0),(60,16,1,'Base salary',62857.14,1),(61,16,3,'Income Tax',7779.83,0),(62,16,4,'SSS',2828.57,0),(63,16,4,'PhilHealth',1571.43,0),(64,16,4,'Pag-IBIG',1257.14,0),(65,16,2,'Absent Deduction',1000.00,0),(66,17,1,'Base salary',71428.57,1),(67,17,1,'Attendance: Overtime Pay',4301.56,1),(68,17,1,'Attendance: Night Differential',167.41,1),(69,17,2,'Attendance: Late Deduction',1246.29,0),(70,17,2,'Attendance: Undertime Deduction',837.06,0),(71,17,2,'Attendance: Absence Deduction',8928.58,0),(72,17,3,'Income Tax',10849.43,0),(73,17,4,'SSS',3214.29,0),(74,17,4,'PhilHealth',1785.71,0),(75,17,4,'Pag-IBIG',1428.57,0),(76,17,2,'Absent Deduction',1000.00,0),(77,18,1,'Base salary',31428.57,1),(78,18,3,'Income Tax',1589.34,0),(79,18,4,'SSS',1414.29,0),(80,18,4,'PhilHealth',785.71,0),(81,18,4,'Pag-IBIG',628.57,0),(82,18,2,'Absent Deduction',1000.00,0),(83,19,1,'Base salary',31428.57,1),(84,19,3,'Income Tax',1589.34,0),(85,19,4,'SSS',1414.29,0),(86,19,4,'PhilHealth',785.71,0),(87,19,4,'Pag-IBIG',628.57,0),(88,19,2,'Absent Deduction',1000.00,0),(89,20,1,'Base salary',31428.57,1),(90,20,3,'Income Tax',1589.34,0),(91,20,4,'SSS',1414.29,0),(92,20,4,'PhilHealth',785.71,0),(93,20,4,'Pag-IBIG',628.57,0),(94,20,2,'Absent Deduction',1000.00,0),(95,21,1,'Base salary',31428.57,1),(96,21,3,'Income Tax',1589.34,0),(97,21,4,'SSS',1414.29,0),(98,21,4,'PhilHealth',785.71,0),(99,21,4,'Pag-IBIG',628.57,0),(100,21,2,'Absent Deduction',1000.00,0),(101,22,1,'Base salary',40000.00,1),(102,22,3,'Income Tax',3208.40,0),(103,22,4,'SSS',1800.00,0),(104,22,4,'PhilHealth',1000.00,0),(105,22,4,'Pag-IBIG',800.00,0),(106,22,2,'Absent Deduction',1000.00,0),(107,23,1,'Base salary',40000.00,1),(108,23,3,'Income Tax',3208.40,0),(109,23,4,'SSS',1800.00,0),(110,23,4,'PhilHealth',1000.00,0),(111,23,4,'Pag-IBIG',800.00,0),(112,23,2,'Absent Deduction',1000.00,0);
+INSERT INTO `payslip_line_items` VALUES (1,1,1,'Base salary',25000.00,1),(2,1,2,'Attendance: Late Deduction',1411.34,0),(3,1,2,'Attendance: Undertime Deduction',1008.10,0),(4,1,3,'Income Tax',625.05,0),(5,1,4,'SSS',1125.00,0),(6,1,4,'PhilHealth',625.00,0),(7,1,4,'Pag-IBIG',500.00,0),(8,2,1,'Base salary',0.00,1),(9,2,4,'SSS',0.00,0),(10,2,4,'PhilHealth',0.00,0),(11,2,4,'Pag-IBIG',0.00,0),(12,3,1,'Base salary',12500.00,1),(13,3,2,'Attendance: Late Deduction',2832.14,0),(14,3,2,'Attendance: Undertime Deduction',1953.20,0),(15,3,4,'SSS',562.50,0),(16,3,4,'PhilHealth',312.50,0),(17,3,4,'Pag-IBIG',250.00,0),(18,4,1,'Base salary',0.00,1),(19,4,4,'SSS',0.00,0),(20,4,4,'PhilHealth',0.00,0),(21,4,4,'Pag-IBIG',0.00,0),(22,5,1,'Base salary',17500.00,1),(23,5,4,'SSS',787.50,0),(24,5,4,'PhilHealth',437.50,0),(25,5,4,'Pag-IBIG',350.00,0),(26,6,1,'Base salary',0.00,1),(27,6,4,'SSS',0.00,0),(28,6,4,'PhilHealth',0.00,0),(29,6,4,'Pag-IBIG',0.00,0),(30,7,1,'Base salary',1376.15,1),(31,7,2,'Attendance: Late Deduction',28.67,0),(32,7,4,'SSS',61.93,0),(33,7,4,'PhilHealth',34.40,0),(34,7,4,'Pag-IBIG',27.52,0),(35,8,1,'Base salary',1376.15,1),(36,9,1,'Base salary',1376.15,1),(37,9,2,'Attendance: Late Deduction',172.02,0),(38,10,1,'Base salary',1376.15,1),(39,10,2,'Attendance: Absence Deduction',1376.15,0),(40,11,1,'Base salary',1376.15,1),(41,11,2,'Attendance: Late Deduction',688.08,0),(42,12,1,'Base salary',1376.15,1),(43,12,2,'Attendance: Late Deduction',688.08,0),(44,13,1,'Base salary',1376.15,1),(45,13,2,'Attendance: Absence Deduction',1376.15,0),(46,14,1,'Base salary',1376.15,1),(47,14,2,'Attendance: Late Deduction',172.02,0),(48,15,1,'Base salary',1376.15,1),(49,15,2,'Attendance: Late Deduction',86.01,0);
 /*!40000 ALTER TABLE `payslip_line_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1113,7 +1277,7 @@ CREATE TABLE `payslips` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_payslip` (`pay_run_id`,`employee_id`),
   KEY `idx_ps_run` (`pay_run_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1122,7 +1286,7 @@ CREATE TABLE `payslips` (
 
 LOCK TABLES `payslips` WRITE;
 /*!40000 ALTER TABLE `payslips` DISABLE KEYS */;
-INSERT INTO `payslips` VALUES (1,1,1,0.00,0.00,0.00,'PHP',1,'2026-05-19 01:46:51','2026-05-19 01:46:51',NULL),(2,1,2,0.00,0.00,0.00,'PHP',1,'2026-05-19 01:46:51','2026-05-19 01:46:51',NULL),(3,1,3,0.00,0.00,0.00,'PHP',1,'2026-05-19 01:46:51','2026-05-19 01:46:51',NULL),(4,1,4,0.00,0.00,0.00,'PHP',1,'2026-05-19 01:46:51','2026-05-19 01:46:51',NULL),(5,2,1,15000.00,450.00,14550.00,'PHP',1,'2026-05-19 01:47:18','2026-05-19 01:47:18',NULL),(6,2,2,2400.00,72.00,2328.00,'PHP',1,'2026-05-19 01:47:18','2026-05-19 01:47:18',NULL),(7,2,3,12500.00,375.00,12125.00,'PHP',1,'2026-05-19 01:47:18','2026-05-19 01:47:18',NULL),(8,2,4,15000.00,0.00,15000.00,'PHP',1,'2026-05-19 01:47:18','2026-05-19 01:47:18',NULL),(9,3,1,15000.00,450.00,14550.00,'PHP',1,'2026-05-19 02:27:35','2026-05-19 02:27:35',NULL),(10,3,2,2400.00,72.00,2328.00,'PHP',1,'2026-05-19 02:27:35','2026-05-19 02:27:35',NULL),(11,3,3,13282.10,2302.10,10980.00,'PHP',1,'2026-05-19 02:27:35','2026-05-19 02:27:35',NULL),(12,3,4,15000.00,0.00,15000.00,'PHP',1,'2026-05-19 02:27:35','2026-05-19 02:27:35',NULL),(13,4,3,18594.90,4360.42,14234.48,'PHP',1,'2026-05-19 03:48:58','2026-05-19 03:48:58',NULL),(14,5,1,80000.00,20075.05,59924.95,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(15,5,2,28500.00,2565.00,25935.00,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(16,5,3,62857.14,14436.97,48420.17,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(17,5,4,75897.54,29289.93,46607.61,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(18,5,5,31428.57,5417.91,26010.66,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(19,5,6,31428.57,5417.91,26010.66,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(20,5,7,31428.57,5417.91,26010.66,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(21,5,8,31428.57,5417.91,26010.66,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(22,5,9,40000.00,7808.40,32191.60,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL),(23,5,10,40000.00,7808.40,32191.60,'PHP',1,'2026-05-19 05:10:37','2026-05-19 05:10:37',NULL);
+INSERT INTO `payslips` VALUES (1,1,1,25000.00,5294.49,19705.51,'PHP',1,'2026-05-19 09:57:29','2026-05-19 09:57:30',NULL),(2,1,2,0.00,0.00,0.00,'PHP',1,'2026-05-19 09:57:30','2026-05-19 09:57:30',NULL),(3,2,1,12500.00,5910.34,6589.66,'PHP',1,'2026-05-20 01:50:42','2026-05-20 01:50:42',NULL),(4,2,2,0.00,0.00,0.00,'PHP',1,'2026-05-20 01:50:42','2026-05-20 01:50:42',NULL),(5,2,3,17500.00,1575.00,15925.00,'PHP',1,'2026-05-20 01:50:42','2026-05-20 01:50:42',NULL),(6,3,6,0.00,0.00,0.00,'PHP',2,'2026-05-20 05:46:46','2026-05-20 05:47:00',NULL),(7,4,6,1376.15,152.52,1223.63,'PHP',1,'2026-05-20 06:39:34','2026-05-20 06:39:34',NULL),(8,5,6,1376.15,0.00,1376.15,'PHP',1,'2026-05-20 06:45:27','2026-05-20 06:45:27',NULL),(9,6,6,1376.15,172.02,1204.13,'PHP',1,'2026-05-20 06:47:57','2026-05-20 06:47:57',NULL),(10,7,6,1376.15,1376.15,0.00,'PHP',1,'2026-05-20 06:48:33','2026-05-20 06:48:33',NULL),(11,8,6,1376.15,688.08,688.07,'PHP',1,'2026-05-20 06:49:01','2026-05-20 06:49:01',NULL),(12,9,6,1376.15,688.08,688.07,'PHP',1,'2026-05-20 06:49:18','2026-05-20 06:49:18',NULL),(13,10,6,1376.15,1376.15,0.00,'PHP',1,'2026-05-20 06:55:13','2026-05-20 06:55:13',NULL),(14,11,6,1376.15,172.02,1204.13,'PHP',1,'2026-05-20 07:08:26','2026-05-20 07:08:26',NULL),(15,12,6,1376.15,86.01,1290.14,'PHP',1,'2026-05-20 07:19:12','2026-05-20 07:19:13',NULL);
 /*!40000 ALTER TABLE `payslips` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1205,7 +1369,7 @@ CREATE TABLE `positions` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1214,8 +1378,40 @@ CREATE TABLE `positions` (
 
 LOCK TABLES `positions` WRITE;
 /*!40000 ALTER TABLE `positions` DISABLE KEYS */;
-INSERT INTO `positions` VALUES (1,'HR Manager','Manager',1,50000.00,90000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(2,'Operations Supervisor','Manager',2,40000.00,70000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(3,'Customer Support Supervisor','Manager',2,40000.00,70000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(4,'Technical Lead','Lead',3,45000.00,80000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(5,'Operations Associate','Junior',2,20000.00,35000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(6,'Support Associate','Junior',2,20000.00,35000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27'),(7,'Software Engineer','Junior',3,25000.00,45000.00,'2026-05-19 04:35:27','2026-05-19 04:35:27');
+INSERT INTO `positions` VALUES (1,'Junior Software Developer','Junior',4,25000.00,30000.00,'2026-05-19 08:09:15','2026-05-19 08:09:15'),(2,'Hiring Manager','Senior',2,30000.00,40000.00,'2026-05-19 08:09:38','2026-05-19 08:09:38'),(3,'Hiring Staff','Associate',3,25000.00,30000.00,'2026-05-19 08:10:05','2026-05-19 08:10:05');
 /*!40000 ALTER TABLE `positions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `profile_update_requests`
+--
+
+DROP TABLE IF EXISTS `profile_update_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `profile_update_requests` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `employee_id` bigint unsigned NOT NULL,
+  `requested_by` bigint unsigned NOT NULL,
+  `requested_changes` json NOT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '1=pending, 2=approved, 3=rejected',
+  `remarks` text COLLATE utf8mb4_unicode_ci,
+  `reviewed_by` bigint unsigned DEFAULT NULL,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `profile_update_requests`
+--
+
+LOCK TABLES `profile_update_requests` WRITE;
+/*!40000 ALTER TABLE `profile_update_requests` DISABLE KEYS */;
+/*!40000 ALTER TABLE `profile_update_requests` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1366,7 +1562,7 @@ CREATE TABLE `salary_records` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1375,7 +1571,7 @@ CREATE TABLE `salary_records` (
 
 LOCK TABLES `salary_records` WRITE;
 /*!40000 ALTER TABLE `salary_records` DISABLE KEYS */;
-INSERT INTO `salary_records` VALUES (1,1,70000.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2020-01-15',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(2,2,55000.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2021-06-10','2026-05-18','Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 05:09:58'),(3,3,55000.00,'PHP',4,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-19',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 05:07:41'),(4,4,62500.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2021-06-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(5,5,27500.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(6,6,27500.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(7,7,27500.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:28','2026-05-19 04:35:28'),(8,8,27500.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:29','2026-05-19 04:35:29'),(9,9,35000.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:29','2026-05-19 04:35:29'),(10,10,35000.00,'PHP',4,21.8000,NULL,NULL,NULL,NULL,NULL,'2023-01-10',NULL,'Initial Salary',NULL,NULL,'2026-05-19 04:35:29','2026-05-19 04:35:29'),(11,2,57000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-19',NULL,NULL,NULL,1,'2026-05-19 05:09:58','2026-05-19 05:09:58');
+INSERT INTO `salary_records` VALUES (1,1,25000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-19',NULL,NULL,NULL,1,'2026-05-19 09:57:15','2026-05-19 09:57:15'),(2,3,25000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-19','2026-05-19',NULL,NULL,1,'2026-05-20 01:44:06','2026-05-20 01:48:15'),(3,3,27000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-20','2026-05-19',NULL,NULL,1,'2026-05-20 01:44:31','2026-05-20 01:48:15'),(4,3,35000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-20',NULL,NULL,NULL,1,'2026-05-20 01:48:15','2026-05-20 01:48:15'),(5,6,30000.00,'PHP',5,21.8000,1.2500,0.1000,1.0000,1.0000,1.0000,'2026-05-20',NULL,NULL,NULL,5,'2026-05-20 05:55:24','2026-05-20 05:55:24');
 /*!40000 ALTER TABLE `salary_records` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1405,7 +1601,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('dklv3OjuZp2sfijRSsBBwejEWegWevIlVJG5s42V',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJLeFg0UXF0Y1Z6R1JUWjRTQVFJNGRDUXVtT1hhMTBUR1ZnbXlhcTZKIiwidXJsIjp7ImludGVuZGVkIjoiaHR0cDpcL1wvMTI3LjAuMC4xOjgwMDBcL3RpbWVrZWVwaW5nIn0sIl9wcmV2aW91cyI6eyJ1cmwiOiJodHRwOlwvXC8xMjcuMC4wLjE6ODAwMFwvdGltZWtlZXBpbmciLCJyb3V0ZSI6InRpbWVrZWVwaW5nLmluZGV4In0sIl9mbGFzaCI6eyJvbGQiOltdLCJuZXciOltdfSwibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiOjF9',1779168131);
+INSERT INTO `sessions` VALUES ('10xB2JQq3OkNwpxEjBqOPslWX17EApBBg4KJvWxW',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJ4R0g3TWh6V014T2tTT2RnaUM5b1RjZ21FQUZzOHlSckNhT056eFdJIiwiX2ZsYXNoIjp7Im9sZCI6W10sIm5ldyI6W119LCJfcHJldmlvdXMiOnsidXJsIjoiaHR0cDpcL1wvbG9jYWxob3N0OjgwMDBcL3NhbGFyaWVzXC9zZXR0aW5ncyIsInJvdXRlIjoic2FsYXJ5LnNldHRpbmdzIn0sImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjoxfQ==',1779263898),('8L9qGeW82FeNXBQbam2xXoMZ1kuCQ4XxR2gu1oAD',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJnV05xT2IzUFBBOEZyblNPRHBFQjJhNGsxWkEwdWRGUWdDSEx4a3RUIiwiX2ZsYXNoIjp7Im9sZCI6W10sIm5ldyI6W119LCJfcHJldmlvdXMiOnsidXJsIjoiaHR0cDpcL1wvMTI3LjAuMC4xOjgwMDBcL3NlbGYtc2VydmljZVwvcHJvZmlsZVwvMiIsInJvdXRlIjoic2VsZi1zZXJ2aWNlLnByb2ZpbGUifSwibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiOjF9',1779267788),('8yOBUPbwGs6mH6tvRqS8bnGxj9b8LpRlZEsZuQfg',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJCV3Q5cDF2Z0xuT3ZCWTJoanRreUpVUnRTR29xV1FTU3pBSzB2TlZpIiwidXJsIjp7ImludGVuZGVkIjoiaHR0cDpcL1wvMTI3LjAuMC4xOjgwMDBcL29yZ2FuaXphdGlvblwvdXNlcnMifSwiX3ByZXZpb3VzIjp7InVybCI6Imh0dHA6XC9cLzEyNy4wLjAuMTo4MDAwXC9sb2dpbiIsInJvdXRlIjoibG9naW4ifSwiX2ZsYXNoIjp7Im9sZCI6W10sIm5ldyI6W119LCJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI6MX0=',1779265152),('F2FONj7m0EFrTrntA2m0UR8qiNsCcPfmnfkeV836',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJHVE83cmJKbVppSmpER0pmODhWaG1yY3Mya1ZMeU1OS3NtUHRBODlYIiwiX2ZsYXNoIjp7Im9sZCI6W10sIm5ldyI6W119LCJfcHJldmlvdXMiOnsidXJsIjoiaHR0cDpcL1wvMTI3LjAuMC4xOjgwMDBcL2Rhc2hib2FyZCIsInJvdXRlIjoiZGFzaGJvYXJkIn0sImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjoxfQ==',1779265798),('t4WCAB8nQtAtYF4F5uonc8WunHJCURRr7vh1hIPO',5,'192.168.1.32','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','eyJfdG9rZW4iOiJMM0lGNW9yRjFlbVZZeGtNOVV3bEJuZDRTQlM1bTM3Vnc5VXUwQjJDIiwiX3ByZXZpb3VzIjp7InVybCI6Imh0dHA6XC9cLzE5Mi4xNjguMS4xMzo4MDAwXC9wYXlyb2xsIiwicm91dGUiOiJwYXlyb2xsLmluZGV4In0sIl9mbGFzaCI6eyJvbGQiOltdLCJuZXciOltdfSwicmVnaXN0cmF0aW9uIjpbXSwibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiOjV9',1779261560);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1422,8 +1618,12 @@ CREATE TABLE `shift_assignments` (
   `shift_id` int unsigned NOT NULL,
   `effective_from` date NOT NULL,
   `effective_to` date DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  PRIMARY KEY (`id`),
+  KEY `idx_sa_emp_effective` (`employee_id`,`effective_from`),
+  KEY `idx_sa_shift` (`shift_id`),
+  CONSTRAINT `shift_assignments_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `shift_assignments_shift_id_foreign` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1432,6 +1632,7 @@ CREATE TABLE `shift_assignments` (
 
 LOCK TABLES `shift_assignments` WRITE;
 /*!40000 ALTER TABLE `shift_assignments` DISABLE KEYS */;
+INSERT INTO `shift_assignments` VALUES (1,1,16,'2026-05-20',NULL),(2,1,11,'2026-05-20','2026-05-19'),(3,1,15,'2026-05-20',NULL),(4,2,18,'2026-05-20','2026-05-19'),(5,2,17,'2026-05-20','2026-05-19'),(6,2,17,'2026-05-20','2026-05-19'),(7,2,9,'2026-05-20','2026-05-19'),(8,2,17,'2026-05-20','2026-05-19'),(9,2,17,'2026-05-20',NULL),(10,2,19,'2026-05-20',NULL),(11,2,20,'2026-05-20',NULL),(12,6,21,'2026-05-20','2026-05-19'),(13,6,9,'2026-05-20','2026-05-19'),(14,6,9,'2026-05-20',NULL),(15,4,9,'2026-05-20','2026-05-19'),(16,4,22,'2026-05-20',NULL),(17,4,23,'2026-05-20',NULL),(18,6,24,'2026-05-20',NULL),(19,3,25,'2026-05-20',NULL);
 /*!40000 ALTER TABLE `shift_assignments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1445,14 +1646,20 @@ DROP TABLE IF EXISTS `shifts`;
 CREATE TABLE `shifts` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(80) NOT NULL,
+  `shift_order` int NOT NULL DEFAULT '1',
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
+  `crosses_midnight` tinyint(1) NOT NULL DEFAULT '0',
+  `shift_duration_minutes` int DEFAULT NULL,
   `break_minutes` int NOT NULL DEFAULT '60',
   `is_night_shift` tinyint NOT NULL DEFAULT '0',
-  `days_of_week` varchar(20) NOT NULL COMMENT 'e.g. Mon-Fri, CSV bitmask',
+  `is_flexible` tinyint(1) NOT NULL DEFAULT '0',
+  `flexible_hours` int DEFAULT '2',
+  `flexible_until_time` time DEFAULT NULL,
+  `days_of_week` varchar(255) NOT NULL,
   `is_active` tinyint NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1461,6 +1668,7 @@ CREATE TABLE `shifts` (
 
 LOCK TABLES `shifts` WRITE;
 /*!40000 ALTER TABLE `shifts` DISABLE KEYS */;
+INSERT INTO `shifts` VALUES (1,'Shift 22:00:00-07:00:00',1,'22:00:00','07:00:00',0,NULL,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(2,'Morning Shift (8-5)',1,'08:00:00','17:00:00',0,480,60,0,0,2,NULL,'\"Mon-Fri\"',1),(3,'8-4 (No Lunch)',2,'08:00:00','16:00:00',0,480,0,0,0,2,NULL,'\"Mon-Fri\"',1),(4,'9-6',3,'09:00:00','18:00:00',0,480,60,0,0,2,NULL,'\"Mon-Fri\"',1),(5,'10-7',4,'10:00:00','19:00:00',0,480,60,0,0,2,NULL,'\"Mon-Fri\"',1),(6,'11-8',5,'11:00:00','20:00:00',0,480,60,0,0,2,NULL,'\"Mon-Fri\"',1),(7,'Graveyard (10pm-7am)',6,'22:00:00','07:00:00',1,480,60,1,0,2,NULL,'\"Mon-Fri\"',1),(8,'Graveyard (11pm-8am)',7,'23:00:00','08:00:00',1,480,60,1,0,2,NULL,'\"Mon-Fri\"',1),(9,'Shift 09:00:00-18:00:00',1,'09:00:00','18:00:00',0,NULL,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(10,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,45,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(11,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,60,0,0,2,NULL,'[\"Sat\",\"Sun\"]',1),(12,'Shift 11:34 AM - 6:34 PM',1,'11:34:00','18:34:00',0,-420,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(13,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,45,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\"]',1),(14,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,540,45,0,0,2,NULL,'[\"Thu\",\"Fri\"]',1),(15,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,60,0,0,2,NULL,'[\"Fri\",\"Sat\",\"Sun\"]',1),(16,'Shift 10:00 PM - 7:00 AM',1,'22:00:00','07:00:00',1,540,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\"]',1),(17,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\"]',1),(18,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,540,60,0,0,2,NULL,'[\"Thu\",\"Fri\"]',1),(19,'Shift 8:00 AM - 4:00 PM',1,'08:00:00','16:00:00',0,-480,0,0,0,2,NULL,'[\"Thu\",\"Fri\",\"Sat\"]',1),(20,'Shift 3:00 PM - 6:00 PM',1,'15:00:00','18:00:00',0,-180,0,0,0,2,NULL,'[\"Sun\"]',1),(21,'Shift 9:00 AM - 6:00 AM',1,'09:00:00','06:00:00',1,-1260,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(22,'Shift 9:00 AM - 6:00 PM',1,'09:00:00','18:00:00',0,-540,60,0,1,2,'11:00:00','[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1),(23,'Shift 10:00 AM - 4:00 PM',1,'10:00:00','16:00:00',0,-360,60,0,0,2,NULL,'[\"Sat\"]',1),(24,'Shift 10:00 PM - 7:00 AM',1,'22:00:00','07:00:00',1,-540,60,1,0,2,NULL,'[\"Sat\"]',1),(25,'Shift 10:00 AM - 4:00 AM',1,'10:00:00','04:00:00',1,-1080,60,0,0,2,NULL,'[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]',1);
 /*!40000 ALTER TABLE `shifts` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1480,7 +1688,7 @@ CREATE TABLE `supervisor_assignments` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_sv_date` (`supervisor_id`,`date`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1489,7 +1697,6 @@ CREATE TABLE `supervisor_assignments` (
 
 LOCK TABLES `supervisor_assignments` WRITE;
 /*!40000 ALTER TABLE `supervisor_assignments` DISABLE KEYS */;
-INSERT INTO `supervisor_assignments` VALUES (1,2,'Manila Zoo','2026-05-18','2026-05-18 20:35:29','2026-05-18 20:35:29'),(2,2,'Manila Zoo','2026-05-19','2026-05-18 20:35:29','2026-05-18 20:35:29'),(3,2,'SM','2026-05-20','2026-05-18 20:35:29','2026-05-18 20:35:29'),(4,2,'Manila Zoo','2026-05-21','2026-05-18 20:35:29','2026-05-18 20:35:29'),(5,2,'Manila Zoo','2026-05-22','2026-05-18 20:35:29','2026-05-18 20:35:29'),(6,3,'Robinsons Mall','2026-05-18','2026-05-18 20:35:29','2026-05-18 20:35:29'),(7,3,'Robinsons Mall','2026-05-19','2026-05-18 20:35:29','2026-05-18 20:35:29'),(8,3,'SM','2026-05-20','2026-05-18 20:35:29','2026-05-18 20:35:29'),(9,3,'Robinsons Mall','2026-05-21','2026-05-18 20:35:29','2026-05-18 20:35:29'),(10,3,'Robinsons Mall','2026-05-22','2026-05-18 20:35:29','2026-05-18 20:35:29'),(11,4,'IT Park','2026-05-18','2026-05-18 20:35:29','2026-05-18 20:35:29'),(12,4,'IT Park','2026-05-19','2026-05-18 20:35:29','2026-05-18 20:35:29'),(13,4,'SM','2026-05-20','2026-05-18 20:35:29','2026-05-18 20:35:29'),(14,4,'IT Park','2026-05-21','2026-05-18 20:35:29','2026-05-18 20:35:29'),(15,4,'IT Park','2026-05-22','2026-05-18 20:35:29','2026-05-18 20:35:29');
 /*!40000 ALTER TABLE `supervisor_assignments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1526,6 +1733,38 @@ INSERT INTO `tax_brackets` VALUES (1,0.00,0.0000,'Exempt','₱20,833 and below',
 UNLOCK TABLES;
 
 --
+-- Table structure for table `temporary_assignments`
+--
+
+DROP TABLE IF EXISTS `temporary_assignments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `temporary_assignments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `temporary_role` tinyint NOT NULL,
+  `original_role` tinyint NOT NULL,
+  `from_date` datetime NOT NULL,
+  `to_date` datetime NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `temporary_assignments_user_id_index` (`user_id`),
+  KEY `temporary_assignments_user_active_to_idx` (`user_id`,`is_active`,`to_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `temporary_assignments`
+--
+
+LOCK TABLES `temporary_assignments` WRITE;
+/*!40000 ALTER TABLE `temporary_assignments` DISABLE KEYS */;
+/*!40000 ALTER TABLE `temporary_assignments` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `time_logs`
 --
 
@@ -1547,8 +1786,10 @@ CREATE TABLE `time_logs` (
   `total_hours` decimal(5,2) DEFAULT NULL COMMENT 'Computed after clock-out',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_tl_emp_date` (`employee_id`,`log_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_tl_emp_date` (`employee_id`,`log_date`),
+  KEY `idx_tl_emp_clockin` (`employee_id`,`clock_in`),
+  CONSTRAINT `time_logs_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1557,7 +1798,6 @@ CREATE TABLE `time_logs` (
 
 LOCK TABLES `time_logs` WRITE;
 /*!40000 ALTER TABLE `time_logs` DISABLE KEYS */;
-INSERT INTO `time_logs` VALUES (1,4,'2026-05-19','2026-05-19 07:55:00','2026-05-19 17:05:00','Manual',NULL,0,NULL,0,0,8.17,'2026-05-19 10:13:43'),(2,4,'2026-05-20','2026-05-20 08:37:00','2026-05-20 17:00:00','Manual',NULL,0,NULL,37,0,7.38,'2026-05-19 10:13:43'),(3,4,'2026-05-21','2026-05-21 00:00:00',NULL,'Manual',NULL,0,NULL,0,0,NULL,'2026-05-19 10:13:43'),(4,4,'2026-05-22','2026-05-22 07:58:00','2026-05-22 16:15:00','Manual',NULL,0,NULL,0,45,7.28,'2026-05-19 10:13:43'),(5,4,'2026-05-23','2026-05-23 08:00:00','2026-05-23 19:30:00','Manual',NULL,0,NULL,0,0,10.50,'2026-05-19 10:13:43'),(6,4,'2026-05-19','2026-05-19 07:55:00','2026-05-19 17:05:00','Manual',NULL,0,NULL,0,0,8.17,'2026-05-19 10:14:40'),(7,4,'2026-05-20','2026-05-20 08:37:00','2026-05-20 17:00:00','Manual',NULL,0,NULL,37,0,7.38,'2026-05-19 10:14:40'),(8,4,'2026-05-21','2026-05-21 00:00:00',NULL,'Manual',NULL,0,NULL,0,0,NULL,'2026-05-19 10:14:40'),(9,4,'2026-05-22','2026-05-22 07:58:00','2026-05-22 16:15:00','Manual',NULL,0,NULL,0,45,7.28,'2026-05-19 10:14:40'),(10,4,'2026-05-23','2026-05-23 08:00:00','2026-05-23 19:30:00','Manual',NULL,0,NULL,0,0,10.50,'2026-05-19 10:14:40');
 /*!40000 ALTER TABLE `time_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1613,6 +1853,7 @@ CREATE TABLE `users` (
   `remember_token` varchar(100) DEFAULT NULL,
   `employee_id` int unsigned DEFAULT NULL,
   `role` tinyint NOT NULL DEFAULT '4' COMMENT '1=Employee,2=Supervisor,3=OIC,4=HR',
+  `permissions` json DEFAULT NULL,
   `status` varchar(60) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1622,7 +1863,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1631,7 +1872,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Joefhanie Diaz','hr_admin','hr@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,1,4,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(2,'Andrei Dilag','sv_ops','sv1@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,2,2,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(3,'Ramon Valenzuela','sv_support','sv2@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,3,2,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(4,'Maria Clara Santos','sv_tech','sv3@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,4,2,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(5,'Juan dela Cruz','emp_ops_a','emp1@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,5,1,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(6,'Princess Mendoza','emp_ops_b','emp2@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,6,1,'1','2026-05-19 04:35:28','2026-05-19 04:35:28',NULL,NULL,NULL),(7,'Jose Rizal Macaraeg','emp_support_a','emp3@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,7,1,'1','2026-05-19 04:35:29','2026-05-19 04:35:29',NULL,NULL,NULL),(8,'Arnel Pineda','emp_support_b','emp4@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,8,1,'1','2026-05-19 04:35:29','2026-05-19 04:35:29',NULL,NULL,NULL),(9,'Gloc Nine Alimario','emp_tech_a','emp5@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,9,1,'1','2026-05-19 04:35:29','2026-05-19 04:35:29',NULL,NULL,NULL),(10,'Catriona Gray','emp_tech_b','emp6@example.com',NULL,'$2y$12$won3z.cl8IOzpUh5p3XybuDmEc/xXzVkPWLsvBX6NZVL.2mRh8cv6',NULL,10,1,'1','2026-05-19 04:35:29','2026-05-19 04:35:29',NULL,NULL,NULL);
+INSERT INTO `users` VALUES (1,'JM Junio Diaz','admin','admin@admin.com',NULL,'$2y$12$JqNVzMPy0HN2g03BF5ClP.1aWhuHHesL6QqjU2p4Gn0.Tp3yjIqMW',NULL,1,4,NULL,'2','2026-05-19 08:01:25','2026-05-19 08:10:34',NULL,NULL,NULL),(2,'Kenneth L. Neri','ken','wufupuqihu@mailinator.com',NULL,'$2y$12$MTtt56sNAf9yKVLeWrnjQeBfcNHGYTY6mDXVj8Vxl/hMveqJOew.u',NULL,2,1,'[\"timekeeping.view\", \"timekeeping.manage\"]',NULL,'2026-05-19 09:30:44','2026-05-20 08:23:09',NULL,NULL,NULL),(3,'Hiroko B. Norman','HN003','pyzozyqy@mailinator.com',NULL,'$2y$12$/aBCXgSGoruukT9xN8Vnxu0wRNFy.0uAi8mjGrNTAUaGhQ6t9oaFu',NULL,3,4,NULL,NULL,'2026-05-20 01:54:06','2026-05-20 01:54:06',NULL,NULL,NULL),(4,'Test Middle Admin','admin_test','admin_test@example.com',NULL,'$2y$12$E7PawwwxWMlNcAo7AhtPR.z7Sw690thl.bQqAsRuNknCZnFJZjDgC',NULL,4,4,NULL,'2','2026-05-20 02:12:39','2026-05-20 02:12:39',NULL,NULL,NULL),(5,'luwi da tester','luwi','luwi@email.com',NULL,'$2y$12$yCoLvOOjseDfLhMSOFkcmeLz0mNG9fd/nRCu9N./g.0fUMjUS6exq','Zr79CH6w86dOdC7GwMZRdJnK1SB44pRIXXrw1ZowZHTpCsUzrAZJ8weyItrl',5,2,'[\"employees.view\", \"employees.manage\", \"timekeeping.view\", \"timekeeping.manage\", \"leaves.view\", \"leaves.manage\", \"reports.view\"]','2','2026-05-20 05:24:16','2026-05-20 08:31:20',NULL,NULL,NULL),(6,'luwiemployee','luwiemployee','fekyd@mailinator.com',NULL,'$2y$12$pRyEf/gKaRGaqMEdVbIUzOLqUUQdoC3Osg3q2Xwu.LWEAR15YFKCm',NULL,6,1,NULL,'2','2026-05-20 05:40:31','2026-05-20 05:40:31',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1679,4 +1920,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-19 13:23:46
+-- Dump completed on 2026-05-20 17:03:43
