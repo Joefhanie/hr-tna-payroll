@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
 use Illuminate\Support\Facades\Route;
@@ -35,10 +36,11 @@ Route::middleware('auth')->group(function () {
     Route::view('/onboarding', 'onboarding')->name('onboarding');
     Route::view('/leave', 'leave')->name('leave');
     Route::view('/benefits', 'benefits')->name('benefits');
-    Route::view('/self-service', 'self-service')->name('self-service');
-    Route::get('/self-service/profile/{id}', function($id) {
-        return view('self-service.profile');
-    })->name('self-service.profile');
+    Route::get('/self-service', [SelfServiceController::class, 'index'])->name('self-service');
+    Route::get('/self-service/profile/{employee}', [SelfServiceController::class, 'profile'])->name('self-service.profile');
+    Route::post('/self-service/profile/{employee}/leave-requests', [SelfServiceController::class, 'storeLeaveRequest'])->name('self-service.leave-requests.store');
+    Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
+    Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
     Route::redirect('/payroll', '/payroll/plotting-payment');
     Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
     Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');

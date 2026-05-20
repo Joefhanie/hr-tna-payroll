@@ -13,13 +13,16 @@ class Leave extends Model
     protected $table = 'leave_requests';
 
     protected $fillable = [
-        'user_id',
-        'type',
+        'employee_id',
+        'leave_type_id',
         'start_date',
         'end_date',
+        'days_requested',
         'status',
         'reason',
         'approved_by',
+        'approved_at',
+        'rejection_note',
     ];
 
     protected $casts = [
@@ -30,9 +33,9 @@ class Leave extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function user(): BelongsTo
+    public function employee(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Employee::class);
     }
 
     public function approver(): BelongsTo

@@ -18,20 +18,40 @@ class RegistrationTest extends TestCase
 
     public function test_users_can_register_with_a_hashed_password(): void
     {
-        $response = $this->post('/register', [
-            'name' => 'Jane Doe',
+        $credentialsResponse = $this->post('/register', [
+            'username' => 'jane.doe',
             'email' => 'jane@example.com',
             'password' => 'secret123',
             'password_confirmation' => 'secret123',
+            'role' => 4,
         ]);
 
-        $response->assertRedirect('/dashboard');
+        $credentialsResponse->assertRedirect('/register/profile');
+
+        $profileResponse = $this->post('/register/profile', [
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'phone' => '09123456789',
+            'city' => 'Pasig',
+            'country' => 'Philippines',
+        ]);
+
+        $profileResponse->assertRedirect('/register/employment');
+
+        $employmentResponse = $this->post('/register/employment', [
+            'employment_type' => 1,
+            'status' => 1,
+            'hire_date' => now()->toDateString(),
+        ]);
+
+        $employmentResponse->assertRedirect('/dashboard');
 
         $user = User::where('email', 'jane@example.com')->first();
 
         $this->assertNotNull($user);
         $this->assertTrue(Hash::check('secret123', $user->password));
         $this->assertNotSame('secret123', $user->password);
+        $this->assertSame('jane.doe', $user->username);
         $this->assertAuthenticatedAs($user);
     }
 }

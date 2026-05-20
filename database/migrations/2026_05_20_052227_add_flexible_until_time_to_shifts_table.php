@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             $table->time('flexible_until_time')->nullable()->after('flexible_hours');
         });
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             $table->dropColumn('flexible_until_time');
         });

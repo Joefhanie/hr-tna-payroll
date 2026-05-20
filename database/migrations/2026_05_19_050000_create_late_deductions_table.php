@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('late_deductions', function (Blueprint $table) {
-            $table->unsignedInteger('id')->autoIncrement()->primary();
+            $table->id();
             $table->unsignedInteger('time_log_id')->nullable()->comment('Reference to time_logs table');
             $table->unsignedInteger('employee_id')->nullable()->comment('Reference to employees table');
             $table->date('attendance_date')->comment('Date of the late attendance');
