@@ -19,12 +19,11 @@
 
     {{-- ── Toolbar ── --}}
     <div class="mb-6 flex items-center gap-3">
-        <div class="relative flex-1 max-w-xs bg-white rounded-lg">
-            <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input id="ta-search" type="search" placeholder="Search employees…"
-                   class="w-full rounded-lg border border-slate-200 py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" />
+        <div class="relative flex-1 max-w-xs bg-white">
+            <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="ta-search" type="search" placeholder="Search by name or code…"
+                   class="w-full rounded-lg border border-slate-300 py-2 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white"
+                   style="padding-left:2.25rem" />
         </div>
         <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,6 +74,7 @@
                         <th class="px-4 py-3">Dep</th>
                         <th class="px-4 py-3">From</th>
                         <th class="px-4 py-3">To</th>
+                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Temporary Role</th>
                         <th class="px-4 py-3">Actions</th>
                     </tr>
@@ -86,16 +86,14 @@
                             $roleLabels = [1 => 'Employee', 2 => 'Supervisor', 4 => 'HR'];
                             $roleColors = [
                                 1 => 'badge-blue',
-                                2 => 'badge-purple',
+                                2 => 'badge-gray',
                                 4 => 'badge-red',
                             ];
 
-                            $originalRoleLabel = $user ? ($roleLabels[$user->role] ?? 'N/A') : 'N/A';
-                            $originalRoleColor = $user ? ($roleColors[$user->role] ?? 'badge-gray') : 'badge-gray';
-
-                            // Get latest temporary assignment
+                            // Only consider active temporary assignments for table display/actions.
+                            // This ensures revoked assignments do not keep showing From/To/Temporary Role.
                             $temporaryAssignment = $user
-                                ? $user->temporaryAssignments->sortByDesc('to_date')->first()
+                                ? $user->temporaryAssignments->where('is_active', true)->sortByDesc('to_date')->first()
                                 : null;
 
                             $now = now();
@@ -110,30 +108,33 @@
                                 && $temporaryAssignment->from_date
                                 && $temporaryAssignment->from_date->isFuture();
 
-                            $isExpired = $temporaryAssignment
-                                && (!$temporaryAssignment->is_active || ($temporaryAssignment->to_date && $temporaryAssignment->to_date->isPast()));
-
                             if ($isCurrentTemporary) {
                                 $statusLabel = 'Active';
                                 $statusColor = 'badge-green';
-                                $tempRoleLabel = 'Temporary ' . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
+                                $tempRoleLabel = $roleLabels[$temporaryAssignment->temporary_role] ?? 'Role';
                                 $tempRoleColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
                             } elseif ($isScheduled) {
                                 $statusLabel = 'Scheduled';
                                 $statusColor = 'badge-blue';
-                                $tempRoleLabel = 'Temporary ' . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
+                                $tempRoleLabel = $roleLabels[$temporaryAssignment->temporary_role] ?? 'Role';
                                 $tempRoleColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
-                            } elseif ($isExpired) {
-                                $statusLabel = 'Expired';
-                                $statusColor = 'badge-gray';
-                                $tempRoleLabel = 'Temporary ' . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
-                                $tempRoleColor = 'badge-gray';
                             } else {
                                 $statusLabel = 'None';
                                 $statusColor = 'badge-gray';
                                 $tempRoleLabel = '—';
                                 $tempRoleColor = '';
                             }
+
+                            // Role column should represent original_role from temporary assignments
+                            // when available, with user role as fallback.
+                            $latestAssignmentForRole = $user
+                                ? $user->temporaryAssignments->sortByDesc('id')->first()
+                                : null;
+                            $baseRole = $latestAssignmentForRole
+                                ? $latestAssignmentForRole->original_role
+                                : ($user ? $user->role : null);
+                            $roleLabel = $baseRole ? ($roleLabels[$baseRole] ?? 'N/A') : 'N/A';
+                            $roleColor = $baseRole ? ($roleColors[$baseRole] ?? 'badge-gray') : 'badge-gray';
                         @endphp
                         <tr class="ta-row hover:bg-slate-50 transition">
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
@@ -167,6 +168,15 @@
                             <td class="px-4 py-3 text-xs text-slate-500 font-mono">
                                 @if ($temporaryAssignment)
                                     {{ $temporaryAssignment->to_date?->format('Y-m-d') }}
+                                @else
+                                    <span class="text-slate-400">—</span>
+                                @endif
+                            </td>
+
+                            {{-- Role --}}
+                            <td class="px-4 py-3">
+                                @if ($user)
+                                    <span class="badge {{ $roleColor }}">{{ $roleLabel }}</span>
                                 @else
                                     <span class="text-slate-400">—</span>
                                 @endif
@@ -216,13 +226,13 @@
                                         </button>
                                     @endif
 
-                                    {{-- Termination (Revoke / Cancel Assignment) --}}
+                                    {{-- Revoke Temporary Role Assignment --}}
                                     @if ($user && ($isCurrentTemporary || $isScheduled))
-                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to terminate/revoke this temporary role assignment?');">
+                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to revoke this temporary role assignment?');">
                                             @csrf
                                             <button type="submit"
                                                     class="text-red-600 hover:text-red-800 transition"
-                                                    title="Terminate / Revoke Temporary Role">
+                                                    title="Revoke Temporary Role">
                                                 <i class="ti ti-ban text-base"></i>
                                             </button>
                                         </form>

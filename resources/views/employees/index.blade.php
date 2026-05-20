@@ -55,26 +55,27 @@
     @endif
 
     <!-- Employees Table -->
-    <div class="card overflow-visible">
+    <div class="card overflow-hidden">
         @if ($employees->count() > 0)
             <table class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Code</th>
+                        <th class="px-4 py-3">ID</th>
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Position</th>
                         <th class="px-4 py-3">Department</th>
                         <th class="px-4 py-3">Hire Date</th>
                         <th class="px-4 py-3">Employment Type</th>
                         <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 overflow-visible">
+                <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
                         <tr>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
@@ -120,75 +121,36 @@
                                 @endphp
                                 <span class="badge {{ $badgeColor }}">{{ $statusLabel }}</span>
                             </td>
-                            <td class="px-4 py-3">
-                                @php
-                                    $roleLabels = [1 => 'Employee', 2 => 'Supervisor', 4 => 'HR'];
-                                    $roleColors = [
-                                        1 => 'badge-blue',
-                                        2 => 'badge-purple',
-                                        4 => 'badge-red',
-                                    ];
-                                    $userRole = $employee->user?->role;
-                                    $temporaryAssignment = $employee->user
-                                        ? \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
-                                            ->latest('to_date')
-                                            ->first()
-                                        : null;
 
-                                    $now = now();
-                                    $isCurrentTemporary = $temporaryAssignment
-                                        && $temporaryAssignment->is_active
-                                        && $temporaryAssignment->from_date
-                                        && $temporaryAssignment->to_date
-                                        && $now->between($temporaryAssignment->from_date, $temporaryAssignment->to_date);
-
-                                    if ($isCurrentTemporary) {
-                                        $roleLabel = 'Temporary ' . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
-                                        $roleBadgeColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
-                                    } else {
-                                        $roleLabel = $roleLabels[$userRole] ?? 'N/A';
-                                        $roleBadgeColor = $roleColors[$userRole] ?? 'badge-gray';
-                                    }
-                                @endphp
-                                <span class="badge {{ $roleBadgeColor }}">{{ $roleLabel }}</span>
-                                @if($isCurrentTemporary)
-                                    <div class="text-xs text-slate-500 mt-1">
-                                        Temporary from {{ $temporaryAssignment->from_date->format('M d, Y H:i') }} to {{ $temporaryAssignment->to_date->format('M d, Y H:i') }}
-                                    </div>
-                                @endif
-                            </td>
                             <td class="px-4 py-3 text-sm">
-                                <div class="relative">
-                                    <button type="button" onclick="toggleMenu(this)" class="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition" title="Actions">
-                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M12 8c1.1 0 2-0.9 2-2s-0.9-2-2-2-2 0.9-2 2 0.9 2 2 2zm0 2c-1.1 0-2 0.9-2 2s0.9 2 2 2 2-0.9 2-2-0.9-2-2-2zm0 6c-1.1 0-2 0.9-2 2s0.9 2 2 2 2-0.9 2-2-0.9-2-2-2z"/>
+                                <div class="flex items-center gap-2">
+                                    {{-- Eye (View Profile) --}}
+                                    <a href="{{ route('employees.show', $employee) }}"
+                                       class="text-slate-500 hover:text-slate-900 transition"
+                                       title="View Details">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                         </svg>
-                                    </button>
-                                    <div data-menu class="hidden absolute right-0 mt-1 w-48 rounded-lg border border-slate-200 bg-white shadow-lg z-50">
-                                        <a href="{{ route('employees.show', $employee) }}" class="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 first:rounded-t-lg transition">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                            </svg>
-                                            <span>View</span>
-                                        </a>
-                                        <a href="{{ route('employees.edit', $employee) }}" class="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                            <span>Edit</span>
-                                        </a>
-                                        <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="block" onsubmit="return confirm('Are you sure you want to delete this employee?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg transition text-left">
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                                <span>Delete</span>
-                                            </button>
-                                        </form>
-                                    </div>
+                                    </a>
+
+                                    {{-- Edit --}}
+                                    <a href="{{ route('employees.edit', $employee) }}"
+                                       class="text-blue-600 hover:text-blue-800 transition"
+                                       title="Edit Employee">
+                                        <i class="ti ti-edit text-base"></i>
+                                    </a>
+
+                                    {{-- Delete --}}
+                                    <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="text-red-600 hover:text-red-800 transition"
+                                                title="Delete Employee">
+                                            <i class="ti ti-trash text-base"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -205,32 +167,4 @@
         @endif
     </div>
 
-    <script>
-        function toggleMenu(button) {
-            const menu = button.nextElementSibling;
-            const allMenus = document.querySelectorAll('[data-menu]');
-
-            allMenus.forEach(m => {
-                if (m !== menu) {
-                    m.classList.add('hidden');
-                }
-            });
-
-            menu.classList.toggle('hidden');
-            event.stopPropagation();
-        }
-
-        // Close all menus when clicking outside
-        document.addEventListener('click', function(e) {
-            // Check if click is on a menu button or inside an open menu
-            const isMenuButton = e.target.closest('button[onclick*="toggleMenu"]');
-            const isInsideMenu = e.target.closest('[data-menu]');
-
-            // If clicking outside of menu button and menu, close all menus
-            if (!isMenuButton && !isInsideMenu) {
-                const menus = document.querySelectorAll('[data-menu]');
-                menus.forEach(menu => menu.classList.add('hidden'));
-            }
-        });
-    </script>
 </x-app-layout>

@@ -220,6 +220,11 @@ class EmployeeController extends Controller
         $fromDate = isset($validated['from_date']) ? \Carbon\Carbon::parse($validated['from_date']) : now();
         $toDate = isset($validated['to_date']) ? \Carbon\Carbon::parse($validated['to_date']) : now();
 
+        $latestAssignment = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
+            ->latest()
+            ->first();
+        $originalRole = $latestAssignment?->original_role ?? $employee->user->role;
+
         \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
             ->update(['is_active' => false]);
 
@@ -227,18 +232,11 @@ class EmployeeController extends Controller
         \App\Models\TemporaryAssignment::create([
             'user_id' => $employee->user->id,
             'temporary_role' => $validated['role'],
-            'original_role' => $employee->user->role,
+            'original_role' => $originalRole,
             'from_date' => $fromDate->toDateTimeString(),
             'to_date' => $toDate->toDateTimeString(),
             'is_active' => true,
         ]);
-
-        // Update user's role immediately if from_date is today or earlier
-        if ($fromDate->lessThanOrEqualTo(now())) {
-            $employee->user->update([
-                'role' => $validated['role'],
-            ]);
-        }
 
         $fromLabel = $fromDate->format('M d, Y' . ($fromDate->format('H:i') !== '00:00' ? ' H:i' : ''));
         $toLabel = $toDate->format('M d, Y' . ($toDate->format('H:i') !== '00:00' ? ' H:i' : ''));
@@ -248,7 +246,7 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Revoke / Terminate temporary access for an employee.
+     * Revoke temporary access for an employee.
      */
     public function revokeRole(Employee $employee): RedirectResponse
     {
@@ -261,15 +259,7 @@ class EmployeeController extends Controller
             ->where('is_active', true)
             ->update(['is_active' => false]);
 
-        // Revert user role to original role if they have a saved assignment
-        $latestAssignment = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)->latest()->first();
-        if ($latestAssignment) {
-            $employee->user->update([
-                'role' => $latestAssignment->original_role,
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Temporary role access revoked/terminated successfully.');
+        return redirect()->back()->with('success', 'Temporary role access revoked successfully.');
     }
 
     /**
@@ -277,11 +267,17 @@ class EmployeeController extends Controller
      */
     public function temporaryAccess(): \Illuminate\View\View
     {
-        $employees = Employee::whereHas('user.temporaryAssignments')
+        $employees = Employee::whereDoesntHave('user', function ($query) {
+                $query->where('role', 2);
+            })
             ->with(['department', 'position', 'user.temporaryAssignments'])
             ->paginate(15);
 
-        $allEmployees = Employee::with(['user'])->get();
+        $allEmployees = Employee::whereDoesntHave('user', function ($query) {
+                $query->where('role', 2);
+            })
+            ->with(['user'])
+            ->get();
 
         return view('employees.temporary-access', compact('employees', 'allEmployees'));
     }
