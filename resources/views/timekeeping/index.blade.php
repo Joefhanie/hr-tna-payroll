@@ -43,7 +43,15 @@
         </div>
     </div>
 
-    {{-- Tabs removed --}}
+    {{-- Tabs --}}
+    <div class="mb-4">
+        <div class="border-b border-slate-200">
+            <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="border-[#1a56db] text-[#1a56db] whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Calendar View</button>
+                <button type="button" onclick="switchTab('list')" id="tab-list" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">List View</button>
+            </nav>
+        </div>
+    </div>
 
     {{-- Calendar View --}}
     <div id="view-calendar" class="block mb-12">
@@ -187,6 +195,20 @@
     {{-- List View --}}
     <div id="view-list" class="hidden">
         <section class="card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Attendance Records</h3>
+                    <p class="text-xs text-slate-500">View and manage attendance logs for the selected date.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="list-date-selector" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Select Date:</label>
+                    <input type="date" 
+                           id="list-date-selector" 
+                           value="{{ $selectedDate }}" 
+                           onchange="window.location.href = '{{ route('timekeeping.index') }}?date=' + this.value + '&tab=list'" 
+                           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                </div>
+            </div>
             <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
@@ -215,7 +237,7 @@
                                         $timeOut->addDay();
                                     }
 
-                                    $totalMins = $timeOut->diffInMinutes($timeIn);
+                                    $totalMins = $timeOut->diffInMinutes($timeIn, true);
                                     $breakMins = $shift ? $shift->break_minutes : 0;
                                     $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
                                 }
@@ -254,21 +276,21 @@
                                         @if($shift)
                                             <div class="flex flex-wrap gap-1 mt-0.5">
                                                 @if($shift->crosses_midnight)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700" title="Cross-day Shift (Crosses Midnight)">
-                                                        <i class="ti ti-moon text-indigo-500"></i>
-                                                        Cross-day
+                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wide" title="Cross-day Shift (Crosses Midnight)">
+                                                        <i class="ti ti-moon"></i>
+                                                        CROSS-DAY
                                                     </span>
                                                 @endif
                                                 @if($shift->getWorkingHoursPerDay() <= 4.0)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Half Day Shift (4 hours or less)">
-                                                        <i class="ti ti-circle-half text-teal-500"></i>
-                                                        Half Day
+                                                    <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Half Day Shift (4 hours or less)">
+                                                        <i class="ti ti-circle-half"></i>
+                                                        HALF DAY
                                                     </span>
                                                 @endif
                                                 @if(!is_null($workedHours) && abs($workedHours) <= 4.0)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700" title="Worked 4 hours or less today">
-                                                        <i class="ti ti-clock-2 text-amber-500"></i>
-                                                        Worked Half Day
+                                                    <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked 4 hours or less today">
+                                                        <i class="ti ti-clock-2"></i>
+                                                        WORKED HALF DAY
                                                     </span>
                                                 @endif
                                             </div>
@@ -353,10 +375,9 @@
                                 </option>
                             @endforeach
                         </select>
-                        <p id="employee-shift-info" class="mt-1.5 text-[0.75rem] text-slate-500 hidden">
-                            <i class="ti ti-clock text-slate-400"></i>
-                            <span id="employee-shift-text"></span>
-                        </p>
+                        <div id="employee-shift-info" class="mt-1.5 text-[0.75rem] text-slate-500 hidden">
+                            <div id="employee-shift-text" class="space-y-1"></div>
+                        </div>
                     </div>
 
                     {{-- Date --}}
@@ -585,8 +606,8 @@
                     }
                     if (workedHours !== null && workedHours <= 4.0) {
                         shiftBadgesHtml += `
-                            <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
-                                <i class="ti ti-circle-half"></i> Half Day
+                            <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
+                                <i class="ti ti-circle-half"></i> HALF DAY
                             </span>
                         `;
                     }
@@ -608,23 +629,33 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            switchTab('calendar');
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTab = urlParams.get('tab') || 'calendar';
+            switchTab(activeTab);
         });
 
         @php
             $employeeShiftData = $users->mapWithKeys(function ($emp) {
-                $shift = $emp->currentShift?->shift;
-                if (!$shift) return [$emp->id => null];
+                $assignments = $emp->currentShifts;
+                if ($assignments->isEmpty()) return [$emp->id => []];
 
-                $start = \Carbon\Carbon::createFromFormat('H:i:s', $shift->start_time)->format('g:i A');
-                $end = \Carbon\Carbon::createFromFormat('H:i:s', $shift->end_time)->format('g:i A');
-                $days = is_array($shift->days_of_week) ? $shift->days_of_week : [];
+                $shiftsInfo = [];
+                foreach ($assignments as $assignment) {
+                    $shift = $assignment->shift;
+                    if (!$shift) continue;
 
-                return [$emp->id => [
-                    'name'  => $shift->name,
-                    'time'  => $start . ' – ' . $end,
-                    'days'  => $days,
-                ]];
+                    $start = \Carbon\Carbon::createFromFormat('H:i:s', $shift->start_time)->format('g:i A');
+                    $end = \Carbon\Carbon::createFromFormat('H:i:s', $shift->end_time)->format('g:i A');
+                    $days = is_array($shift->days_of_week) ? $shift->days_of_week : [];
+
+                    $shiftsInfo[] = [
+                        'name'  => $shift->name,
+                        'time'  => $start . ' – ' . $end,
+                        'days'  => $days,
+                    ];
+                }
+
+                return [$emp->id => $shiftsInfo];
             })->all();
         @endphp
 
@@ -641,16 +672,25 @@
             function updateShiftInfo() {
                 if (!userSelect || !shiftInfoEl || !shiftTextEl) return;
                 const empId = userSelect.value;
-                const shiftData = employeeShiftMap[empId];
+                const shifts = employeeShiftMap[empId];
 
-                if (shiftData) {
+                if (shifts && shifts.length > 0) {
                     const dayAbbr = { 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed', 'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun' };
-                    const daysStr = (shiftData.days || []).map(d => dayAbbr[d] || d).join(', ');
-                    shiftTextEl.textContent = `Shift: ${shiftData.time}` + (daysStr ? ` · ${daysStr}` : '');
+                    let html = '';
+                    shifts.forEach((shift) => {
+                        const daysStr = (shift.days || []).map(d => dayAbbr[d] || d).join(', ');
+                        html += `
+                            <div class="flex items-center gap-1.5 mt-1 text-slate-500">
+                                <i class="ti ti-clock text-slate-400"></i>
+                                <span>Shift: ${shift.time}${daysStr ? ` · ${daysStr}` : ''}</span>
+                            </div>
+                        `;
+                    });
+                    shiftTextEl.innerHTML = html;
                     shiftInfoEl.classList.remove('hidden');
                 } else {
                     shiftInfoEl.classList.add('hidden');
-                    shiftTextEl.textContent = '';
+                    shiftTextEl.innerHTML = '';
                 }
             }
 

@@ -13,13 +13,13 @@ use Illuminate\Support\Facades\Schema;
 
 class TimekeepingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $today = Carbon::now()->toDateString();
+        $selectedDate = $request->query('date', Carbon::now()->toDateString());
 
         $todayAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->where('attendance_date', $today)
+                ->where('attendance_date', $selectedDate)
                 ->orderBy('check_in')
                 ->get()
             : collect();
@@ -80,7 +80,7 @@ class TimekeepingController extends Controller
             : [];
 
         $employees = Schema::hasTable('employees')
-            ? Employee::with(['currentShift.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            ? Employee::with(['currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
             : collect();
 
         $calendarData = Schema::hasTable('attendance')
@@ -104,6 +104,7 @@ class TimekeepingController extends Controller
             'absentToday' => $absentToday,
             'activeAttendance' => $activeAttendance,
             'todayDate' => Carbon::now(),
+            'selectedDate' => $selectedDate,
             'recentAttendance' => $recentAttendance,
             'users' => $employees,
             'openAttendanceMap' => $openAttendanceMap,
