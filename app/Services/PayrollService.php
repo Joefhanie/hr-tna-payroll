@@ -9,6 +9,7 @@ use App\Models\Payslip;
 use App\Models\PayslipLineItem;
 use App\Models\GovernmentContribution;
 use App\Models\SalaryRecord;
+use App\Models\PayrollSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -228,9 +229,16 @@ class PayrollService
 
         $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
         $dailyRate = round($baseGross / $periodDays, 2);
-        $hourlyRate = round($dailyRate / 8, 2);
 
-        $global = \App\Models\PayrollSetting::first();
+        // Get active shift to determine scheduled daily working hours (default to 8)
+        $shift = $employee->getActiveShiftForDate($periodStart);
+        $workingHoursPerDay = 8.0;
+        if ($shift) {
+            $workingHoursPerDay = max(0.1, $shift->getWorkingHoursPerDay());
+        }
+        $hourlyRate = round($dailyRate / $workingHoursPerDay, 2);
+
+        $global = PayrollSetting::first();
 
         $overtimeMultiplier = $salaryRecord && $salaryRecord->attendance_overtime_multiplier !== null
             ? (float) $salaryRecord->attendance_overtime_multiplier
@@ -262,8 +270,18 @@ class PayrollService
 
         foreach ($attendanceRecords as $attendance) {
             $attendanceDate = Carbon::parse($attendance->attendance_date->toDateString());
-            $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
-            $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
+            
+            // Fetch shift dynamically per attendance date
+            $dayShift = $attendance->shift ?? $employee->getActiveShiftForDate($attendanceDate);
+            
+            if ($dayShift) {
+                $shiftStart = $dayShift->getShiftStartDateTime($attendanceDate);
+                $shiftEnd = $dayShift->getShiftEndDateTime($attendanceDate);
+            } else {
+                $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
+                $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
+            }
+
             $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
             $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
 

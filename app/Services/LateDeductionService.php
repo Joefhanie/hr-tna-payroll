@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\LateDeduction;
+use App\Models\Attendance;
 use App\Models\TimeLog;
 use App\Models\Shift;
 use App\Models\Employee;
@@ -42,8 +43,10 @@ class LateDeductionService
         // Get expected time (shift start)
         $expectedClockIn = $shift->getShiftStartDateTime($attendanceDate);
 
-        // Calculate minutes late
-        $lateMinutes = max(0, $actualClockIn->diffInMinutes($expectedClockIn));
+        // Calculate minutes late only when the clock-in is after the expected start time
+        $lateMinutes = $actualClockIn->greaterThan($expectedClockIn)
+            ? $expectedClockIn->diffInMinutes($actualClockIn)
+            : 0;
 
         // Determine deduction type and hours
         $deduction = $this->getDeductionForLateMinutes($lateMinutes);
@@ -123,6 +126,57 @@ class LateDeductionService
     }
 
     /**
+     * Record a late deduction from an attendance row.
+     *
+     * @param Attendance $attendance
+     * @param Shift $shift
+     * @param Carbon|string $clockInTime
+     * @param bool $createGraceRecord Whether to persist 0-deduction grace-period rows
+     * @return LateDeduction|null
+     */
+    public function recordAttendanceLateDeduction(Attendance $attendance, Shift $shift, $clockInTime, $createGraceRecord = false)
+    {
+        $employee = $attendance->user?->employee;
+
+        if (!$employee) {
+            return null;
+        }
+
+        $deductionData = $this->calculateLateDeduction(
+            $employee,
+            $shift,
+            $clockInTime,
+            $attendance->attendance_date
+        );
+
+        if ($deductionData['late_minutes'] === 0 && !$createGraceRecord) {
+            return null;
+        }
+
+        $lateDeduction = LateDeduction::updateOrCreate(
+            [
+                'employee_id' => $employee->id,
+                'attendance_date' => $attendance->attendance_date,
+                'time_log_id' => null,
+            ],
+            [
+                'expected_time' => $deductionData['expected_time'],
+                'actual_time' => $deductionData['actual_time'],
+                'late_minutes' => $deductionData['late_minutes'],
+                'deduction_type' => $deductionData['late_minutes'] <= 10 ? 'grace_period' : $deductionData['deduction_type'],
+                'deduction_hours' => $deductionData['late_minutes'] <= 10 ? 0 : $deductionData['deduction_hours'],
+                'hourly_rate' => $deductionData['hourly_rate'],
+                'deduction_amount' => $deductionData['late_minutes'] <= 10 ? 0 : $deductionData['deduction_amount'],
+                'policy_version' => '1.0',
+                'is_excused' => false,
+                'notes' => 'Auto-generated from manual attendance entry.',
+            ]
+        );
+
+        return $lateDeduction;
+    }
+
+    /**
      * Process attendance and create/update late deduction record
      *
      * @param Employee $employee
@@ -183,9 +237,15 @@ class LateDeductionService
         }
 
         // Convert salary to hourly rate
-        // Assuming salary is monthly and we use 22 working days, 8 hours/day
+        // Assuming salary is monthly and we use 22 working days
         $dailyRate = $salary->amount / 22;
-        $hourlyRate = $dailyRate / 8;
+
+        $shift = $this->getEmployeeShiftForDate($employee, $date);
+        $workingHoursPerDay = 8.0;
+        if ($shift) {
+            $workingHoursPerDay = max(0.1, $shift->getWorkingHoursPerDay());
+        }
+        $hourlyRate = $dailyRate / $workingHoursPerDay;
 
         return round($hourlyRate, 2);
     }

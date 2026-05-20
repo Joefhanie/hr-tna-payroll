@@ -30,6 +30,22 @@ class Shift extends Model
     ];
 
     /**
+     * Dynamic accessor for crosses_midnight to ensure correct night shift detection.
+     */
+    public function getCrossesMidnightAttribute($value)
+    {
+        return (bool) ($value || ($this->end_time && $this->start_time && $this->end_time < $this->start_time));
+    }
+
+    /**
+     * Dynamic accessor for shift_duration_minutes to ensure correct working hour computations.
+     */
+    public function getShiftDurationMinutesAttribute($value)
+    {
+        return ($value > 0) ? (int)$value : $this->calculateShiftDuration();
+    }
+
+    /**
      * Convert TIME field to minutes since midnight
      * Useful for comparison operations
      *
@@ -224,6 +240,39 @@ class Shift extends Model
         $duration = $minutes > 0 ? "{$hours}h {$minutes}m" : "{$hours}h";
 
         return "{$this->name} ({$start}-{$end}, {$duration})";
+    }
+
+    /**
+     * Get a friendly time range for display.
+     */
+    public function getDisplayTimeRange(): string
+    {
+        $start = Carbon::createFromFormat('H:i:s', $this->start_time)->format('g:i A');
+        $end = Carbon::createFromFormat('H:i:s', $this->end_time)->format('g:i A');
+
+        return "{$start} - {$end}";
+    }
+
+    /**
+     * Calculate the attendance status for a clock-in based on this shift.
+     */
+    public function getAttendanceStatusForClockIn($clockInTime, $gracePeriodMinutes = 10): array
+    {
+        $lateMinutes = $this->checkIfLate($clockInTime, $gracePeriodMinutes);
+
+        if ($lateMinutes >= 61) {
+            return ['key' => 3, 'label' => 'Absent', 'late_minutes' => $lateMinutes];
+        }
+
+        if ($lateMinutes >= 31) {
+            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
+        }
+
+        if ($lateMinutes >= 11) {
+            return ['key' => 2, 'label' => 'Late', 'late_minutes' => $lateMinutes];
+        }
+
+        return ['key' => 1, 'label' => 'Present', 'late_minutes' => $lateMinutes];
     }
 
     /**

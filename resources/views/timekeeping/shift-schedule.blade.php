@@ -51,20 +51,30 @@
 
                                 <!-- VIEW MODE -->
                                 <td class="whitespace-nowrap px-4 py-3 view-mode-{{ $employee->id }}">
-                                    <div class="shift-container">
+                                    <div class="shift-container flex flex-wrap gap-2 items-center">
                                         @if($employee->currentShift && $employee->currentShift->shift)
-                                            <span class="hidden text-slate-400 italic text-xs no-shift">Not assigned</span>
+                                            <span class="text-slate-400 italic text-xs no-shift" style="display: none;">Not assigned</span>
                                             <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge">
                                                 <i class="ti ti-clock text-indigo-500"></i>
                                                 <span class="time-display">
                                                     {{ \Carbon\Carbon::parse($employee->currentShift->shift->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($employee->currentShift->shift->end_time)->format('h:i A') }}
                                                 </span>
                                             </span>
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-100 break-badge">
+                                                <i class="ti ti-coffee text-amber-500"></i>
+                                                <span class="break-display">
+                                                    {{ $employee->currentShift->shift->break_minutes }}m break
+                                                </span>
+                                            </span>
                                         @else
                                             <span class="text-slate-400 italic text-xs no-shift">Not assigned</span>
-                                            <span class="hidden inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 border border-indigo-100 time-badge" style="display: none;">
                                                 <i class="ti ti-clock text-indigo-500"></i>
                                                 <span class="time-display"></span>
+                                            </span>
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-100 break-badge" style="display: none;">
+                                                <i class="ti ti-coffee text-amber-500"></i>
+                                                <span class="break-display"></span>
                                             </span>
                                         @endif
                                     </div>
@@ -92,10 +102,17 @@
 
                                 <!-- EDIT MODE -->
                                 <td class="whitespace-nowrap px-4 py-3 edit-mode-{{ $employee->id }} hidden">
-                                    <div class="flex items-center gap-2">
-                                        <input type="time" name="start_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->start_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
-                                        <span class="text-slate-400">-</span>
-                                        <input type="time" name="end_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->end_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <input type="time" name="start_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->start_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                            <span class="text-slate-400">-</span>
+                                            <input type="time" name="end_time_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? \Carbon\Carbon::parse($employee->currentShift->shift->end_time)->format('H:i') : '' }}" class="w-[105px] rounded border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[10px] text-slate-500 font-medium">Break:</span>
+                                            <input type="number" name="break_minutes_{{ $employee->id }}" value="{{ $employee->currentShift && $employee->currentShift->shift ? $employee->currentShift->shift->break_minutes : '60' }}" min="0" class="w-[60px] rounded border border-slate-300 px-2 py-0.5 text-xs focus:border-blue-500 focus:outline-none text-slate-700">
+                                            <span class="text-[10px] text-slate-500">min</span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-600 edit-mode-{{ $employee->id }} hidden">
@@ -168,6 +185,13 @@
                                 <input type="time" name="start_time" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700" required>
                                 <span class="text-slate-400 font-medium">to</span>
                                 <input type="time" name="end_time" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-sm font-medium text-slate-700">Break Duration</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="break_minutes" min="0" value="60" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700" required>
+                                <span class="text-xs font-semibold text-slate-500">minutes</span>
                             </div>
                         </div>
                         <div>
@@ -260,6 +284,7 @@
             const employeeId = document.getElementById('modal_employee_id').value;
             const startTime = document.querySelector('#addShiftModal input[name="start_time"]').value;
             const endTime = document.querySelector('#addShiftModal input[name="end_time"]').value;
+            const breakMinutes = document.querySelector('#addShiftModal input[name="break_minutes"]').value;
 
             // Get checked days
             const checkedDays = Array.from(document.querySelectorAll('#addShiftModal input[name="days[]"]:checked')).map(cb => cb.value);
@@ -267,9 +292,13 @@
             // Sync to the row's hidden inputs
             const rowStartTime = document.querySelector(`input[name="start_time_${employeeId}"]`);
             const rowEndTime = document.querySelector(`input[name="end_time_${employeeId}"]`);
+            const rowBreakMinutes = document.querySelector(`input[name="break_minutes_${employeeId}"]`);
             if (rowStartTime && rowEndTime) {
                 rowStartTime.value = startTime;
                 rowEndTime.value = endTime;
+            }
+            if (rowBreakMinutes) {
+                rowBreakMinutes.value = breakMinutes;
             }
 
             const rowCheckboxes = document.querySelectorAll(`input[name="days_${employeeId}[]"]`);
@@ -285,6 +314,7 @@
             showToast();
 
             document.querySelector('#addShiftModal form').reset();
+            document.querySelector('#addShiftModal input[name="break_minutes"]').value = '60'; // Reset to default
         }
 
         function showToast() {
@@ -309,6 +339,8 @@
             // Get inputs
             const startTimeInput = document.querySelector(`input[name="start_time_${id}"]`);
             const endTimeInput = document.querySelector(`input[name="end_time_${id}"]`);
+            const breakMinutesInput = document.querySelector(`input[name="break_minutes_${id}"]`);
+            const breakMinutes = breakMinutesInput ? breakMinutesInput.value : 60;
             const checkboxes = Array.from(document.querySelectorAll(`input[name="days_${id}[]"]:checked`));
             const checkedDays = checkboxes.map(cb => cb.value);
 
@@ -331,6 +363,7 @@
                     employee_id: id,
                     start_time: startTimeInput.value,
                     end_time: endTimeInput.value,
+                    break_minutes: breakMinutes,
                     days: checkedDays
                 })
             })
@@ -353,6 +386,13 @@
                             const timeBadge = document.querySelector(`.view-mode-${id} .time-badge`);
                             if (noShift) noShift.classList.add('hidden');
                             if (timeBadge) timeBadge.classList.remove('hidden');
+                        }
+
+                        const breakDisplay = document.querySelector(`.view-mode-${id} .break-display`);
+                        if (breakDisplay) {
+                            breakDisplay.innerText = `${breakMinutes}m break`;
+                            const breakBadge = document.querySelector(`.view-mode-${id} .break-badge`);
+                            if (breakBadge) breakBadge.classList.remove('hidden');
                         }
                     }
 
