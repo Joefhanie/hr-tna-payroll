@@ -151,6 +151,16 @@ class Employee extends Model
             ->latest('effective_from');
     }
 
+    public function currentShifts(): HasMany
+    {
+        return $this->hasMany(ShiftAssignment::class)
+            ->where('effective_from', '<=', now()->toDateString())
+            ->where(function ($query) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', now()->toDateString());
+            });
+    }
+
     public function shiftAssignments()
     {
         return $this->hasMany(ShiftAssignment::class);
@@ -159,8 +169,9 @@ class Employee extends Model
     public function getActiveShiftForDate($date): ?Shift
     {
         $date = $date instanceof Carbon ? $date : Carbon::parse($date);
+        $dayOfWeek = $date->format('D'); // 'Mon', 'Tue', etc.
 
-        $assignment = $this->shiftAssignments()
+        $assignments = $this->shiftAssignments()
             ->with('shift')
             ->where('effective_from', '<=', $date->toDateString())
             ->where(function ($query) use ($date) {
@@ -168,9 +179,17 @@ class Employee extends Model
                     ->orWhere('effective_to', '>=', $date->toDateString());
             })
             ->orderByDesc('effective_from')
-            ->first();
+            ->get();
 
-        return $assignment?->shift;
+        foreach ($assignments as $assignment) {
+            if ($assignment->shift && is_array($assignment->shift->days_of_week)) {
+                if (in_array($dayOfWeek, $assignment->shift->days_of_week)) {
+                    return $assignment->shift;
+                }
+            }
+        }
+
+        return $assignments->first()?->shift;
     }
 
     /**

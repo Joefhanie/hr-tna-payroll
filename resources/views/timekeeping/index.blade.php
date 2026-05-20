@@ -223,7 +223,9 @@
                                         $timeOut->addDay();
                                     }
 
-                                    $workedHours = round($timeOut->diffInMinutes($timeIn) / 60, 2);
+                                    $totalMins = $timeOut->diffInMinutes($timeIn);
+                                    $breakMins = $shift ? $shift->break_minutes : 0;
+                                    $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
                                 }
 
                                 $computedStatus = $attendance->status;
@@ -577,7 +579,8 @@
                                 workedMinutes += 24 * 60;
                             }
 
-                            workedHours = Math.max(0, workedMinutes) / 60;
+                            const breakMins = shift && shift.break_minutes ? parseInt(shift.break_minutes) : 0;
+                            workedHours = Math.max(0, workedMinutes - breakMins) / 60;
                         }
                     }
 

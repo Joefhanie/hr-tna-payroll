@@ -223,7 +223,7 @@ class TimekeepingController extends Controller
 
     public function shiftSchedule()
     {
-        $employees = \App\Models\Employee::with(['department', 'currentShift.shift'])->get();
+        $employees = \App\Models\Employee::with(['department', 'currentShifts.shift'])->get();
         return view('timekeeping.shift-schedule', compact('employees'));
     }
 
@@ -236,6 +236,7 @@ class TimekeepingController extends Controller
             'break_minutes' => 'nullable|integer|min:0',
             'days' => 'array',
             'days.*' => 'string',
+            'assignment_id' => 'nullable|integer|exists:shift_assignments,id',
         ]);
 
         $days = $validated['days'] ?? [];
@@ -276,9 +277,63 @@ class TimekeepingController extends Controller
             ]);
         }
 
+        if (!empty($validated['assignment_id'])) {
+            $assignmentToEdit = \App\Models\ShiftAssignment::find($validated['assignment_id']);
+            if ($assignmentToEdit && $assignmentToEdit->employee_id == $validated['employee_id']) {
+                // End the specific assignment being edited so it's fully replaced, avoiding overlap fragmentation
+                $assignmentToEdit->update(['effective_to' => now()->yesterday()->toDateString()]);
+            }
+        }
+
+        // Resolve overlaps with existing active shift assignments
+        $activeAssignments = \App\Models\ShiftAssignment::with('shift')
+            ->where('employee_id', $validated['employee_id'])
+            ->whereNull('effective_to')
+            ->get();
+
+        foreach ($activeAssignments as $assignment) {
+            $existingShift = $assignment->shift;
+            if (!$existingShift || !is_array($existingShift->days_of_week)) {
+                continue;
+            }
+
+            $overlap = array_intersect($existingShift->days_of_week, $days);
+            if (empty($overlap)) {
+                continue;
+            }
+
+            $remainingDays = array_values(array_diff($existingShift->days_of_week, $days));
+
+            if (empty($remainingDays)) {
+                $assignment->update(['effective_to' => now()->yesterday()->toDateString()]);
+            } else {
+                $newRemainingShift = \App\Models\Shift::where('start_time', $existingShift->start_time)
+                    ->where('end_time', $existingShift->end_time)
+                    ->where('break_minutes', $existingShift->break_minutes)
+                    ->where('days_of_week', json_encode($remainingDays))
+                    ->first();
+
+                if (!$newRemainingShift) {
+                    $newRemainingShift = \App\Models\Shift::create([
+                        'name' => 'Shift ' . date('g:i A', strtotime($existingShift->start_time)) . ' - ' . date('g:i A', strtotime($existingShift->end_time)),
+                        'start_time' => $existingShift->start_time,
+                        'end_time' => $existingShift->end_time,
+                        'break_minutes' => $existingShift->break_minutes,
+                        'is_night_shift' => $existingShift->is_night_shift,
+                        'crosses_midnight' => $existingShift->crosses_midnight,
+                        'shift_duration_minutes' => $existingShift->shift_duration_minutes,
+                        'days_of_week' => $remainingDays,
+                        'is_active' => true,
+                    ]);
+                }
+
+                $assignment->update(['shift_id' => $newRemainingShift->id]);
+            }
+        }
+
         \App\Models\ShiftAssignment::updateOrCreate(
-            ['employee_id' => $validated['employee_id'], 'effective_to' => null],
-            ['shift_id' => $shift->id, 'effective_from' => now()->toDateString()]
+            ['employee_id' => $validated['employee_id'], 'shift_id' => $shift->id, 'effective_to' => null],
+            ['effective_from' => now()->toDateString()]
         );
 
         return response()->json(['success' => true]);

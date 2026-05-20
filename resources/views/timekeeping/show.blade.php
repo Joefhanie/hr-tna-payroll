@@ -74,7 +74,9 @@
                                         $timeOut->addDay();
                                     }
 
-                                    $workedHours = round($timeOut->diffInMinutes($timeIn) / 60, 2);
+                                    $totalMins = $timeOut->diffInMinutes($timeIn);
+                                    $breakMins = $shift ? $shift->break_minutes : 0;
+                                    $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
                                 }
                             @endphp
                             <tr class="group hover:bg-slate-50/50 transition">
