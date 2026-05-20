@@ -67,9 +67,9 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="javascript:void(0)" onclick="alert('Permissions and Access Management module is coming soon!')" class="text-slate-600 hover:text-indigo-600 transition" title="Manage Permissions/Access">
+                                    <button type="button" onclick="openPermissionsModal({{ $user->id }}, '{{ addslashes($user->username) }}', {{ $user->role }}, {{ json_encode($user->permissions ?? null) }})" class="text-slate-600 hover:text-indigo-600 transition" title="Manage Permissions/Access">
                                         <i class="ti ti-shield-lock text-xl"></i>
-                                    </a>
+                                    </button>
                                     <div class="w-px h-4 bg-slate-200 mx-1"></div>
                                     <a href="{{ route('organization.users.edit', $user) }}" class="text-slate-600 hover:text-slate-900 transition" title="Edit User">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +241,291 @@
         </div>
     @endif
 
+    <!-- User Permissions Modal -->
+    <div id="userPermissionsModal" class="hidden fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
+        <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div>
+                    <h3 class="text-lg font-bold text-[#06112e]">Manage Access & Permissions</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Customize module permissions for user: <span id="perm_username_title" class="font-semibold text-slate-800"></span> <span id="perm_role_badge"></span></p>
+                </div>
+                <button type="button" onclick="closePermissionsModal()" class="text-slate-400 transition hover:text-slate-600">
+                    <i class="ti ti-x text-xl"></i>
+                </button>
+            </div>
+
+            <form id="userPermissionsForm" method="POST" action="" class="flex-1 overflow-y-auto px-6 py-4">
+                @csrf
+                @method('PUT')
+
+                <!-- HR Warning Banner -->
+                <div id="hr_warning_banner" class="hidden mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs text-blue-800 flex items-start gap-2.5">
+                    <i class="ti ti-info-circle text-lg mt-0.5 shrink-0"></i>
+                    <div>
+                        <span class="font-bold">Administrator Access:</span> This user is assigned the HR role and automatically has full, unrestricted access to all modules and actions across the system. Individual permissions cannot be disabled.
+                    </div>
+                </div>
+
+                <!-- Custom Override Info Banner -->
+                <div id="custom_override_banner" class="hidden mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+                    <i class="ti ti-alert-triangle text-lg mt-0.5 shrink-0"></i>
+                    <div>
+                        <span class="font-bold">Custom Role Overrides:</span> This user has customized permissions that override the default access level for their role. Checkboxes showing <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-[10px] font-bold text-amber-700">Override</span> indicate explicit configuration.
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Employees -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-users text-base text-indigo-500"></i> Employees
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Employees</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Allows viewing employee records and lists.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Manage Employees</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Create, edit, terminate, and grant roles.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Timekeeping -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-clock text-base text-indigo-500"></i> Timekeeping
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Attendance</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">View logs, shifts, schedules, and timesheets.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Manage Timekeeping</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Save shift schedules and manually log time.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Leave -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-calendar-event text-base text-indigo-500"></i> Leave
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Leaves</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">View leave calendar, requests, and balances.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Approve & Manage Leaves</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Approve, reject, or adjust leave requests.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Payroll -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-wallet text-base text-indigo-500"></i> Payroll & Salaries
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Payroll</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">View payslips, basic salary rates, deductions.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Manage Payroll</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Create pay runs, finalize payroll, edit settings.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-heart text-base text-indigo-500"></i> Benefits
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Benefits</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">View benefit enrollments and plans.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Manage Benefits</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Enroll employees, edit plans & allowances.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Settings & Reports -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-settings text-base text-indigo-500"></i> General settings
+                        </h4>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="reports.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View Reports</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Access dashboard analytics and snapshots.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2.5 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="settings.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Manage Settings</span>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">Update system variables, departments, positions.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-between items-center border-t border-slate-100 pt-4">
+                    <button type="button" id="btnRestoreDefaults" onclick="restoreRoleDefaults()" class="rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Restore Role Defaults</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closePermissionsModal()" class="rounded-lg border border-slate-200 bg-white px-4 py-1.5 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                        <button type="submit" id="btnSavePermissions" class="rounded-lg bg-[#1a56db] px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Permissions</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        let activeUserRole = null;
+        const roleDefaults = {
+            2: ['employees.view', 'timekeeping.view', 'timekeeping.manage', 'leaves.view', 'leaves.manage', 'reports.view'], // Supervisor
+            3: ['timekeeping.view', 'timekeeping.manage', 'leaves.view', 'leaves.manage'], // OIC
+            1: ['self-service.view'], // Employee
+            4: [] // HR gets everything via backend, no defaults needed
+        };
+
+        const roleLabels = {
+            1: 'Employee',
+            2: 'Supervisor',
+            3: 'OIC',
+            4: 'HR'
+        };
+
+        const roleBadgeClasses = {
+            1: 'bg-blue-100 text-blue-700',
+            2: 'bg-slate-100 text-slate-700',
+            3: 'bg-indigo-100 text-indigo-700',
+            4: 'bg-red-100 text-red-700'
+        };
+
+        function openPermissionsModal(userId, username, role, customPermissions) {
+            activeUserRole = role;
+            document.getElementById('perm_username_title').textContent = username;
+            
+            // Set Badge
+            const badgeEl = document.getElementById('perm_role_badge');
+            badgeEl.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ' + (roleBadgeClasses[role] || 'bg-slate-100 text-slate-700');
+            badgeEl.textContent = roleLabels[role] || 'Unknown';
+
+            // Set Form action
+            document.getElementById('userPermissionsForm').action = '/organization/users/' + userId + '/permissions';
+
+            // Show HR Warning or Custom Override Banner
+            const hrBanner = document.getElementById('hr_warning_banner');
+            const overrideBanner = document.getElementById('custom_override_banner');
+            const saveBtn = document.getElementById('btnSavePermissions');
+            const restoreBtn = document.getElementById('btnRestoreDefaults');
+
+            hrBanner.classList.add('hidden');
+            overrideBanner.classList.add('hidden');
+            
+            const checkboxes = document.querySelectorAll('.perm-checkbox');
+
+            if (role === 4) {
+                // HR
+                hrBanner.classList.remove('hidden');
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    cb.disabled = true;
+                });
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                restoreBtn.disabled = true;
+                restoreBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                // Not HR
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                restoreBtn.disabled = false;
+                restoreBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // If customPermissions is defined/active, show override banner
+                const hasCustom = customPermissions !== null && customPermissions !== undefined;
+                if (hasCustom) {
+                    overrideBanner.classList.remove('hidden');
+                }
+
+                // Check permissions
+                const activePerms = hasCustom ? customPermissions : (roleDefaults[role] || []);
+
+                checkboxes.forEach(cb => {
+                    cb.disabled = false;
+                    cb.checked = activePerms.includes(cb.value);
+                });
+            }
+
+            // Show Modal
+            const modal = document.getElementById('userPermissionsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closePermissionsModal() {
+            const modal = document.getElementById('userPermissionsModal');
+            modal.classList.replace('flex', 'hidden');
+        }
+
+        function restoreRoleDefaults() {
+            if (activeUserRole === 4) return;
+            const defaults = roleDefaults[activeUserRole] || [];
+            const checkboxes = document.querySelectorAll('.perm-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = defaults.includes(cb.value);
+            });
+            // Hide custom override banner temporarily until they save or if they click restore
+            document.getElementById('custom_override_banner').classList.add('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             function bindEmployeeToggle(checkboxId, selectorId, noticeId) {
                 const checkbox = document.getElementById(checkboxId);

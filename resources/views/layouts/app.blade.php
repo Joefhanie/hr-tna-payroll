@@ -53,7 +53,7 @@
       ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules'],
       ['label' => 'Salaries', 'group' => 'Modules', 'children' => [
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
-        ['url' => route('salary.settings'), 'label' => 'Tax & Deductions'],
+        ['url' => route('salary.settings'), 'label' => 'Salary Settings'],
       ]],
       ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules'],
       ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules'],

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'employee_id', 'role', 'status'])]
+#[Fillable(['name', 'username', 'email', 'password', 'employee_id', 'role', 'status', 'permissions'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -36,7 +36,48 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'role' => 'int',
+        'permissions' => 'array',
     ];
+
+    /**
+     * Check if user has a specific permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        // HR role (4) has all permissions by default
+        if ($this->role === 4) {
+            return true;
+        }
+
+        // If user has specific overrides defined in JSON, check those
+        if (is_array($this->permissions)) {
+            return in_array($permission, $this->permissions);
+        }
+
+        // Otherwise, fall back to role defaults:
+        $defaults = [
+            2 => [ // Supervisor
+                'employees.view',
+                'timekeeping.view',
+                'timekeeping.manage',
+                'leaves.view',
+                'leaves.manage',
+                'reports.view',
+            ],
+            3 => [ // OIC
+                'timekeeping.view',
+                'timekeeping.manage',
+                'leaves.view',
+                'leaves.manage',
+            ],
+            1 => [ // Employee
+                'self-service.view',
+            ],
+        ];
+
+        $rolePermissions = $defaults[$this->role] ?? [];
+        return in_array($permission, $rolePermissions);
+    }
 
     public function employee(): BelongsTo
     {

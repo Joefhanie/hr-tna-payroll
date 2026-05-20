@@ -163,6 +163,20 @@ class OrganizationController extends Controller
         return redirect()->route('organization.users.index')->with('success', 'User updated successfully.');
     }
 
+    public function updateUserPermissions(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string'],
+        ]);
+
+        $user->update([
+            'permissions' => $validated['permissions'] ?? [],
+        ]);
+
+        return redirect()->route('organization.users.index')->with('success', 'User permissions updated successfully.');
+    }
+
     /**
      * @param \App\Models\Employee|null $currentEmployee
      * @return \Illuminate\Support\Collection<int, \App\Models\Employee>

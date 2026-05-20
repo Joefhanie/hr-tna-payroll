@@ -4,7 +4,6 @@
 
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Salaries / Tax & Deductions</p>
             <h1 class="mt-1 text-2xl font-semibold text-slate-900">Payroll Rules Configuration</h1>
             <p class="mt-1 text-sm text-slate-500">Edit tax brackets, government contributions, and deduction rules.</p>
         </div>
