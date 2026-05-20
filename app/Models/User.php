@@ -44,6 +44,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the temporary assignments for the user.
+     */
+    public function temporaryAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TemporaryAssignment::class);
+    }
+
+    /**
      * Get a consistently formatted display name using middle initial.
      */
     public function getDisplayNameAttribute(): string

@@ -243,8 +243,47 @@ class EmployeeController extends Controller
         $fromLabel = $fromDate->format('M d, Y' . ($fromDate->format('H:i') !== '00:00' ? ' H:i' : ''));
         $toLabel = $toDate->format('M d, Y' . ($toDate->format('H:i') !== '00:00' ? ' H:i' : ''));
 
-        return redirect()->route('employees.index')
+        return redirect()->back()
             ->with('success', 'Temporary role access granted from ' . $fromLabel . ' to ' . $toLabel . '.');
+    }
+
+    /**
+     * Revoke / Terminate temporary access for an employee.
+     */
+    public function revokeRole(Employee $employee): RedirectResponse
+    {
+        if (!$employee->user) {
+            return redirect()->back()->with('error', 'Employee does not have a user account.');
+        }
+
+        // Deactivate all active or scheduled temporary assignments
+        \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        // Revert user role to original role if they have a saved assignment
+        $latestAssignment = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)->latest()->first();
+        if ($latestAssignment) {
+            $employee->user->update([
+                'role' => $latestAssignment->original_role,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Temporary role access revoked/terminated successfully.');
+    }
+
+    /**
+     * Display the temporary access management page.
+     */
+    public function temporaryAccess(): \Illuminate\View\View
+    {
+        $employees = Employee::whereHas('user.temporaryAssignments')
+            ->with(['department', 'position', 'user.temporaryAssignments'])
+            ->paginate(15);
+
+        $allEmployees = Employee::with(['user'])->get();
+
+        return view('employees.temporary-access', compact('employees', 'allEmployees'));
     }
 
     /**

@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot:title>Employee Management</x-slot:title>
     <x-slot:header>Employee Management</x-slot:header>
 
@@ -14,6 +14,8 @@
             <span>Add Employee</span>
         </a>
     </div>
+
+    {{-- Tabs removed --}}
 
     <div class="mb-6 flex items-center gap-3">
         <div class="relative flex-1 max-w-xs bg-white rounded-lg">
@@ -134,19 +136,14 @@
                                         : null;
 
                                     $now = now();
-                                    $isScheduledTemporary = $temporaryAssignment
-                                        && $temporaryAssignment->is_active
-                                        && $temporaryAssignment->from_date
-                                        && $temporaryAssignment->from_date->greaterThan($now);
                                     $isCurrentTemporary = $temporaryAssignment
                                         && $temporaryAssignment->is_active
                                         && $temporaryAssignment->from_date
                                         && $temporaryAssignment->to_date
                                         && $now->between($temporaryAssignment->from_date, $temporaryAssignment->to_date);
 
-                                    if ($isCurrentTemporary || $isScheduledTemporary) {
-                                        $prefix = $isScheduledTemporary ? 'Scheduled Temporary ' : 'Temporary ';
-                                        $roleLabel = $prefix . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
+                                    if ($isCurrentTemporary) {
+                                        $roleLabel = 'Temporary ' . ($roleLabels[$temporaryAssignment->temporary_role] ?? 'Role');
                                         $roleBadgeColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
                                     } else {
                                         $roleLabel = $roleLabels[$userRole] ?? 'N/A';
@@ -154,9 +151,9 @@
                                     }
                                 @endphp
                                 <span class="badge {{ $roleBadgeColor }}">{{ $roleLabel }}</span>
-                                @if($isCurrentTemporary || $isScheduledTemporary)
+                                @if($isCurrentTemporary)
                                     <div class="text-xs text-slate-500 mt-1">
-                                        {{ $isScheduledTemporary ? 'Scheduled' : 'Temporary' }} from {{ $temporaryAssignment->from_date->format('M d, Y H:i') }} to {{ $temporaryAssignment->to_date->format('M d, Y H:i') }}
+                                        Temporary from {{ $temporaryAssignment->from_date->format('M d, Y H:i') }} to {{ $temporaryAssignment->to_date->format('M d, Y H:i') }}
                                     </div>
                                 @endif
                             </td>
@@ -175,10 +172,6 @@
                                             </svg>
                                             <span>View</span>
                                         </a>
-                                        <button type="button" onclick="openRoleModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', {{ $employee->user?->role ?? 0 }});" class="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition text-left">
-                                            <i class="ti ti-shield-lock text-base"></i>
-                                            <span>Grant Role</span>
-                                        </button>
                                         <a href="{{ route('employees.edit', $employee) }}" class="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -212,104 +205,17 @@
         @endif
     </div>
 
-    <!-- No User Account Warning Modal -->
-    <div id="noUserWarningModal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-        <div class="w-full max-w-md rounded-lg bg-white shadow-lg">
-            <div class="border-b border-slate-200 px-6 py-4">
-                <h3 class="text-lg font-semibold text-slate-900">User Account Required</h3>
-            </div>
-            <div class="px-6 py-6">
-                <div class="mb-4 rounded-lg bg-yellow-50 p-4">
-                    <p class="text-sm text-slate-700">
-                        <span class="font-semibold">⚠️ Warning:</span> This employee does not have a user account yet. A user account is required to assign a role.
-                    </p>
-                </div>
-                <p class="text-sm text-slate-600 mb-6">
-                    Please create a user account for this employee first by visiting the Users page.
-                </p>
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeNoUserWarning()" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="redirectToUsers(currentEmployeeId, currentEmployeeName)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                        Go to Users Page
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Grant Role Modal -->
-    <div id="grantRoleModal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-        <div class="w-full max-w-md rounded-lg bg-white shadow-lg">
-            <div class="border-b border-slate-200 px-6 py-4">
-                <h3 class="text-lg font-semibold text-slate-900">Grant Role</h3>
-            </div>
-            <form method="POST" id="grantRoleForm" class="px-6 py-4">
-                @csrf
-                @method('PATCH')
-                <div class="mb-4">
-                    <label for="roleSelect" class="block text-sm font-medium text-slate-700 mb-2">Select Role</label>
-                    <select id="roleSelect" name="role" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        <option value="">Choose a role</option>
-                        <option value="1">Employee</option>
-                        <option value="2">Supervisor</option>
-                        <option value="4">HR</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Temporary Assignment</label>
-                    @can('assign-temporary-role-with-time')
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date & time)</label>
-                                <input id="fromDate" name="from_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date & time)</label>
-                                <input id="toDate" name="to_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            </div>
-                        </div>
-                        
-                    @else
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date)</label>
-                                <input id="fromDate" name="from_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date)</label>
-                                <input id="toDate" name="to_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            </div>
-                        </div>
-                        
-                    @endcan
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeRoleModal()" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        Cancel
-                    </button>
-                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                        Grant Role
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
-        let currentEmployeeId = null;
-
         function toggleMenu(button) {
             const menu = button.nextElementSibling;
             const allMenus = document.querySelectorAll('[data-menu]');
-            
+
             allMenus.forEach(m => {
                 if (m !== menu) {
                     m.classList.add('hidden');
                 }
             });
-            
+
             menu.classList.toggle('hidden');
             event.stopPropagation();
         }
@@ -319,58 +225,11 @@
             // Check if click is on a menu button or inside an open menu
             const isMenuButton = e.target.closest('button[onclick*="toggleMenu"]');
             const isInsideMenu = e.target.closest('[data-menu]');
-            
+
             // If clicking outside of menu button and menu, close all menus
             if (!isMenuButton && !isInsideMenu) {
                 const menus = document.querySelectorAll('[data-menu]');
                 menus.forEach(menu => menu.classList.add('hidden'));
-            }
-        });
-
-        let currentEmployeeName = null;
-
-        function openRoleModal(employeeId, employeeName, currentRole) {
-            currentEmployeeId = employeeId;
-            currentEmployeeName = employeeName;
-            
-            // Check if user account exists (currentRole will be 0 if no user account)
-            if (currentRole === 0) {
-                document.getElementById('noUserWarningModal').classList.remove('hidden');
-                return;
-            }
-            
-            document.getElementById('grantRoleForm').action = `/employees/${employeeId}/grant-role`;
-            if (currentRole) {
-                document.getElementById('roleSelect').value = currentRole;
-            }
-            document.getElementById('grantRoleModal').classList.remove('hidden');
-        }
-
-        function closeRoleModal() {
-            document.getElementById('grantRoleModal').classList.add('hidden');
-            currentEmployeeId = null;
-        }
-
-        function closeNoUserWarning() {
-            document.getElementById('noUserWarningModal').classList.add('hidden');
-            currentEmployeeId = null;
-        }
-
-        function redirectToUsers(employeeId, employeeName) {
-            let url = '/organization/users?action=create';
-            if (employeeId) {
-                url += `&employee_id=${employeeId}`;
-            }
-            if (employeeName) {
-                url += `&employee_name=${encodeURIComponent(employeeName)}`;
-            }
-            window.location.href = url;
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('grantRoleModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeRoleModal();
             }
         });
     </script>

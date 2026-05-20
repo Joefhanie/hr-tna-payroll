@@ -71,9 +71,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/organization/users', [OrganizationController::class, 'storeUser'])->name('organization.users.store');
     Route::put('/organization/users/{user}', [OrganizationController::class, 'updateUser'])->name('organization.users.update');
 
+    // Organization settings (company details and logo)
+    Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
+    Route::post('/organization/settings', [OrganizationController::class, 'updateSettings'])->name('organization.settings.update');
+
     // Employee Management
     Route::resource('employees', EmployeeController::class);
+    Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
     Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
+    Route::post('/employees/{employee}/revoke-role', [EmployeeController::class, 'revokeRole'])->name('employees.revoke-role');
 
     // Salary Management
     Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');

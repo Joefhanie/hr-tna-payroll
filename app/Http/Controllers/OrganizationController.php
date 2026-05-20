@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\CompanySetting;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
@@ -343,5 +344,54 @@ class OrganizationController extends Controller
         $position->delete();
 
         return redirect()->route('organization.departments.index')->with('success', 'Position deleted successfully.');
+    }
+
+    /**
+     * Show company settings (singleton row) for editing.
+     */
+    public function settings(): View
+    {
+        $settings = CompanySetting::current();
+
+        return view('organization.settings', compact('settings'));
+    }
+
+    /**
+     * Update company settings and optionally upload logo files.
+     */
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $settings = CompanySetting::current();
+
+        $validated = $request->validate([
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'country' => ['nullable', 'string', 'max:120'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'tin' => ['nullable', 'string', 'max:60'],
+            'industry' => ['nullable', 'string', 'max:120'],
+            'logo' => ['nullable', 'image', 'max:10240'],
+            'logo_dark' => ['nullable', 'image', 'max:10240'],
+        ]);
+
+        $settings->fill($validated);
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('company', 'public');
+            $settings->logo_path = $path;
+        }
+
+        if ($request->hasFile('logo_dark')) {
+            $path = $request->file('logo_dark')->store('company', 'public');
+            $settings->logo_dark_path = $path;
+        }
+
+        $settings->save();
+
+        return redirect()->route('organization.settings')->with('success', 'Company settings updated successfully.');
     }
 }

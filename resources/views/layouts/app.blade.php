@@ -43,7 +43,7 @@
       ['url' => route('dashboard'),     'label' => 'Dashboard',     'group' => 'Overview'],
       ['label' => 'Employees', 'group' => 'Modules', 'children' => [
         ['url' => route('employees.index'),           'label' => 'Employee List'],
-        ['url' => route('employees.work-assignment'), 'label' => 'Work Assignment'],
+        ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access'],
       ]],
       ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules'],
       ['label' => 'Timekeeping', 'group' => 'Modules', 'children' => [
