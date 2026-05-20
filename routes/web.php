@@ -77,7 +77,9 @@ Route::middleware('auth')->group(function () {
 
     // Employee Management
     Route::resource('employees', EmployeeController::class);
+    Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
     Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
+    Route::post('/employees/{employee}/revoke-role', [EmployeeController::class, 'revokeRole'])->name('employees.revoke-role');
 
     // Salary Management
     Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');

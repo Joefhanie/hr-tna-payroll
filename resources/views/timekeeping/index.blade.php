@@ -43,15 +43,7 @@
         </div>
     </div>
 
-    {{-- Tabs --}}
-    <div class="mb-4">
-        <div class="border-b border-slate-200">
-            <nav class="-mb-px flex gap-6" aria-label="Tabs">
-                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="border-[#1a56db] text-[#1a56db] whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Calendar View</button>
-                <button type="button" onclick="switchTab('list')" id="tab-list" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">List View</button>
-            </nav>
-        </div>
-    </div>
+    {{-- Tabs removed --}}
 
     {{-- Calendar View --}}
     <div id="view-calendar" class="block mb-12">
