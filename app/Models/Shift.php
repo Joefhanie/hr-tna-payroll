@@ -30,6 +30,22 @@ class Shift extends Model
     ];
 
     /**
+     * Dynamic accessor for crosses_midnight to ensure correct night shift detection.
+     */
+    public function getCrossesMidnightAttribute($value)
+    {
+        return (bool) ($value || ($this->end_time && $this->start_time && $this->end_time < $this->start_time));
+    }
+
+    /**
+     * Dynamic accessor for shift_duration_minutes to ensure correct working hour computations.
+     */
+    public function getShiftDurationMinutesAttribute($value)
+    {
+        return ($value > 0) ? (int)$value : $this->calculateShiftDuration();
+    }
+
+    /**
      * Convert TIME field to minutes since midnight
      * Useful for comparison operations
      *

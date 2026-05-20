@@ -64,6 +64,18 @@
                                 
                                 $shift = $record->shift ?? $record->user?->employee?->currentShift?->shift;
                                 $displayShiftTime = $shift?->getDisplayTimeRange() ?? null;
+                                $workedHours = null;
+
+                                if ($record->check_in && $record->check_out) {
+                                    $timeIn = \Carbon\Carbon::createFromFormat('H:i:s', $record->check_in->format('H:i:s'));
+                                    $timeOut = \Carbon\Carbon::createFromFormat('H:i:s', $record->check_out->format('H:i:s'));
+
+                                    if ($shift?->crosses_midnight && $timeOut->lt($timeIn)) {
+                                        $timeOut->addDay();
+                                    }
+
+                                    $workedHours = round($timeOut->diffInMinutes($timeIn) / 60, 2);
+                                }
                             @endphp
                             <tr class="group hover:bg-slate-50/50 transition">
                                 <td class="px-6 py-4 font-medium text-slate-900">{{ $record->attendance_date->format('M d, Y') }} <span class="text-xs text-slate-400 font-normal ml-1">{{ $record->attendance_date->format('D') }}</span></td>
@@ -78,8 +90,8 @@
                                                         Cross-day
                                                     </span>
                                                 @endif
-                                                @if($shift->getWorkingHoursPerDay() <= 4.0)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Half Day Shift (4 hours or less)">
+                                                @if(!is_null($workedHours) && $workedHours <= 4.0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Worked half day (4 hours or less)">
                                                         <i class="ti ti-circle-half text-teal-500"></i>
                                                         Half Day
                                                     </span>

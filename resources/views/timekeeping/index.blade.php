@@ -213,6 +213,18 @@
                             @php
                                 $shift = $attendance->shift ?? $attendance->user?->employee?->currentShift?->shift;
                                 $displayShiftTime = $shift?->getDisplayTimeRange() ?? null;
+                                $workedHours = null;
+
+                                if ($attendance->check_in && $attendance->check_out) {
+                                    $timeIn = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_in->format('H:i:s'));
+                                    $timeOut = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_out->format('H:i:s'));
+
+                                    if ($shift?->crosses_midnight && $timeOut->lt($timeIn)) {
+                                        $timeOut->addDay();
+                                    }
+
+                                    $workedHours = round($timeOut->diffInMinutes($timeIn) / 60, 2);
+                                }
 
                                 $computedStatus = $attendance->status;
                                 if ($shift && $attendance->check_in) {
@@ -257,6 +269,12 @@
                                                     <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Half Day Shift (4 hours or less)">
                                                         <i class="ti ti-circle-half text-teal-500"></i>
                                                         Half Day
+                                                    </span>
+                                                @endif
+                                                @if(!is_null($workedHours) && abs($workedHours) <= 4.0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700" title="Worked 4 hours or less today">
+                                                        <i class="ti ti-clock-2 text-amber-500"></i>
+                                                        Worked Half Day
                                                     </span>
                                                 @endif
                                             </div>
@@ -546,7 +564,23 @@
                 const shift = record.shift || (record.user && record.user.employee && record.user.employee.current_shift ? record.user.employee.current_shift.shift : null);
                 let shiftBadgesHtml = '';
                 if (shift) {
-                    const workingHours = (shift.shift_duration_minutes - (shift.break_minutes || 0)) / 60;
+                    let workedHours = null;
+
+                    if (record.check_in && record.check_out) {
+                        const checkIn = new Date(`1970-01-01T${record.check_in}`);
+                        const checkOut = new Date(`1970-01-01T${record.check_out}`);
+
+                        if (!Number.isNaN(checkIn.getTime()) && !Number.isNaN(checkOut.getTime())) {
+                            let workedMinutes = (checkOut.getTime() - checkIn.getTime()) / 60000;
+
+                            if (shift.crosses_midnight && workedMinutes < 0) {
+                                workedMinutes += 24 * 60;
+                            }
+
+                            workedHours = Math.max(0, workedMinutes) / 60;
+                        }
+                    }
+
                     if (shift.crosses_midnight) {
                         shiftBadgesHtml += `
                             <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wide" title="Cross-day Shift (Crosses Midnight)">
@@ -554,9 +588,9 @@
                             </span>
                         `;
                     }
-                    if (workingHours <= 4.0) {
+                    if (workedHours !== null && workedHours <= 4.0) {
                         shiftBadgesHtml += `
-                            <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 uppercase tracking-wide" title="Half Day Shift (4 hours or less)">
+                            <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
                                 <i class="ti ti-circle-half"></i> Half Day
                             </span>
                         `;
