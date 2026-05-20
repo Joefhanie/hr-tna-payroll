@@ -100,8 +100,10 @@
                                     <input type="number" name="rules[{{ $loop->index }}][deduction_hours]" value="{{ number_format($rule->deduction_hours, 2, '.', '') }}" step="0.01" min="0" class="w-32 rounded border border-slate-200 px-3 py-1.5 text-sm" required>
                                 </td>
                                 <td class="px-4 py-3 text-center">
-                                    <button type="button" class="text-rose-600 hover:text-rose-900 text-xs font-semibold remove-row-btn">
-                                        Remove
+                                    <button type="button" class="text-rose-600 hover:text-rose-900 remove-row-btn" title="Remove">
+                                        <svg class="h-4 w-4 pointer-events-none mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
                                     </button>
                                 </td>
                             </tr>
@@ -350,15 +352,18 @@
             <input type="number" name="rules[${i}][deduction_hours]" value="0.00" step="0.01" min="0" class="w-32 ${inputCls}" placeholder="Hours" required>
         </td>
         <td class="px-4 py-3 text-center">
-            <button type="button" class="text-rose-600 hover:text-rose-900 text-xs font-semibold remove-row-btn">
-                Remove
+            <button type="button" class="text-rose-600 hover:text-rose-900 remove-row-btn" title="Remove">
+                <svg class="h-4 w-4 pointer-events-none mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
             </button>
         </td>
     `);
 
     document.querySelector('#late-rules-form tbody')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-row-btn')) {
-            const tr = e.target.closest('tr');
+        const btn = e.target.closest('.remove-row-btn');
+        if (btn) {
+            const tr = btn.closest('tr');
             tr.remove();
         }
     });
