@@ -133,7 +133,7 @@
                         @endforeach
                     @endforeach
 
-                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.manage')))
+                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view')))
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php

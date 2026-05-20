@@ -280,19 +280,33 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                             <i class="ti ti-users text-base text-indigo-500"></i> Employees
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="employees.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Employees</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Allows viewing employee records and lists.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View profiles & lists</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="employees.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Manage Employees</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Create, edit, terminate, and grant roles.</p>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Add new employees</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update profiles & status</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="employees.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Permanently remove</p>
                                 </div>
                             </label>
                         </div>
@@ -303,19 +317,33 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                             <i class="ti ti-clock text-base text-indigo-500"></i> Timekeeping
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="timekeeping.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Attendance</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">View logs, shifts, schedules, and timesheets.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View schedule & logs</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="timekeeping.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Manage Timekeeping</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Save shift schedules and manually log time.</p>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Add schedule & manual logs</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update shifts & settings</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="timekeeping.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Delete schedules & logs</p>
                                 </div>
                             </label>
                         </div>
@@ -326,19 +354,33 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                             <i class="ti ti-calendar-event text-base text-indigo-500"></i> Leave
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="leaves.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Leaves</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">View leave calendar, requests, and balances.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View leave balances</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="leaves.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Approve & Manage Leaves</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Approve, reject, or adjust leave requests.</p>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Request leave requests</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit / Approve</span>
+                                    <p class="text-[9px] text-slate-500">Approve/Reject requests</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="leaves.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Remove leave entries</p>
                                 </div>
                             </label>
                         </div>
@@ -349,19 +391,33 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                             <i class="ti ti-wallet text-base text-indigo-500"></i> Payroll & Salaries
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="payroll.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Payroll</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">View payslips, basic salary rates, deductions.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View payslips & salaries</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="payroll.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Manage Payroll</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Create pay runs, finalize payroll, edit settings.</p>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Generate pay runs</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update rates & finalize</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="payroll.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Remove payroll runs</p>
                                 </div>
                             </label>
                         </div>
@@ -372,19 +428,33 @@
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                             <i class="ti ti-heart text-base text-indigo-500"></i> Benefits
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="benefits.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Benefits</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">View benefit enrollments and plans.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View benefit plans</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="benefits.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Manage Benefits</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Enroll employees, edit plans & allowances.</p>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Add plans & enroll</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update rates & rules</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="benefits.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Remove enrollments</p>
                                 </div>
                             </label>
                         </div>
@@ -393,21 +463,42 @@
                     <!-- Settings & Reports -->
                     <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
-                            <i class="ti ti-settings text-base text-indigo-500"></i> General settings
+                            <i class="ti ti-settings text-base text-indigo-500"></i> Settings & Reports
                         </h4>
-                        <div class="space-y-3">
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="reports.view" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer col-span-2 border-b border-slate-200/40 pb-1.5 mb-0.5">
+                                <input type="checkbox" name="permissions[]" value="reports.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Reports</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Access dashboard analytics and snapshots.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View Reports & Dashboard</span>
+                                    <p class="text-[9px] text-slate-500">Access charts, analytics, and overview data</p>
                                 </div>
                             </label>
-                            <label class="flex items-start gap-2.5 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="settings.manage" class="perm-checkbox mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="settings.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Manage Settings</span>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">Update system variables, departments, positions.</p>
+                                    <span class="text-xs font-semibold text-slate-800">View Settings</span>
+                                    <p class="text-[9px] text-slate-500">View departments & positions</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="settings.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Add department/position</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="settings.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit Settings</span>
+                                    <p class="text-[9px] text-slate-500">Modify dept/positions</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="settings.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete Settings</span>
+                                    <p class="text-[9px] text-slate-500">Remove dept/positions</p>
                                 </div>
                             </label>
                         </div>
@@ -428,8 +519,16 @@
     <script>
         let activeUserRole = null;
         const roleDefaults = {
-            2: ['employees.view', 'timekeeping.view', 'timekeeping.manage', 'leaves.view', 'leaves.manage', 'reports.view'], // Supervisor
-            3: ['timekeeping.view', 'timekeeping.manage', 'leaves.view', 'leaves.manage'], // OIC
+            2: [
+                'employees.view',
+                'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
+                'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete',
+                'reports.view'
+            ], // Supervisor
+            3: [
+                'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
+                'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete'
+            ], // OIC
             1: ['self-service.view'], // Employee
             4: [] // HR gets everything via backend, no defaults needed
         };

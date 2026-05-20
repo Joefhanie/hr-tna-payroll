@@ -16,7 +16,20 @@ class CheckPermission
     public function handle(Request $request, Closure $next, string $permission): Response
     {
         $user = $request->user();
-        if (!$user || !$user->hasPermission($permission)) {
+        if (!$user) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $permissions = explode(',', $permission);
+        $hasAny = false;
+        foreach ($permissions as $p) {
+            if ($user->hasPermission(trim($p))) {
+                $hasAny = true;
+                break;
+            }
+        }
+
+        if (!$hasAny) {
             abort(403, 'Unauthorized action. You do not have the required permission: ' . $permission);
         }
 

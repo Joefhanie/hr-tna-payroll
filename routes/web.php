@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
         Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
     });
-    Route::middleware('permission:timekeeping.manage')->group(function () {
+    Route::middleware('permission:timekeeping.create,timekeeping.edit')->group(function () {
         Route::post('/timekeeping/manual', [TimekeepingController::class, 'storeManual'])->name('timekeeping.manual.store');
         Route::post('/timekeeping/shift-schedule/save', [TimekeepingController::class, 'saveShiftSchedule'])->name('timekeeping.shift-schedule.save');
     });
@@ -49,49 +49,55 @@ Route::middleware('auth')->group(function () {
     Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view');
     Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view');
 
-    // Organization Management
-    Route::middleware('permission:settings.manage')->group(function () {
+    // Organization Management (Settings)
+    Route::middleware('permission:settings.view')->group(function () {
         Route::redirect('/organization', '/organization/departments');
         Route::get('/organization/departments', [OrganizationController::class, 'departments'])->name('organization.departments.index');
         Route::get('/organization/departments/{department}', [OrganizationController::class, 'showDepartment'])->name('organization.departments.show');
-        Route::get('/organization/departments/{department}/edit', [OrganizationController::class, 'editDepartment'])->name('organization.departments.edit');
-        Route::post('/organization/departments', [OrganizationController::class, 'storeDepartment'])->name('organization.departments.store');
-        Route::put('/organization/departments/{department}', [OrganizationController::class, 'updateDepartment'])->name('organization.departments.update');
-        Route::delete('/organization/departments/{department}', [OrganizationController::class, 'destroyDepartment'])->name('organization.departments.destroy');
-
         Route::get('/organization/positions', [OrganizationController::class, 'positions'])->name('organization.positions.index');
         Route::get('/organization/positions/{position}', [OrganizationController::class, 'showPosition'])->name('organization.positions.show');
-        Route::get('/organization/positions/{position}/edit', [OrganizationController::class, 'editPosition'])->name('organization.positions.edit');
-        Route::post('/organization/positions', [OrganizationController::class, 'storePosition'])->name('organization.positions.store');
-        Route::put('/organization/positions/{position}', [OrganizationController::class, 'updatePosition'])->name('organization.positions.update');
-        Route::delete('/organization/positions/{position}', [OrganizationController::class, 'destroyPosition'])->name('organization.positions.destroy');
-
         Route::get('/organization/users', [OrganizationController::class, 'users'])->name('organization.users.index');
-        Route::get('/organization/users/{user}/edit', [OrganizationController::class, 'editUser'])->name('organization.users.edit');
+        Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
+    });
+    Route::middleware('permission:settings.create')->group(function () {
+        Route::post('/organization/departments', [OrganizationController::class, 'storeDepartment'])->name('organization.departments.store');
+        Route::post('/organization/positions', [OrganizationController::class, 'storePosition'])->name('organization.positions.store');
         Route::post('/organization/users', [OrganizationController::class, 'storeUser'])->name('organization.users.store');
+    });
+    Route::middleware('permission:settings.edit')->group(function () {
+        Route::get('/organization/departments/{department}/edit', [OrganizationController::class, 'editDepartment'])->name('organization.departments.edit');
+        Route::put('/organization/departments/{department}', [OrganizationController::class, 'updateDepartment'])->name('organization.departments.update');
+        Route::get('/organization/positions/{position}/edit', [OrganizationController::class, 'editPosition'])->name('organization.positions.edit');
+        Route::put('/organization/positions/{position}', [OrganizationController::class, 'updatePosition'])->name('organization.positions.update');
+        Route::get('/organization/users/{user}/edit', [OrganizationController::class, 'editUser'])->name('organization.users.edit');
         Route::put('/organization/users/{user}', [OrganizationController::class, 'updateUser'])->name('organization.users.update');
         Route::put('/organization/users/{user}/permissions', [OrganizationController::class, 'updateUserPermissions'])->name('organization.users.permissions.update');
-
-        Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
         Route::post('/organization/settings', [OrganizationController::class, 'updateSettings'])->name('organization.settings.update');
+    });
+    Route::middleware('permission:settings.delete')->group(function () {
+        Route::delete('/organization/departments/{department}', [OrganizationController::class, 'destroyDepartment'])->name('organization.departments.destroy');
+        Route::delete('/organization/positions/{position}', [OrganizationController::class, 'destroyPosition'])->name('organization.positions.destroy');
     });
 
     // Employee Management
     Route::middleware('permission:employees.view')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
+        Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
     });
-    Route::middleware('permission:employees.manage')->group(function () {
+    Route::middleware('permission:employees.create')->group(function () {
         Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
         Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+    });
+    Route::middleware('permission:employees.edit')->group(function () {
         Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
         Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
-        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
-        
-        Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
         Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
         Route::post('/employees/{employee}/revoke-role', [EmployeeController::class, 'revokeRole'])->name('employees.revoke-role');
         Route::post('/employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
+    });
+    Route::middleware('permission:employees.delete')->group(function () {
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
     });
 
     // Salary & Payroll Management
@@ -110,27 +116,32 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
     });
-    Route::middleware('permission:payroll.manage')->group(function () {
+    Route::middleware('permission:payroll.create')->group(function () {
+        Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
+        Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
+        Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
+        Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
+    });
+    Route::middleware('permission:payroll.edit')->group(function () {
         Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
         Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
         Route::post('/salaries/settings/late-deduction-rules', [SalaryController::class, 'saveLateDeductionRules'])->name('salary.save-late-deduction-rules');
         Route::post('/salaries/settings/government-contributions', [SalaryController::class, 'saveGovernmentContributions'])->name('salary.save-government-contributions');
         Route::post('/salaries/settings/deduction-rules', [SalaryController::class, 'saveDeductionRules'])->name('salary.save-deduction-rules');
         Route::post('/salaries/settings/payroll', [SalaryController::class, 'savePayrollSettings'])->name('salary.save-payroll-settings');
-        Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
-        Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
+        
         Route::get('/salary/{salaryRecord}/edit', [SalaryController::class, 'edit'])->name('salary.edit');
         Route::put('/salary/{salaryRecord}', [SalaryController::class, 'update'])->name('salary.update');
-        Route::delete('/salary/{salaryRecord}', [SalaryController::class, 'destroy'])->name('salary.destroy');
         Route::post('/employees/{employee}/salary/assignments', [SalaryController::class, 'saveAssignments'])->name('salary.save-assignments');
 
-        Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
-        Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
         Route::post('/payroll/{payRun}/finalize', [PayrollController::class, 'finalize'])->name('payroll.finalize');
         Route::get('/payroll/{payRun}/edit', [PayrollController::class, 'edit'])->name('payroll.edit');
         Route::put('/payroll/{payRun}', [PayrollController::class, 'update'])->name('payroll.update');
-        Route::delete('/payroll/{payRun}', [PayrollController::class, 'destroy'])->name('payroll.destroy');
         Route::post('/payroll/plotting-payment/save', [PayrollController::class, 'savePlottingPayment'])->name('payroll.plotting-payment.save');
         Route::post('/payroll/plotting-payment/{employee}', [PayrollController::class, 'savePlottingEmployee'])->name('payroll.plotting-payment.employee.save');
+    });
+    Route::middleware('permission:payroll.delete')->group(function () {
+        Route::delete('/salary/{salaryRecord}', [SalaryController::class, 'destroy'])->name('salary.destroy');
+        Route::delete('/payroll/{payRun}', [PayrollController::class, 'destroy'])->name('payroll.destroy');
     });
 });
