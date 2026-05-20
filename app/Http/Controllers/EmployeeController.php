@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Position;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +16,7 @@ class EmployeeController extends Controller
      */
     public function index(): View
     {
-        $employees = Employee::with(['department', 'position', 'manager', 'user'])
+        $employees = Employee::with(['department', 'position', 'manager'])
             ->paginate(15);
 
         return view('employees.index', compact('employees'));
@@ -30,18 +29,11 @@ class EmployeeController extends Controller
     {
         $departments = Department::all();
         $positions = Position::all();
-        // Only list active, full-time employees as possible managers
-        $managers = Employee::where('status', 1)
-            ->where('employment_type', 1)
+        $managers = Employee::whereNotNull('manager_id')
+            ->orWhere('position_id', 'LIKE', '%Manager%')
             ->get();
 
-        $pendingUser = null;
-        $pendingUserId = session('pending_employee_user_id');
-        if ($pendingUserId) {
-            $pendingUser = User::find($pendingUserId);
-        }
-
-        return view('employees.create', compact('departments', 'positions', 'managers', 'pendingUser'));
+        return view('employees.create', compact('departments', 'positions', 'managers'));
     }
 
     /**
@@ -50,6 +42,7 @@ class EmployeeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'employee_code' => ['required', 'string', 'unique:employees'],
             'first_name' => ['required', 'string', 'max:80'],
             'last_name' => ['required', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
@@ -65,10 +58,9 @@ class EmployeeController extends Controller
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:80'],
-            // employment_type submitted as numeric codes: 1=Full-time,2=Part-time,3=Contract,4=Temporary
-            'employment_type' => ['required', 'in:1,2,3,4'],
-            // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned, 5=Terminated
-            'status' => ['required', 'in:1,2,3,4,5'],
+            'employment_type' => ['required', 'in:Full-time,Part-time,Contractual,Intern'],
+            // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned/Terminated
+            'status' => ['required', 'in:1,2,3,4'],
             'hire_date' => ['required', 'date'],
             'regularization_date' => ['nullable', 'date'],
             'termination_date' => ['nullable', 'date'],
@@ -78,31 +70,7 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', 'exists:employees,id'],
         ]);
 
-        // Extract role for user update
-        $role = $validated['role'] ?? null;
-        unset($validated['role']);
-
-        $validated['employee_code'] = $this->generateTemporaryEmployeeCode();
-
-        $employee = Employee::create($validated);
-        $employee->update([
-            'employee_code' => $this->generateEmployeeCode(
-                $employee->first_name,
-                $employee->last_name,
-                $employee->id,
-            ),
-        ]);
-
-        $pendingUserId = $request->session()->pull('pending_employee_user_id');
-        if ($pendingUserId) {
-            $fullName = trim($employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name);
-            $fullName = str_replace('  ', ' ', $fullName);
-            User::whereKey($pendingUserId)->update([
-                'employee_id' => $employee->id,
-                'name' => $fullName,
-                'role' => $role,
-            ]);
-        }
+        Employee::create($validated);
 
         return redirect()->route('employees.index')
             ->with('success', 'Employee created successfully.');
@@ -133,11 +101,7 @@ class EmployeeController extends Controller
     {
         $departments = Department::all();
         $positions = Position::all();
-        // Exclude the employee being edited; only active full-time employees
-        $managers = Employee::where('id', '!=', $employee->id)
-            ->where('status', 1)
-            ->where('employment_type', 1)
-            ->get();
+        $managers = Employee::where('id', '!=', $employee->id)->get();
 
         return view('employees.edit', compact('employee', 'departments', 'positions', 'managers'));
     }
@@ -148,6 +112,7 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee): RedirectResponse
     {
         $validated = $request->validate([
+            'employee_code' => ['required', 'string', 'unique:employees,employee_code,' . $employee->id],
             'first_name' => ['required', 'string', 'max:80'],
             'last_name' => ['required', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
@@ -163,10 +128,9 @@ class EmployeeController extends Controller
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:80'],
-            // employment_type submitted as numeric codes: 1=Full-time,2=Part-time,3=Contract,4=Temporary
-            'employment_type' => ['required', 'in:1,2,3,4'],
-            // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned, 5=Terminated
-            'status' => ['required', 'in:1,2,3,4,5'],
+            'employment_type' => ['required', 'in:Full-time,Part-time,Contractual,Intern'],
+            // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned/Terminated
+            'status' => ['required', 'in:1,2,3,4'],
             'hire_date' => ['required', 'date'],
             'regularization_date' => ['nullable', 'date'],
             'termination_date' => ['nullable', 'date'],
@@ -177,13 +141,6 @@ class EmployeeController extends Controller
         ]);
 
         $employee->update($validated);
-
-        // Sync the name to the associated User account, if one exists
-        $fullName = trim($employee->first_name . ' ' . $employee->middle_name . ' ' . $employee->last_name);
-        $fullName = str_replace('  ', ' ', $fullName);
-        User::where('employee_id', $employee->id)->update([
-            'name' => $fullName,
-        ]);
 
         return redirect()->route('employees.show', $employee)
             ->with('success', 'Employee updated successfully.');
@@ -304,18 +261,30 @@ class EmployeeController extends Controller
     public function temporaryAccess(): \Illuminate\View\View
     {
         $employees = Employee::whereDoesntHave('user', function ($query) {
-                $query->where('role', 2);
+                $query->whereIn('role', [2, 4]);
             })
             ->with(['department', 'position', 'user.temporaryAssignments'])
             ->paginate(15);
 
         $allEmployees = Employee::whereDoesntHave('user', function ($query) {
-                $query->where('role', 2);
+                $query->whereIn('role', [2, 4]);
             })
             ->with(['user'])
             ->get();
 
         return view('employees.temporary-access', compact('employees', 'allEmployees'));
+    }
+
+    /**
+     * Display the temporary access details for a specific employee.
+     */
+    public function showTemporaryAccess(Employee $employee): \Illuminate\View\View
+    {
+        $employee->load(['department', 'position', 'user.temporaryAssignments' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }]);
+
+        return view('employees.temporary-access-show', compact('employee'));
     }
 
     /**

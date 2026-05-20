@@ -195,7 +195,7 @@
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     {{-- Eye (View Details) --}}
-                                    <a href="{{ route('employees.show', $employee) }}"
+                                    <a href="{{ route('employees.temporary-access.show', $employee) }}"
                                        class="text-slate-500 hover:text-slate-900 transition"
                                        title="View Details">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
