@@ -103,11 +103,17 @@ Route::middleware('auth')->group(function () {
     });
 
     // Salary & Payroll Management
+    Route::middleware('permission:payroll.create')->group(function () {
+        Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
+        Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
+        Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
+        Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
+    });
     Route::middleware('permission:payroll.view')->group(function () {
         Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
         Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
         
-        Route::redirect('/payroll', '/payroll/plotting-payment');
+
         Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-payments', '/payroll/plotting-payment');
@@ -117,12 +123,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
         Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
-    });
-    Route::middleware('permission:payroll.create')->group(function () {
-        Route::get('/employees/{employee}/salary/create', [SalaryController::class, 'create'])->name('salary.create');
-        Route::post('/employees/{employee}/salary', [SalaryController::class, 'store'])->name('salary.store');
-        Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
-        Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
     });
     Route::middleware('permission:payroll.edit')->group(function () {
         Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
