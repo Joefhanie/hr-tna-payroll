@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         // Convert pay_runs.status from ENUM to INT
         if (Schema::hasColumn('pay_runs', 'status')) {
             DB::statement("ALTER TABLE `pay_runs` MODIFY `status` VARCHAR(255)");

@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             // Add shift order for sorting (e.g., 1st shift, 2nd shift, etc.)
             if (!Schema::hasColumn('shifts', 'shift_order')) {
@@ -35,6 +39,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             $table->dropColumn(['shift_order', 'crosses_midnight', 'shift_duration_minutes']);
         });

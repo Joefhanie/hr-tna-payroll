@@ -79,13 +79,22 @@ class LateDeductionService
     public function getDeductionForLateMinutes($lateMinutes, $policyVersion = null)
     {
         $policy = $this->getPolicy();
+        $lastThreshold = null;
         foreach ($policy['thresholds'] as $threshold) {
+            $lastThreshold = $threshold;
             if ($lateMinutes >= $threshold['min'] && $lateMinutes <= $threshold['max']) {
                 return [
                     'type' => $threshold['type'],
                     'deduction_hours' => $threshold['deduction_hours'],
                 ];
             }
+        }
+
+        if ($lastThreshold) {
+            return [
+                'type' => $lastThreshold['type'],
+                'deduction_hours' => $lastThreshold['deduction_hours'],
+            ];
         }
 
         // Default: full day absent
@@ -334,20 +343,30 @@ class LateDeductionService
      */
     public function getPolicy()
     {
-        $global = \App\Models\PayrollSetting::first();
-        if ($global) {
-            $grace = (int) ($global->late_grace_period_minutes ?? 10);
+        $rules = \App\Models\LateDeductionRule::orderBy('sort_order')->get();
+        if ($rules->isNotEmpty()) {
+            $thresholds = [];
+            $prevMax = -1;
+            foreach ($rules as $rule) {
+                $min = $prevMax + 1;
+                $thresholds[] = [
+                    'min' => $min,
+                    'max' => $rule->max_minutes,
+                    'type' => $rule->name,
+                    'deduction_hours' => (float) $rule->deduction_hours,
+                ];
+                $prevMax = $rule->max_minutes;
+            }
+
+            // The grace period is defined by the first rule's max_minutes
+            $grace = $rules->first()->max_minutes;
+
             return [
                 'grace_period_minutes' => $grace,
-                'thresholds' => [
-                    ['min' => 0, 'max' => $grace, 'type' => 'grace_period', 'deduction_hours' => 0],
-                    ['min' => $grace + 1, 'max' => 15, 'type' => 'thirty_minutes', 'deduction_hours' => (float) ($global->late_11_15_deduction_hours ?? 0.5)],
-                    ['min' => 16, 'max' => 30, 'type' => 'one_hour', 'deduction_hours' => (float) ($global->late_16_30_deduction_hours ?? 1.0)],
-                    ['min' => 31, 'max' => 60, 'type' => 'half_day', 'deduction_hours' => (float) ($global->late_31_60_deduction_hours ?? 4.0)],
-                    ['min' => 61, 'max' => 99999, 'type' => 'absent', 'deduction_hours' => (float) ($global->late_61_plus_deduction_hours ?? 8.0)],
-                ],
+                'thresholds' => $thresholds,
             ];
         }
+
         return $this->policy;
     }
 
@@ -369,6 +388,27 @@ class LateDeductionService
      */
     public function getPolicyDescription()
     {
+        $rules = \App\Models\LateDeductionRule::orderBy('sort_order')->get();
+        if ($rules->isNotEmpty()) {
+            $desc = "Late Time-In Policy:\n";
+            $prevMax = -1;
+            foreach ($rules as $rule) {
+                $min = $prevMax + 1;
+                $hours = number_format($rule->deduction_hours, 2);
+                if ($rule->max_minutes >= 99999) {
+                    $desc .= "- {$min}+ minutes: {$hours} hours deduction ({$rule->name})\n";
+                } elseif ($rule->deduction_hours == 0) {
+                    $desc .= "- {$min}-{$rule->max_minutes} minutes: No deduction ({$rule->name})\n";
+                } else {
+                    $desc .= "- {$min}-{$rule->max_minutes} minutes: {$hours} hours deduction ({$rule->name})\n";
+                }
+                $prevMax = $rule->max_minutes;
+            }
+            $desc .= "\nAll deductions are applied to the employee's hourly rate.\n";
+            $desc .= "Deductions can be excused by HR/Management with proper justification.";
+            return $desc;
+        }
+
         return <<<'POLICY'
 Late Time-In Policy:
 - 0-10 minutes: No deduction (grace period)

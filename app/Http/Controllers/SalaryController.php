@@ -35,10 +35,45 @@ class SalaryController extends Controller
         $taxBrackets = TaxBracket::orderBy('sort_order')->orderBy('threshold')->get();
         $governmentContributions = GovernmentContributionRate::orderBy('sort_order')->get();
         $deductionRules = DeductionRule::orderBy('sort_order')->get();
+        $lateDeductionRules = \App\Models\LateDeductionRule::orderBy('sort_order')->get();
 
         $global = \App\Models\PayrollSetting::first();
 
-        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules', 'global'));
+        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules', 'lateDeductionRules', 'global'));
+    }
+
+    /**
+     * Save dynamic late deduction rules.
+     */
+    public function saveLateDeductionRules(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'rules' => 'required|array',
+            'rules.*.id' => 'nullable|integer',
+            'rules.*.name' => 'required|string|max:255',
+            'rules.*.max_minutes' => 'required|integer|min:0',
+            'rules.*.deduction_hours' => 'required|numeric|min:0',
+        ]);
+
+        $ruleIds = collect($validated['rules'])->pluck('id')->filter()->all();
+        \App\Models\LateDeductionRule::whereNotIn('id', $ruleIds)->delete();
+
+        foreach ($validated['rules'] as $index => $ruleData) {
+            $payload = [
+                'name' => $ruleData['name'],
+                'max_minutes' => (int) $ruleData['max_minutes'],
+                'deduction_hours' => (float) $ruleData['deduction_hours'],
+                'sort_order' => $index,
+            ];
+
+            if (isset($ruleData['id']) && $ruleData['id']) {
+                \App\Models\LateDeductionRule::findOrFail($ruleData['id'])->update($payload);
+            } else {
+                \App\Models\LateDeductionRule::create($payload);
+            }
+        }
+
+        return redirect()->route('salary.settings')->with('success', 'Late deduction rules updated successfully.');
     }
 
     /**
@@ -53,6 +88,9 @@ class SalaryController extends Controller
             'attendance_undertime_deduction_multiplier' => 'nullable|numeric|min:0',
             'attendance_absence_deduction_multiplier' => 'nullable|numeric|min:0',
             'late_grace_period_minutes' => 'nullable|integer|min:0',
+            'late_tier1_max_minutes' => 'nullable|integer|min:0',
+            'late_tier2_max_minutes' => 'nullable|integer|min:0',
+            'late_tier3_max_minutes' => 'nullable|integer|min:0',
             'late_11_15_deduction_hours' => 'nullable|numeric|min:0',
             'late_16_30_deduction_hours' => 'nullable|numeric|min:0',
             'late_31_60_deduction_hours' => 'nullable|numeric|min:0',
@@ -67,6 +105,9 @@ class SalaryController extends Controller
             'attendance_undertime_deduction_multiplier',
             'attendance_absence_deduction_multiplier',
             'late_grace_period_minutes',
+            'late_tier1_max_minutes',
+            'late_tier2_max_minutes',
+            'late_tier3_max_minutes',
             'late_11_15_deduction_hours',
             'late_16_30_deduction_hours',
             'late_31_60_deduction_hours',

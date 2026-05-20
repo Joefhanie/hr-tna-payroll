@@ -66,32 +66,45 @@
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
             ],
             'Modules' => [
-                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'children' => [
+                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view', 'children' => [
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
                     ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access'],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
-                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'children' => [
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view'],
+                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
-                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event'],
-                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'children' => [
+                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view'],
+                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
-                    ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
+                    ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
                 ]],
-                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'children' => [
+                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view', 'children' => [
                     ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
-                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
-                ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
-                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar'],
+                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view'],
+                ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
+                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view'],
             ],
         ];
 
+        // Filter nav groups by permissions
+        foreach ($navGroups as $groupName => &$items) {
+            $items = array_filter($items, function ($item) use ($user) {
+                if (isset($item['permission'])) {
+                    return $user && $user->hasPermission($item['permission']);
+                }
+                return true;
+            });
+        }
+        unset($items);
+
+        // Filter out empty nav groups
+        $navGroups = array_filter($navGroups, fn($items) => count($items) > 0);
+
         $organizationActive = request()->routeIs('organization.departments.*', 'organization.positions.*');
-        $user = auth()->user();
         $userInitials = $user?->name
             ? collect(preg_split('/\s+/', trim($user->name)))->filter()->take(2)->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))->implode('')
             : 'HR';
@@ -169,6 +182,7 @@
                         @endforeach
                     @endforeach
 
+                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view')))
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php
@@ -216,13 +230,14 @@
                         </span>
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Settings</span>
                     </a>
+                    @endif
                 </nav>
             </div>
 
             <div class="mt-auto pt-4">
-                <form method="POST" action="{{ route('logout') }}" class="w-full">
+                <form id="logoutForm" method="POST" action="{{ route('logout') }}" class="w-full">
                     @csrf
-                    <button type="submit" class="logout-button flex w-full items-center rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-slate-700 transition hover:bg-slate-50">
+                    <button type="button" id="logoutTrigger" class="logout-button flex w-full items-center rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-slate-700 transition hover:bg-slate-50">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
                             <i class="ti ti-logout sidebar-icon text-xl"></i>
                         </span>
@@ -254,9 +269,51 @@
             </header>
 
             <div class="p-4 sm:p-5 lg:p-6">
-                <div class="space-y-5">{{ $slot }}</div>
+                <div class="space-y-5">
+                    @if (session('success'))
+                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if (session('error'))
+                        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <p class="font-medium">Please review the following:</p>
+                            <ul class="mt-2 list-disc pl-5">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    {{ $slot }}
+                </div>
             </div>
         </main>
+    </div>
+
+    <div id="logoutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4">
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div class="border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Confirm Logout</h3>
+                <p class="mt-1 text-sm text-slate-500">Are you sure you want to sign out of the system?</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-6 py-4">
+                <button type="button" id="logoutCancel" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button type="button" id="logoutConfirm" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700">
+                    Logout
+                </button>
+            </div>
+        </div>
     </div>
 
     {{ $scripts ?? '' }}
@@ -278,6 +335,54 @@
                     document.body.classList.toggle('sidebar-collapsed');
                 });
             }
+
+            const logoutForm = document.getElementById('logoutForm');
+            const logoutTrigger = document.getElementById('logoutTrigger');
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutCancel = document.getElementById('logoutCancel');
+            const logoutConfirm = document.getElementById('logoutConfirm');
+
+            const openLogoutModal = function () {
+                if (!logoutModal) return;
+
+                logoutModal.classList.remove('hidden');
+                logoutModal.classList.add('flex');
+            };
+
+            const closeLogoutModal = function () {
+                if (!logoutModal) return;
+
+                logoutModal.classList.remove('flex');
+                logoutModal.classList.add('hidden');
+            };
+
+            if (logoutTrigger) {
+                logoutTrigger.addEventListener('click', openLogoutModal);
+            }
+
+            if (logoutCancel) {
+                logoutCancel.addEventListener('click', closeLogoutModal);
+            }
+
+            if (logoutConfirm && logoutForm) {
+                logoutConfirm.addEventListener('click', function () {
+                    logoutForm.submit();
+                });
+            }
+
+            if (logoutModal) {
+                logoutModal.addEventListener('click', function (event) {
+                    if (event.target === logoutModal) {
+                        closeLogoutModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && logoutModal && logoutModal.classList.contains('flex')) {
+                    closeLogoutModal();
+                }
+            });
 
             // Toast Notification System
             function initToast(toast, index) {

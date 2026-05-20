@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             $table->boolean('is_flexible')->default(false)->after('is_night_shift');
             $table->integer('flexible_hours')->nullable()->default(2)->after('is_flexible');
@@ -22,6 +26,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('shifts')) {
+            return;
+        }
+
         Schema::table('shifts', function (Blueprint $table) {
             $table->dropColumn(['is_flexible', 'flexible_hours']);
         });
