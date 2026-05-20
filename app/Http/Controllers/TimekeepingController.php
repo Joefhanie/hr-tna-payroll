@@ -236,11 +236,15 @@ class TimekeepingController extends Controller
             'break_minutes' => 'nullable|integer|min:0',
             'days' => 'array',
             'days.*' => 'string',
+            'is_flexible' => 'boolean',
+            'flexible_until_time' => 'nullable',
             'assignment_id' => 'nullable|integer|exists:shift_assignments,id',
         ]);
 
         $days = $validated['days'] ?? [];
         $breakMinutes = (int) ($validated['break_minutes'] ?? 60);
+        $isFlexible = $validated['is_flexible'] ?? false;
+        $flexibleUntilTime = !empty($validated['flexible_until_time']) ? date('H:i:s', strtotime($validated['flexible_until_time'])) : null;
 
         $start = date('H:i:s', strtotime($validated['start_time']));
         $end = date('H:i:s', strtotime($validated['end_time']));
@@ -260,6 +264,8 @@ class TimekeepingController extends Controller
         $shift = \App\Models\Shift::where('start_time', $start)
             ->where('end_time', $end)
             ->where('break_minutes', $breakMinutes)
+            ->where('is_flexible', $isFlexible)
+            ->where('flexible_until_time', $flexibleUntilTime)
             ->where('days_of_week', json_encode($days))
             ->first();
 
@@ -274,6 +280,9 @@ class TimekeepingController extends Controller
                 'shift_duration_minutes' => $durationMinutes,
                 'days_of_week' => $days,
                 'is_active' => true,
+                'is_flexible' => $isFlexible,
+                'flexible_until_time' => $flexibleUntilTime,
+                'flexible_hours' => 2, // Default 2 hours as per requirements
             ]);
         }
 
@@ -310,6 +319,8 @@ class TimekeepingController extends Controller
                 $newRemainingShift = \App\Models\Shift::where('start_time', $existingShift->start_time)
                     ->where('end_time', $existingShift->end_time)
                     ->where('break_minutes', $existingShift->break_minutes)
+                    ->where('is_flexible', $existingShift->is_flexible)
+                    ->where('flexible_until_time', $existingShift->flexible_until_time)
                     ->where('days_of_week', json_encode($remainingDays))
                     ->first();
 
@@ -324,6 +335,9 @@ class TimekeepingController extends Controller
                         'shift_duration_minutes' => $existingShift->shift_duration_minutes,
                         'days_of_week' => $remainingDays,
                         'is_active' => true,
+                        'is_flexible' => $existingShift->is_flexible,
+                        'flexible_until_time' => $existingShift->flexible_until_time,
+                        'flexible_hours' => $existingShift->flexible_hours,
                     ]);
                 }
 

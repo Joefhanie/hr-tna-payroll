@@ -20,6 +20,9 @@ class Shift extends Model
         'shift_duration_minutes',
         'days_of_week',
         'is_active',
+        'is_flexible',
+        'flexible_hours',
+        'flexible_until_time',
     ];
 
     protected $casts = [
@@ -27,6 +30,8 @@ class Shift extends Model
         'is_night_shift' => 'boolean',
         'crosses_midnight' => 'boolean',
         'is_active' => 'boolean',
+        'is_flexible' => 'boolean',
+        'flexible_hours' => 'integer',
     ];
 
     /**
@@ -103,6 +108,18 @@ class Shift extends Model
     }
 
     /**
+     * Get end of flexible window in minutes since midnight
+     */
+    public function getFlexibleUntilMinutes()
+    {
+        if ($this->flexible_until_time) {
+            [$hours, $minutes] = explode(':', substr($this->flexible_until_time, 0, 5));
+            return (int)$hours * 60 + (int)$minutes;
+        }
+        return $this->getStartMinutes() + ($this->flexible_hours ?? 2) * 60;
+    }
+
+    /**
      * Check if employee is late for this shift
      * Returns minutes late (0 if on time)
      *
@@ -118,6 +135,10 @@ class Shift extends Model
         $clockInMinutes = $clockIn->hour * 60 + $clockIn->minute;
         $shiftStartMinutes = $this->getStartMinutes();
 
+        if ($this->is_flexible) {
+            $shiftStartMinutes = $this->getFlexibleUntilMinutes();
+        }
+
         // Calculate lateness
         $lateMinutes = max(0, $clockInMinutes - $shiftStartMinutes);
 
@@ -132,26 +153,38 @@ class Shift extends Model
      * @param int $gracePeriodMinutes
      * @return int
      */
-    public function checkIfUndertime($clockOutTime, $gracePeriodMinutes = 0)
+    public function checkIfUndertime($clockOutTime, $gracePeriodMinutes = 0, $clockInTime = null)
     {
         $clockOut = $clockOutTime instanceof Carbon ? $clockOutTime : Carbon::parse($clockOutTime);
-
-        // Extract time portion as HH:MM
         $clockOutMinutes = $clockOut->hour * 60 + $clockOut->minute;
+        
         $shiftEndMinutes = $this->getEndMinutes();
+        $isCrossMidnight = $this->crosses_midnight;
+        
+        if ($this->is_flexible && $clockInTime) {
+            $clockIn = $clockInTime instanceof Carbon ? $clockInTime : Carbon::parse($clockInTime);
+            $clockInMinutes = $clockIn->hour * 60 + $clockIn->minute;
+            $shiftStartMinutes = $this->getStartMinutes();
+            $flexibleUntilMinutes = $this->getFlexibleUntilMinutes();
+            
+            // The effective start time is bounded by the flexible window
+            $effectiveStartMinutes = max($shiftStartMinutes, min($clockInMinutes, $flexibleUntilMinutes));
+            
+            // New end minutes is effective start + duration
+            $shiftEndMinutes = $effectiveStartMinutes + $this->shift_duration_minutes;
+            if ($shiftEndMinutes >= 24 * 60) {
+                $shiftEndMinutes -= 24 * 60;
+                $isCrossMidnight = true;
+            } else {
+                $isCrossMidnight = false;
+            }
+        }
 
-        // Handle cross-midnight shifts
-        // If shift crosses midnight but clock-out is before midnight, add 24 hours worth of minutes
-        if ($this->crosses_midnight && $clockOutMinutes < $shiftEndMinutes) {
-            // Clock out is in early morning, shift end is also early morning
-            // No adjustment needed, just compare directly
+        if ($isCrossMidnight && $clockOutMinutes < $shiftEndMinutes) {
             $undertimeMinutes = max(0, $shiftEndMinutes - $clockOutMinutes);
-        } elseif ($this->crosses_midnight && $clockOutMinutes >= $shiftEndMinutes) {
-            // Clock out is in evening (next day), shift should have ended in morning
-            // This means employee clocked out after scheduled end - might be overtime
+        } elseif ($isCrossMidnight && $clockOutMinutes >= $shiftEndMinutes) {
             $undertimeMinutes = 0;
         } else {
-            // Regular shift, both before midnight
             $undertimeMinutes = max(0, $shiftEndMinutes - $clockOutMinutes);
         }
 
