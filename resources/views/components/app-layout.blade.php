@@ -11,37 +11,51 @@
 </head>
 <body class="h-screen overflow-hidden font-sans text-slate-900">
     @php
+        $user = auth()->user();
         $navGroups = [
             'Overview' => [
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
             ],
             'Modules' => [
-                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'children' => [
+                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view', 'children' => [
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
                     ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access'],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
-                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'children' => [
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view'],
+                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
-                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event'],
-                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'children' => [
+                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view'],
+                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
-                    ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Tax & Deductions'],
+                    ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
                 ]],
-                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'children' => [
+                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view', 'children' => [
                     ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
-                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat'],
-                ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle'],
-                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar'],
+                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view'],
+                ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
+                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view'],
             ],
         ];
 
+        // Filter nav groups by permissions
+        foreach ($navGroups as $groupName => &$items) {
+            $items = array_filter($items, function ($item) use ($user) {
+                if (isset($item['permission'])) {
+                    return $user && $user->hasPermission($item['permission']);
+                }
+                return true;
+            });
+        }
+        unset($items);
+
+        // Filter out empty nav groups
+        $navGroups = array_filter($navGroups, fn($items) => count($items) > 0);
+
         $organizationActive = request()->routeIs('organization.departments.*', 'organization.positions.*');
-        $user = auth()->user();
         $userInitials = $user?->name
             ? collect(preg_split('/\s+/', trim($user->name)))->filter()->take(2)->map(fn ($part) => strtoupper(mb_substr($part, 0, 1)))->implode('')
             : 'HR';
@@ -119,6 +133,7 @@
                         @endforeach
                     @endforeach
 
+                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view')))
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php
@@ -159,6 +174,7 @@
                         </span>
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Settings</span>
                     </a>
+                    @endif
                 </nav>
             </div>
 

@@ -2,6 +2,12 @@
     <x-slot:title>Shift Schedule</x-slot:title>
     <x-slot:header>Shift Schedule</x-slot:header>
 
+    @php
+        $canCreateShifts = auth()->user() && auth()->user()->hasPermission('timekeeping.create');
+        $canEditShifts = auth()->user() && auth()->user()->hasPermission('timekeeping.edit');
+        $canManageShifts = $canCreateShifts || $canEditShifts;
+    @endphp
+
     <style>
         /* Force styling for checked day pills without relying on Tailwind compiler */
         input[type="checkbox"]:checked + span.day-pill {
@@ -27,10 +33,12 @@
                 <h1 class="text-2xl font-bold text-slate-900">Shift Schedule</h1>
                 <p class="mt-1 text-sm text-slate-600">Manage employee shift schedules.</p>
             </div>
-            <button type="button" onclick="openAddShiftModal()" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-                <i class="ti ti-plus"></i>
-                Add Shift
-            </button>
+            @if($canCreateShifts)
+                <button type="button" onclick="openAddShiftModal()" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                    <i class="ti ti-plus"></i>
+                    Add Shift
+                </button>
+            @endif
         </div>
 
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -43,7 +51,9 @@
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">DEPARTMENT</th>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">DEFAULT SHIFT</th>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">WORKING DAYS</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">ACTIONS</th>
+                            @if($canCreateShifts)
+                                <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">ACTIONS</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white">
@@ -149,10 +159,12 @@
                                                         <span>Flex</span>
                                                     </span>
                                                     @endif
-                                                    <!-- Edit Shift Segment Button -->
-                                                    <button type="button" onclick="openEditModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', {{ $assignment->id }}, '{{ $assignment->shift->start_time }}', '{{ $assignment->shift->end_time }}', {{ $assignment->shift->break_minutes }}, {{ json_encode($assignment->shift->days_of_week ?? []) }}, {{ $assignment->shift->is_flexible ? 'true' : 'false' }}, {{ $assignment->shift->flexible_until_time ? "'".substr($assignment->shift->flexible_until_time, 0, 5)."'" : 'null' }})" class="ml-1 inline-flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors" title="Edit this shift segment">
-                                                        <i class="ti ti-pencil text-sm"></i>
-                                                    </button>
+                                                    @if($canEditShifts)
+                                                        <!-- Edit Shift Segment Button -->
+                                                        <button type="button" onclick="openEditModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', {{ $assignment->id }}, '{{ $assignment->shift->start_time }}', '{{ $assignment->shift->end_time }}', {{ $assignment->shift->break_minutes }}, {{ json_encode($assignment->shift->days_of_week ?? []) }}, {{ $assignment->shift->is_flexible ? 'true' : 'false' }}, {{ $assignment->shift->flexible_until_time ? "'".substr($assignment->shift->flexible_until_time, 0, 5)."'" : 'null' }})" class="ml-1 inline-flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors" title="Edit this shift segment">
+                                                            <i class="ti ti-pencil text-sm"></i>
+                                                        </button>
+                                                    @endif
                                                 </div>
                                             @endif
                                         @empty
@@ -187,29 +199,31 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right text-slate-600">
-                                    @php
-                                        $displayParts = [];
-                                        foreach($activeShifts as $assignment) {
-                                            if ($assignment->shift) {
-                                                if ($assignment->shift->is_flexible && $assignment->shift->flexible_until_time) {
-                                                    $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->flexible_until_time)->format('g:i A') . ' to ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('g:i A');
-                                                } else {
-                                                    $flex = $assignment->shift->is_flexible ? ' [Flex]' : '';
-                                                    $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('h:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('h:i A') . $flex;
+                                @if($canCreateShifts)
+                                    <td class="whitespace-nowrap px-4 py-3 text-right text-slate-600">
+                                        @php
+                                            $displayParts = [];
+                                            foreach($activeShifts as $assignment) {
+                                                if ($assignment->shift) {
+                                                    if ($assignment->shift->is_flexible && $assignment->shift->flexible_until_time) {
+                                                        $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->flexible_until_time)->format('g:i A') . ' to ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('g:i A');
+                                                    } else {
+                                                        $flex = $assignment->shift->is_flexible ? ' [Flex]' : '';
+                                                        $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('h:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('h:i A') . $flex;
+                                                    }
+                                                    $displayParts[] = $timeStr . ' (' . implode(', ', array_map(function($d) { return substr($d, 0, 3); }, $assignment->shift->days_of_week ?? [])) . ')';
                                                 }
-                                                $displayParts[] = $timeStr . ' (' . implode(', ', array_map(function($d) { return substr($d, 0, 3); }, $assignment->shift->days_of_week ?? [])) . ')';
                                             }
-                                        }
-                                    @endphp
-                                    <button type="button" onclick="openAddModalPreselected({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', '{{ implode('; ', $displayParts) }}', {{ json_encode(array_values($allActiveDays)) }})" class="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors" title="Add another shift segment">
-                                        <i class="ti ti-plus text-lg"></i>
-                                    </button>
-                                </td>
+                                        @endphp
+                                        <button type="button" onclick="openAddModalPreselected({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', '{{ implode('; ', $displayParts) }}', {{ json_encode(array_values($allActiveDays)) }})" class="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors" title="Add another shift segment">
+                                            <i class="ti ti-plus text-lg"></i>
+                                        </button>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                                <td colspan="{{ $canCreateShifts ? 6 : 5 }}" class="px-4 py-8 text-center text-slate-500">
                                     No employees found.
                                 </td>
                             </tr>

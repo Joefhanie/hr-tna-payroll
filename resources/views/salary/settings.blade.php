@@ -4,7 +4,6 @@
 
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Salaries / Tax & Deductions</p>
             <h1 class="mt-1 text-2xl font-semibold text-slate-900">Payroll Rules Configuration</h1>
             <p class="mt-1 text-sm text-slate-500">Edit tax brackets, government contributions, and deduction rules.</p>
         </div>
@@ -65,35 +64,55 @@
                 <h2 class="text-lg font-semibold text-slate-900">Late Deductions Configuration</h2>
                 <p class="mt-1 text-sm text-slate-500">Configure tiered late deduction thresholds and penalties (in hours).</p>
             </div>
+            <div class="flex items-center gap-3">
+                <span class="badge badge-blue">{{ $lateDeductionRules->count() }} rules</span>
+                <button type="button" id="add-late-rule-btn" class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 hover:border-indigo-300">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add
+                </button>
+            </div>
         </div>
 
-        <form method="POST" action="{{ route('salary.save-payroll-settings') }}" id="late-deductions-form" class="space-y-4">
+        <form method="POST" action="{{ route('salary.save-late-deduction-rules') }}" id="late-rules-form" class="space-y-4">
             @csrf
-            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem;">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Grace Period (Mins)</label>
-                    <input type="number" name="late_grace_period_minutes" min="0" value="{{ old('late_grace_period_minutes', $global->late_grace_period_minutes ?? 10) }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">11-15 Mins (Hours)</label>
-                    <input type="number" name="late_11_15_deduction_hours" step="0.01" min="0" value="{{ old('late_11_15_deduction_hours', isset($global->late_11_15_deduction_hours) ? number_format($global->late_11_15_deduction_hours, 2, '.', '') : '0.50') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">16-30 Mins (Hours)</label>
-                    <input type="number" name="late_16_30_deduction_hours" step="0.01" min="0" value="{{ old('late_16_30_deduction_hours', isset($global->late_16_30_deduction_hours) ? number_format($global->late_16_30_deduction_hours, 2, '.', '') : '1.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">31-60 Mins (Hours)</label>
-                    <input type="number" name="late_31_60_deduction_hours" step="0.01" min="0" value="{{ old('late_31_60_deduction_hours', isset($global->late_31_60_deduction_hours) ? number_format($global->late_31_60_deduction_hours, 2, '.', '') : '4.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">61+ Mins (Hours)</label>
-                    <input type="number" name="late_61_plus_deduction_hours" step="0.01" min="0" value="{{ old('late_61_plus_deduction_hours', isset($global->late_61_plus_deduction_hours) ? number_format($global->late_61_plus_deduction_hours, 2, '.', '') : '8.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3">Rule Name</th>
+                            <th class="px-4 py-3">Minutes Limit</th>
+                            <th class="px-4 py-3">Deduction (Hours)</th>
+                            <th class="px-4 py-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse ($lateDeductionRules as $rule)
+                            <tr>
+                                <td class="px-4 py-3">
+                                    <input type="hidden" name="rules[{{ $loop->index }}][id]" value="{{ $rule->id }}">
+                                    <input type="text" name="rules[{{ $loop->index }}][name]" value="{{ $rule->name }}" class="w-48 rounded border border-slate-200 px-3 py-1.5 text-sm" required>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" name="rules[{{ $loop->index }}][max_minutes]" value="{{ $rule->max_minutes }}" class="w-32 rounded border border-slate-200 px-3 py-1.5 text-sm" required>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" name="rules[{{ $loop->index }}][deduction_hours]" value="{{ number_format($rule->deduction_hours, 2, '.', '') }}" step="0.01" min="0" class="w-32 rounded border border-slate-200 px-3 py-1.5 text-sm" required>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button type="button" class="text-rose-600 hover:text-rose-900 remove-row-btn" title="Remove">
+                                        <svg class="h-4 w-4 pointer-events-none mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-4 py-6 text-center text-slate-500">No late deduction rules configured yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
             <div class="flex justify-end gap-3 mt-4">
@@ -320,6 +339,33 @@
             tr.querySelector('input')?.focus();
         });
     }
+
+    addRow('add-late-rule-btn', 'late-rules-form', i => `
+        <td class="px-4 py-3">
+            <input type="text" name="rules[${i}][name]" class="w-48 ${inputCls}" placeholder="Rule Name" required>
+        </td>
+        <td class="px-4 py-3">
+            <input type="number" name="rules[${i}][max_minutes]" value="0" class="w-32 ${inputCls}" placeholder="Minutes Limit" required>
+        </td>
+        <td class="px-4 py-3">
+            <input type="number" name="rules[${i}][deduction_hours]" value="0.00" step="0.01" min="0" class="w-32 ${inputCls}" placeholder="Hours" required>
+        </td>
+        <td class="px-4 py-3 text-center">
+            <button type="button" class="text-rose-600 hover:text-rose-900 remove-row-btn" title="Remove">
+                <svg class="h-4 w-4 pointer-events-none mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </td>
+    `);
+
+    document.querySelector('#late-rules-form tbody')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.remove-row-btn');
+        if (btn) {
+            const tr = btn.closest('tr');
+            tr.remove();
+        }
+    });
 
     addRow('add-tax-bracket-btn', 'tax-brackets-form', i => `
         <td class="px-4 py-3"><input type="number" name="brackets[${i}][threshold]" value="0" step="0.01" class="w-24 ${inputCls}" required></td>

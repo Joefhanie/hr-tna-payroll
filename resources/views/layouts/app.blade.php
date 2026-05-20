@@ -39,27 +39,36 @@
 </head>
 <body>
   @php
+    $user = auth()->user();
     $nav = [
       ['url' => route('dashboard'),     'label' => 'Dashboard',     'group' => 'Overview'],
-      ['label' => 'Employees', 'group' => 'Modules', 'children' => [
+      ['label' => 'Employees', 'group' => 'Modules', 'permission' => 'employees.view', 'children' => [
         ['url' => route('employees.index'),           'label' => 'Employee List'],
         ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access'],
       ]],
-      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules'],
-      ['label' => 'Timekeeping', 'group' => 'Modules', 'children' => [
+      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules', 'permission' => 'employees.view'],
+      ['label' => 'Timekeeping', 'group' => 'Modules', 'permission' => 'timekeeping.view', 'children' => [
         ['url' => route('timekeeping.index'),          'label' => 'Attendance'],
         ['url' => route('timekeeping.shift-schedule'), 'label' => 'Shift Schedule'],
       ]],
-      ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules'],
-      ['label' => 'Salaries', 'group' => 'Modules', 'children' => [
+      ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules', 'permission' => 'leaves.view'],
+      ['label' => 'Salaries', 'group' => 'Modules', 'permission' => 'payroll.view', 'children' => [
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
-        ['url' => route('salary.settings'), 'label' => 'Tax & Deductions'],
+        ['url' => route('salary.settings'), 'label' => 'Salary Settings'],
       ]],
-      ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules'],
-      ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules'],
-      ['url' => route('self-service'), 'label' => 'Self-Service',  'group' => 'Modules'],
-      ['url' => route('reports'),      'label' => 'Reports',       'group' => 'Modules'],
+      ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules', 'permission' => 'payroll.view'],
+      ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules', 'permission' => 'benefits.view'],
+      ['url' => route('self-service'), 'label' => 'Self-Service',  'group' => 'Modules', 'permission' => 'self-service.view'],
+      ['url' => route('reports'),      'label' => 'Reports',       'group' => 'Modules', 'permission' => 'reports.view'],
     ];
+
+    $nav = array_filter($nav, function ($item) use ($user) {
+      if (isset($item['permission'])) {
+        return $user && $user->hasPermission($item['permission']);
+      }
+      return true;
+    });
+
     $groups = collect($nav)->groupBy('group');
     $current = url()->current();
     $currentPath = request()->path();
