@@ -179,9 +179,9 @@
             </div>
 
             <div class="mt-auto pt-4">
-                <form method="POST" action="{{ route('logout') }}" class="w-full">
+                <form id="logoutForm" method="POST" action="{{ route('logout') }}" class="w-full">
                     @csrf
-                    <button type="submit" class="logout-button flex w-full items-center rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-slate-700 transition hover:bg-slate-50">
+                    <button type="button" id="logoutTrigger" class="logout-button flex w-full items-center rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-slate-700 transition hover:bg-slate-50">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
                             <i class="ti ti-logout sidebar-icon text-xl"></i>
                         </span>
@@ -243,6 +243,23 @@
         </main>
     </div>
 
+    <div id="logoutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4">
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div class="border-b border-slate-100 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Confirm Logout</h3>
+                <p class="mt-1 text-sm text-slate-500">Are you sure you want to sign out of the system?</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-6 py-4">
+                <button type="button" id="logoutCancel" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button type="button" id="logoutConfirm" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-700">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{ $scripts ?? '' }}
 
     <script>
@@ -262,6 +279,54 @@
                     document.body.classList.toggle('sidebar-collapsed');
                 });
             }
+
+            const logoutForm = document.getElementById('logoutForm');
+            const logoutTrigger = document.getElementById('logoutTrigger');
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutCancel = document.getElementById('logoutCancel');
+            const logoutConfirm = document.getElementById('logoutConfirm');
+
+            const openLogoutModal = function () {
+                if (!logoutModal) return;
+
+                logoutModal.classList.remove('hidden');
+                logoutModal.classList.add('flex');
+            };
+
+            const closeLogoutModal = function () {
+                if (!logoutModal) return;
+
+                logoutModal.classList.remove('flex');
+                logoutModal.classList.add('hidden');
+            };
+
+            if (logoutTrigger) {
+                logoutTrigger.addEventListener('click', openLogoutModal);
+            }
+
+            if (logoutCancel) {
+                logoutCancel.addEventListener('click', closeLogoutModal);
+            }
+
+            if (logoutConfirm && logoutForm) {
+                logoutConfirm.addEventListener('click', function () {
+                    logoutForm.submit();
+                });
+            }
+
+            if (logoutModal) {
+                logoutModal.addEventListener('click', function (event) {
+                    if (event.target === logoutModal) {
+                        closeLogoutModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && logoutModal && logoutModal.classList.contains('flex')) {
+                    closeLogoutModal();
+                }
+            });
         });
     </script>
 </body>
