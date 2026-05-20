@@ -22,7 +22,7 @@
             <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input type="search" placeholder="Search employees..." class="w-full rounded-lg border-0 py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <input id="emp-search" type="search" placeholder="Search by name or code…" class="w-full rounded-lg border-0 py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white" />
         </div>
         <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@
     <!-- Employees Table -->
     <div class="card overflow-hidden">
         @if ($employees->count() > 0)
-            <table class="w-full text-sm">
+            <table id="emp-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Code</th>
@@ -73,8 +73,8 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
-                        <tr>
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
+                        <tr class="emp-row hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
@@ -82,7 +82,7 @@
                                         {{ collect(explode(' ', $employee->full_name))->map(fn($name) => $name[0] ?? '')->join('') }}
                                     </div>
                                     <div>
-                                        <p class="font-medium text-slate-900">{{ $employee->full_name }}</p>
+                                        <p class="font-medium text-slate-900 emp-name">{{ $employee->full_name }}</p>
                                         <p class="text-xs text-slate-500">{{ $employee->email }}</p>
                                     </div>
                                 </div>
@@ -115,7 +115,7 @@
                                         2 => 'badge-blue',
                                         3 => 'badge-amber',
                                         4 => 'badge-gray',
-                                        5 => 'badge-gray',
+                                        5 => 'badge-red',
                                     ];
                                     $badgeColor = $statusColors[$statusCode] ?? 'badge-gray';
                                 @endphp
@@ -141,16 +141,13 @@
                                         <i class="ti ti-edit text-base"></i>
                                     </a>
 
-                                    {{-- Delete --}}
-                                    <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this employee?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-red-600 hover:text-red-800 transition"
-                                                title="Delete Employee">
-                                            <i class="ti ti-trash text-base"></i>
-                                        </button>
-                                    </form>
+                                    {{-- Terminate --}}
+                                    <button type="button"
+                                            class="text-red-600 hover:text-red-800 transition"
+                                            title="Terminate Employee"
+                                            onclick="openTerminationModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}')">
+                                        <i class="ti ti-ban text-base"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -166,5 +163,76 @@
             <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>
         @endif
     </div>
+
+    {{-- ── Termination Modal ── --}}
+    <div id="terminationModal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+         style="padding-left: var(--sidebar-width, 0);">
+        <div class="w-full max-w-md rounded-xl bg-white shadow-xl">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Terminate Employee</h3>
+                <p class="text-xs text-slate-500 mt-1">This will mark the employee as terminated</p>
+            </div>
+            <form id="terminationForm" method="POST" action="" class="p-6 space-y-5">
+                @csrf
+                <input type="hidden" id="terminationEmployeeId" name="employee_id">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Termination Date <span class="text-red-500">*</span></label>
+                    <input type="date" id="terminationDate" name="termination_date" required
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Termination Reason</label>
+                    <input type="text" id="terminationReason" name="termination_reason" placeholder="e.g. Resignation, Retirement"
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="submit"
+                            class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition">
+                        Terminate
+                    </button>
+                    <button type="button" onclick="closeTerminationModal()"
+                            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openTerminationModal(employeeId, employeeName) {
+            document.getElementById('terminationEmployeeId').value = employeeId;
+            document.getElementById('terminationDate').value = '';
+            document.getElementById('terminationReason').value = '';
+            document.getElementById('terminationForm').action = `/employees/${employeeId}/terminate`;
+            document.getElementById('terminationModal').classList.remove('hidden');
+            document.getElementById('terminationModal').classList.add('flex');
+        }
+
+        function closeTerminationModal() {
+            document.getElementById('terminationModal').classList.add('hidden');
+            document.getElementById('terminationModal').classList.remove('flex');
+        }
+
+        // Close modal on outside click
+        document.getElementById('terminationModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeTerminationModal();
+            }
+        });
+
+        // Client-side Table Search
+        document.getElementById('emp-search')?.addEventListener('input', function () {
+            const term = this.value.toLowerCase().trim();
+            document.querySelectorAll('#emp-table .emp-row').forEach(row => {
+                const name = row.querySelector('.emp-name')?.textContent.toLowerCase() ?? '';
+                const code = row.querySelector('.emp-code')?.textContent.toLowerCase() ?? '';
+                row.style.display = (name.includes(term) || code.includes(term)) ? '' : 'none';
+            });
+        });
+    </script>
 
 </x-app-layout>

@@ -201,6 +201,28 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Terminate an employee by updating their status and termination details.
+     */
+    public function terminate(Request $request, Employee $employee): RedirectResponse
+    {
+        $validated = $request->validate([
+            'termination_date' => ['required', 'date'],
+            'termination_reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $employee->update([
+            'status' => 5, // 5 = Terminated
+            'termination_date' => $validated['termination_date'],
+            'termination_reason' => $validated['termination_reason'] ?? null,
+        ]);
+
+        $terminationDateLabel = \Carbon\Carbon::parse($validated['termination_date'])->format('M d, Y');
+
+        return redirect()->route('employees.index')
+            ->with('success', 'Employee terminated successfully as of ' . $terminationDateLabel . '.');
+    }
+
+    /**
      * Grant or update role for an employee.
      */
     public function grantRole(Request $request, Employee $employee): RedirectResponse
@@ -220,11 +242,17 @@ class EmployeeController extends Controller
         $fromDate = isset($validated['from_date']) ? \Carbon\Carbon::parse($validated['from_date']) : now();
         $toDate = isset($validated['to_date']) ? \Carbon\Carbon::parse($validated['to_date']) : now();
 
+        // Detect if there is an active assignment already (we're editing/updating)
+        $hadActive = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
+            ->where('is_active', true)
+            ->exists();
+
         $latestAssignment = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
             ->latest()
             ->first();
         $originalRole = $latestAssignment?->original_role ?? $employee->user->role;
 
+        // Deactivate existing actives
         \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
             ->update(['is_active' => false]);
 
@@ -241,8 +269,16 @@ class EmployeeController extends Controller
         $fromLabel = $fromDate->format('M d, Y' . ($fromDate->format('H:i') !== '00:00' ? ' H:i' : ''));
         $toLabel = $toDate->format('M d, Y' . ($toDate->format('H:i') !== '00:00' ? ' H:i' : ''));
 
-        return redirect()->back()
-            ->with('success', 'Temporary role access granted from ' . $fromLabel . ' to ' . $toLabel . '.');
+        $roleLabels = [1 => 'Employee', 2 => 'Supervisor', 4 => 'HR'];
+        $roleName = $roleLabels[$validated['role']] ?? 'Role';
+
+        if ($hadActive) {
+            $message = 'Editing date changed from ' . $fromLabel . ' to ' . $toLabel . '.';
+        } else {
+            $message = 'Temporary role access granted to ' . $roleName . ' from ' . $fromLabel . ' to ' . $toLabel . '.';
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**

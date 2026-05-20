@@ -11,7 +11,6 @@
         ['label' => 'Personal',    'color' => 'indigo'],
         ['label' => 'Contact',     'color' => 'sky'],
         ['label' => 'Employment',  'color' => 'emerald'],
-        ['label' => 'Termination', 'color' => 'rose'],
     ];
 
     // Pre-calculate all descendant department IDs for each department
@@ -40,7 +39,7 @@
         <div id="wizard-progress-line" class="absolute left-0 top-6 h-1 bg-indigo-600 -z-10 transition-all duration-500" style="width:0%"></div>
 
         @foreach ($steps as $i => $step)
-        <div class="wizard-step-indicator flex flex-col items-center gap-3" data-step="{{ $i + 1 }}">
+        <div class="wizard-step-indicator flex flex-col items-center gap-3" data-step="{{ $i + 1 }}" data-color="{{ $step['color'] }}">
             <div class="step-circle flex h-12 w-12 items-center justify-center rounded-full border-2.5 border-slate-300 bg-white text-base font-bold text-slate-500 shadow-sm transition-all duration-300">
                 <span class="step-num">{{ $i + 1 }}</span>
                 <svg class="step-check hidden h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,36 +292,6 @@
     </div>
 </div>
 
-{{-- ── Step 4: Termination Details ──────────────────────────────────── --}}
-<div class="wizard-panel hidden" data-panel="4">
-    <div class="mb-7 flex items-center gap-4">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500 text-white shadow-sm">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        </div>
-        <div>
-            <h3 class="text-base font-semibold text-slate-800">Termination Details</h3>
-            <p class="text-xs text-slate-400">Leave blank if not applicable</p>
-        </div>
-    </div>
-
-    <div class="grid gap-6 sm:grid-cols-2">
-        <div>
-            <label class="{{ $lbl }}" for="termination_date">Termination Date</label>
-            <input id="termination_date" name="termination_date" type="date" value="{{ old('termination_date', optional($employee->termination_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}">
-            @error('termination_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
-        </div>
-        <div>
-            <label class="{{ $lbl }}" for="termination_reason">Termination Reason</label>
-            <input id="termination_reason" name="termination_reason" type="text" value="{{ old('termination_reason', $employee->termination_reason ?? '') }}" placeholder="e.g. Resignation" class="{{ $inp }}">
-            @error('termination_reason')<p class="{{ $err }}">{{ $message }}</p>@enderror
-        </div>
-    </div>
-
-    <p class="mt-6 text-xs text-slate-400">Review all details before submitting. You can go back to any step using the Previous button.</p>
-</div>
-
 {{-- ── Navigation Buttons ────────────────────────────────────────────── --}}
 <div class="mt-10 flex items-center justify-between border-t border-slate-100 pt-8">
     <button type="button" id="wizard-prev"
@@ -348,7 +317,7 @@
 {{-- ── Wizard Script ─────────────────────────────────────────────────── --}}
 <script>
 (function () {
-    const TOTAL = 4;
+    const TOTAL = 3;
     let current = 1;
 
     function isStepCompleted(stepNum) {
@@ -362,6 +331,12 @@
         return errors.length === 0; // Completed only if no errors
     }
 
+    const colorMap = {
+        'indigo': { border: 'border-indigo-600', bg: 'bg-indigo-600', bgLight: 'bg-indigo-50', text: 'text-indigo-600' },
+        'sky': { border: 'border-sky-600', bg: 'bg-sky-600', bgLight: 'bg-sky-50', text: 'text-sky-600' },
+        'emerald': { border: 'border-emerald-600', bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600' },
+    };
+
     function update() {
         // Panels
         document.querySelectorAll('.wizard-panel').forEach(p => {
@@ -371,35 +346,54 @@
         // Step indicators
         document.querySelectorAll('.wizard-step-indicator').forEach(ind => {
             const s     = parseInt(ind.dataset.step);
+            const color = ind.dataset.color || 'indigo';
             const circle = ind.querySelector('.step-circle');
             const num    = ind.querySelector('.step-num');
             const check  = ind.querySelector('.step-check');
             const label  = ind.querySelector('.step-label');
 
-            circle.classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white',
-                                    'border-indigo-300', 'bg-indigo-50',  'text-indigo-600',
-                                    'border-slate-200',  'bg-white',      'text-slate-400');
+            // Remove all color classes
+            Object.values(colorMap).forEach(colors => {
+                ['border', 'bg', 'bgLight', 'text'].forEach(key => {
+                    if (colors[key]) circle.classList.remove(colors[key]);
+                });
+            });
+            circle.classList.remove('border-slate-200', 'bg-white', 'text-slate-400');
+
+            const colors = colorMap[color] || colorMap.indigo;
+
             if (s < current) {
                 // Completed
-                circle.classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
+                circle.classList.add(colors.border, colors.bg, 'text-white');
                 num.classList.add('hidden'); check.classList.remove('hidden');
-                label.classList.replace('text-slate-400', 'text-indigo-600');
+                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
             } else if (s === current) {
                 // Active
-                circle.classList.add('border-indigo-600', 'bg-indigo-50', 'text-indigo-600');
+                circle.classList.add(colors.border, colors.bgLight, colors.text);
                 num.classList.remove('hidden'); check.classList.add('hidden');
-                label.classList.replace('text-slate-400', 'text-indigo-600');
+                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
             } else {
                 // Future
                 circle.classList.add('border-slate-200', 'bg-white', 'text-slate-400');
                 num.classList.remove('hidden'); check.classList.add('hidden');
-                try { label.classList.replace('text-indigo-600', 'text-slate-400'); } catch(e) {}
+                label.classList.add('text-slate-400');
             }
         });
 
         // Progress line
         const pct = ((current - 1) / (TOTAL - 1)) * 100;
-        document.getElementById('wizard-progress-line').style.width = pct + '%';
+        const progressLine = document.getElementById('wizard-progress-line');
+        progressLine.style.width = pct + '%';
+
+        // Update progress line color based on current step
+        const currentStep = document.querySelector(`.wizard-step-indicator[data-step="${current}"]`);
+        if (currentStep) {
+            const color = currentStep.dataset.color || 'indigo';
+            progressLine.classList.remove('bg-indigo-600', 'bg-sky-600', 'bg-emerald-600');
+            if (color === 'sky') progressLine.classList.add('bg-sky-600');
+            else if (color === 'emerald') progressLine.classList.add('bg-emerald-600');
+            else progressLine.classList.add('bg-indigo-600');
+        }
 
         // Buttons
         document.getElementById('wizard-prev').classList.toggle('hidden', current === 1);
@@ -420,28 +414,28 @@
     const deptSelect = document.getElementById('department_id');
     const posSelect = document.getElementById('position_id');
     const departmentChildrenMap = @json($departmentChildrenMap);
-    
+
     function updatePositionDropdown() {
         const deptId = String(deptSelect.value);
         const currentPosId = posSelect.value;
-        
+
         if (!deptId) {
             posSelect.disabled = true;
             posSelect.value = '';
         } else {
             posSelect.disabled = false;
             let isValidSelection = false;
-            
+
             const validDeptIds = [deptId];
             if (departmentChildrenMap[deptId]) {
                 validDeptIds.push(...departmentChildrenMap[deptId]);
             }
-            
+
             Array.from(posSelect.options).forEach(opt => {
                 if (opt.value === '') return;
-                
+
                 const optDeptId = String(opt.dataset.departmentId);
-                
+
                 if (optDeptId === '' || validDeptIds.includes(optDeptId)) {
                     opt.hidden = false;
                     opt.disabled = false;
@@ -451,13 +445,13 @@
                     opt.disabled = true;
                 }
             });
-            
+
             if (!isValidSelection) {
                 posSelect.value = '';
             }
         }
     }
-    
+
     if (deptSelect && posSelect) {
         deptSelect.addEventListener('change', updatePositionDropdown);
         posSelect.addEventListener('change', () => {

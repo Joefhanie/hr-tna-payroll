@@ -222,3 +222,8 @@ details>summary::-webkit-details-marker {
     background: #f3e8ff;
     color: #6b21a8;
 }
+
+.badge-indigo {
+    background: #e0e7ff;
+    color: #3730a3;
+}
