@@ -80,7 +80,7 @@ class TimekeepingController extends Controller
             : [];
 
         $employees = Schema::hasTable('employees')
-            ? Employee::orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            ? Employee::with(['currentShift.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
             : collect();
 
         $calendarData = Schema::hasTable('attendance')

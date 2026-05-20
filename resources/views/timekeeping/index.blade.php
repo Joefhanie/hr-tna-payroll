@@ -147,9 +147,28 @@
                                     {{ $day }}
                                 </span>
                                 @if($hasEvents)
-                                    <span class="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.62rem] font-bold text-white shadow-sm" title="{{ $calendarStatusSummary }}">
-                                        {{ $calendarDayTotal }}
-                                    </span>
+                                    <div class="absolute right-2 top-2 flex flex-col gap-0.5">
+                                        @if($calendarDayStatusCounts['present'] > 0)
+                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.62rem] font-bold text-white shadow-sm" title="Present: {{ $calendarDayStatusCounts['present'] }}">
+                                                {{ $calendarDayStatusCounts['present'] }}
+                                            </span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['late'] > 0)
+                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-yellow-400 text-[0.62rem] font-bold text-slate-900 shadow-sm" title="Late: {{ $calendarDayStatusCounts['late'] }}">
+                                                {{ $calendarDayStatusCounts['late'] }}
+                                            </span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['absent'] > 0)
+                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-400 text-[0.62rem] font-bold text-white shadow-sm" title="Absent: {{ $calendarDayStatusCounts['absent'] }}">
+                                                {{ $calendarDayStatusCounts['absent'] }}
+                                            </span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['excused'] > 0)
+                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-[0.62rem] font-bold text-white shadow-sm" title="Excused: {{ $calendarDayStatusCounts['excused'] }}">
+                                                {{ $calendarDayStatusCounts['excused'] }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 @endif
                             </div>
                         @endfor
@@ -304,6 +323,10 @@
                                 </option>
                             @endforeach
                         </select>
+                        <p id="employee-shift-info" class="mt-1.5 text-[0.75rem] text-slate-500 hidden">
+                            <i class="ti ti-clock text-slate-400"></i>
+                            <span id="employee-shift-text"></span>
+                        </p>
                     </div>
 
                     {{-- Date --}}
@@ -517,11 +540,53 @@
             switchTab('calendar');
         });
 
+        @php
+            $employeeShiftData = $users->mapWithKeys(function ($emp) {
+                $shift = $emp->currentShift?->shift;
+                if (!$shift) return [$emp->id => null];
+
+                $start = \Carbon\Carbon::createFromFormat('H:i:s', $shift->start_time)->format('g:i A');
+                $end = \Carbon\Carbon::createFromFormat('H:i:s', $shift->end_time)->format('g:i A');
+                $days = is_array($shift->days_of_week) ? $shift->days_of_week : [];
+
+                return [$emp->id => [
+                    'name'  => $shift->name,
+                    'time'  => $start . ' – ' . $end,
+                    'days'  => $days,
+                ]];
+            })->all();
+        @endphp
+
         (function () {
             const openAttendanceMap = @json($openAttendanceMap ?? []);
-            const userSelect = document.getElementById('manual-user-id');
+            const employeeShiftMap = @json($employeeShiftData);
+
+            const userSelect = document.getElementById('manual-employee-id');
             const dateInput = document.getElementById('manual-date');
             const checkInInput = document.getElementById('manual-check-in');
+            const shiftInfoEl = document.getElementById('employee-shift-info');
+            const shiftTextEl = document.getElementById('employee-shift-text');
+
+            function updateShiftInfo() {
+                if (!userSelect || !shiftInfoEl || !shiftTextEl) return;
+                const empId = userSelect.value;
+                const shiftData = employeeShiftMap[empId];
+
+                if (shiftData) {
+                    const dayAbbr = { 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed', 'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun' };
+                    const daysStr = (shiftData.days || []).map(d => dayAbbr[d] || d).join(', ');
+                    shiftTextEl.textContent = `Shift: ${shiftData.time}` + (daysStr ? ` · ${daysStr}` : '');
+                    shiftInfoEl.classList.remove('hidden');
+                } else {
+                    shiftInfoEl.classList.add('hidden');
+                    shiftTextEl.textContent = '';
+                }
+            }
+
+            if (userSelect) {
+                userSelect.addEventListener('change', updateShiftInfo);
+                updateShiftInfo(); // run on load if value already selected (old() repopulation)
+            }
 
             function getCurrentTimeValue() {
                 const now = new Date();
