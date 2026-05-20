@@ -74,7 +74,7 @@
                                         $timeOut->addDay();
                                     }
 
-                                    $totalMins = $timeOut->diffInMinutes($timeIn);
+                                    $totalMins = $timeOut->diffInMinutes($timeIn, true);
                                     $breakMins = $shift ? $shift->break_minutes : 0;
                                     $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
                                 }
@@ -87,15 +87,15 @@
                                         @if($shift)
                                             <div class="flex flex-wrap gap-1 mt-0.5">
                                                 @if($shift->crosses_midnight)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700" title="Cross-day Shift (Crosses Midnight)">
-                                                        <i class="ti ti-moon text-indigo-500"></i>
-                                                        Cross-day
+                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wide" title="Cross-day Shift (Crosses Midnight)">
+                                                        <i class="ti ti-moon"></i>
+                                                        CROSS-DAY
                                                     </span>
                                                 @endif
                                                 @if(!is_null($workedHours) && $workedHours <= 4.0)
-                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Worked half day (4 hours or less)">
-                                                        <i class="ti ti-circle-half text-teal-500"></i>
-                                                        Half Day
+                                                    <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
+                                                        <i class="ti ti-circle-half"></i>
+                                                        HALF DAY
                                                     </span>
                                                 @endif
                                             </div>
