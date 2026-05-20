@@ -26,33 +26,79 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-600">Overtime Multiplier (OT)</label>
-                    <input type="number" name="attendance_overtime_multiplier" step="0.0001" min="0" value="{{ old('attendance_overtime_multiplier', $global->attendance_overtime_multiplier ?? 1.25) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                    <input type="number" name="attendance_overtime_multiplier" step="0.01" min="0" value="{{ old('attendance_overtime_multiplier', isset($global->attendance_overtime_multiplier) ? number_format($global->attendance_overtime_multiplier, 2, '.', '') : '1.25') }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-slate-600">Night Differential Multiplier</label>
-                    <input type="number" name="attendance_night_differential_multiplier" step="0.0001" min="0" value="{{ old('attendance_night_differential_multiplier', $global->attendance_night_differential_multiplier ?? 0.10) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                    <input type="number" name="attendance_night_differential_multiplier" step="0.01" min="0" value="{{ old('attendance_night_differential_multiplier', isset($global->attendance_night_differential_multiplier) ? number_format($global->attendance_night_differential_multiplier, 2, '.', '') : '0.10') }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-slate-600">Late Deduction Multiplier</label>
-                    <input type="number" name="attendance_late_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_late_deduction_multiplier', $global->attendance_late_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                    <input type="number" name="attendance_late_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_late_deduction_multiplier', isset($global->attendance_late_deduction_multiplier) ? number_format($global->attendance_late_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-slate-600">Undertime Deduction Multiplier</label>
-                    <input type="number" name="attendance_undertime_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_undertime_deduction_multiplier', $global->attendance_undertime_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                    <input type="number" name="attendance_undertime_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_undertime_deduction_multiplier', isset($global->attendance_undertime_deduction_multiplier) ? number_format($global->attendance_undertime_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-slate-600">Absence Deduction Multiplier</label>
-                    <input type="number" name="attendance_absence_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_absence_deduction_multiplier', $global->attendance_absence_deduction_multiplier ?? 1.00) }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
+                    <input type="number" name="attendance_absence_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_absence_deduction_multiplier', isset($global->attendance_absence_deduction_multiplier) ? number_format($global->attendance_absence_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded border border-slate-200 px-2 py-2 text-sm">
                 </div>
             </div>
 
             <div class="flex justify-end gap-3 mt-4">
                 <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
                     Save Payroll Defaults
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Late Deductions Configuration -->
+    <div class="card p-6 shadow-sm mb-6">
+        <div class="flex items-center justify-between gap-3 mb-5">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Late Deductions Configuration</h2>
+                <p class="mt-1 text-sm text-slate-500">Configure tiered late deduction thresholds and penalties (in hours).</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('salary.save-payroll-settings') }}" id="late-deductions-form" class="space-y-4">
+            @csrf
+            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem;">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Grace Period (Mins)</label>
+                    <input type="number" name="late_grace_period_minutes" min="0" value="{{ old('late_grace_period_minutes', $global->late_grace_period_minutes ?? 10) }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">11-15 Mins (Hours)</label>
+                    <input type="number" name="late_11_15_deduction_hours" step="0.01" min="0" value="{{ old('late_11_15_deduction_hours', isset($global->late_11_15_deduction_hours) ? number_format($global->late_11_15_deduction_hours, 2, '.', '') : '0.50') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">16-30 Mins (Hours)</label>
+                    <input type="number" name="late_16_30_deduction_hours" step="0.01" min="0" value="{{ old('late_16_30_deduction_hours', isset($global->late_16_30_deduction_hours) ? number_format($global->late_16_30_deduction_hours, 2, '.', '') : '1.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">31-60 Mins (Hours)</label>
+                    <input type="number" name="late_31_60_deduction_hours" step="0.01" min="0" value="{{ old('late_31_60_deduction_hours', isset($global->late_31_60_deduction_hours) ? number_format($global->late_31_60_deduction_hours, 2, '.', '') : '4.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">61+ Mins (Hours)</label>
+                    <input type="number" name="late_61_plus_deduction_hours" step="0.01" min="0" value="{{ old('late_61_plus_deduction_hours', isset($global->late_61_plus_deduction_hours) ? number_format($global->late_61_plus_deduction_hours, 2, '.', '') : '8.00') }}" class="w-full rounded border border-slate-200 px-2.5 py-1.5 text-sm" required>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                    Save Late Deductions Config
                 </button>
             </div>
         </form>

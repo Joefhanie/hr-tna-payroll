@@ -52,15 +52,32 @@ class SalaryController extends Controller
             'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
             'attendance_undertime_deduction_multiplier' => 'nullable|numeric|min:0',
             'attendance_absence_deduction_multiplier' => 'nullable|numeric|min:0',
+            'late_grace_period_minutes' => 'nullable|integer|min:0',
+            'late_11_15_deduction_hours' => 'nullable|numeric|min:0',
+            'late_16_30_deduction_hours' => 'nullable|numeric|min:0',
+            'late_31_60_deduction_hours' => 'nullable|numeric|min:0',
+            'late_61_plus_deduction_hours' => 'nullable|numeric|min:0',
         ]);
 
-        $payload = [
-            'attendance_overtime_multiplier' => $validated['attendance_overtime_multiplier'] ?? 1.25,
-            'attendance_night_differential_multiplier' => $validated['attendance_night_differential_multiplier'] ?? 0.10,
-            'attendance_late_deduction_multiplier' => $validated['attendance_late_deduction_multiplier'] ?? 1.00,
-            'attendance_undertime_deduction_multiplier' => $validated['attendance_undertime_deduction_multiplier'] ?? 1.00,
-            'attendance_absence_deduction_multiplier' => $validated['attendance_absence_deduction_multiplier'] ?? 1.00,
+        $payload = [];
+        $keys = [
+            'attendance_overtime_multiplier',
+            'attendance_night_differential_multiplier',
+            'attendance_late_deduction_multiplier',
+            'attendance_undertime_deduction_multiplier',
+            'attendance_absence_deduction_multiplier',
+            'late_grace_period_minutes',
+            'late_11_15_deduction_hours',
+            'late_16_30_deduction_hours',
+            'late_31_60_deduction_hours',
+            'late_61_plus_deduction_hours',
         ];
+
+        foreach ($keys as $key) {
+            if ($request->has($key)) {
+                $payload[$key] = $validated[$key] ?? $request->input($key);
+            }
+        }
 
         $global = \App\Models\PayrollSetting::first();
 

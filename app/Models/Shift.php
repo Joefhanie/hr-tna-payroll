@@ -289,7 +289,7 @@ class Shift extends Model
     /**
      * Calculate the attendance status for a clock-in based on this shift.
      */
-    public function getAttendanceStatusForClockIn($clockInTime, $gracePeriodMinutes = 10): array
+    public function getAttendanceStatusForClockIn($clockInTime): array
     {
         $actualLateMinutes = $this->checkIfLate($clockInTime, 0);
 

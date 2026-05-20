@@ -20,7 +20,8 @@ class LateDeductionService
         'grace_period_minutes' => 10,
         'thresholds' => [
             ['min' => 0, 'max' => 10, 'type' => 'grace_period', 'deduction_hours' => 0],
-            ['min' => 11, 'max' => 30, 'type' => 'one_hour', 'deduction_hours' => 1],
+            ['min' => 11, 'max' => 15, 'type' => 'thirty_minutes', 'deduction_hours' => 0.5],
+            ['min' => 16, 'max' => 30, 'type' => 'one_hour', 'deduction_hours' => 1],
             ['min' => 31, 'max' => 60, 'type' => 'half_day', 'deduction_hours' => 4],
             ['min' => 61, 'max' => 99999, 'type' => 'absent', 'deduction_hours' => 8],
         ],
@@ -77,7 +78,8 @@ class LateDeductionService
      */
     public function getDeductionForLateMinutes($lateMinutes, $policyVersion = null)
     {
-        foreach ($this->policy['thresholds'] as $threshold) {
+        $policy = $this->getPolicy();
+        foreach ($policy['thresholds'] as $threshold) {
             if ($lateMinutes >= $threshold['min'] && $lateMinutes <= $threshold['max']) {
                 return [
                     'type' => $threshold['type'],
@@ -332,6 +334,20 @@ class LateDeductionService
      */
     public function getPolicy()
     {
+        $global = \App\Models\PayrollSetting::first();
+        if ($global) {
+            $grace = (int) ($global->late_grace_period_minutes ?? 10);
+            return [
+                'grace_period_minutes' => $grace,
+                'thresholds' => [
+                    ['min' => 0, 'max' => $grace, 'type' => 'grace_period', 'deduction_hours' => 0],
+                    ['min' => $grace + 1, 'max' => 15, 'type' => 'thirty_minutes', 'deduction_hours' => (float) ($global->late_11_15_deduction_hours ?? 0.5)],
+                    ['min' => 16, 'max' => 30, 'type' => 'one_hour', 'deduction_hours' => (float) ($global->late_16_30_deduction_hours ?? 1.0)],
+                    ['min' => 31, 'max' => 60, 'type' => 'half_day', 'deduction_hours' => (float) ($global->late_31_60_deduction_hours ?? 4.0)],
+                    ['min' => 61, 'max' => 99999, 'type' => 'absent', 'deduction_hours' => (float) ($global->late_61_plus_deduction_hours ?? 8.0)],
+                ],
+            ];
+        }
         return $this->policy;
     }
 
@@ -356,7 +372,8 @@ class LateDeductionService
         return <<<'POLICY'
 Late Time-In Policy:
 - 0-10 minutes: No deduction (grace period)
-- 11-30 minutes: 1 hour deduction
+- 11-15 minutes: 30 minutes deduction
+- 16-30 minutes: 1 hour deduction
 - 31-60 minutes: Half day deduction (4 hours)
 - 61+ minutes: Absent (full day = 8 hours)
 

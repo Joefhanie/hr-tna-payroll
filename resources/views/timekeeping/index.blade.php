@@ -56,23 +56,27 @@
     {{-- Calendar View --}}
     <div id="view-calendar" class="block mb-12">
         @php
-            $startOfMonth = \Carbon\Carbon::now()->startOfMonth();
-            $endOfMonth = clone $startOfMonth;
-            $endOfMonth->endOfMonth();
-            $endOfPrevMonth = (clone $startOfMonth)->subDay();
+            $selectedDateCarbon = \Carbon\Carbon::parse($selectedDate);
+            $startOfMonth = $selectedDateCarbon->copy()->startOfMonth();
+            $endOfMonth = $selectedDateCarbon->copy()->endOfMonth();
+            $endOfPrevMonth = $startOfMonth->copy()->subDay();
             $daysInMonth = $endOfMonth->daysInMonth;
             $daysInPrevMonth = $endOfPrevMonth->daysInMonth;
             $firstDayOfWeek = $startOfMonth->dayOfWeek; // 0 (Sun) to 6 (Sat)
             $monthName = $startOfMonth->format('F');
             $year = $startOfMonth->format('Y');
             $todayStr = \Carbon\Carbon::now()->toDateString();
+
+            // Calculate previous and next month dates for navigation
+            $prevMonthDate = $startOfMonth->copy()->subMonth()->startOfMonth()->toDateString();
+            $nextMonthDate = $startOfMonth->copy()->addMonth()->startOfMonth()->toDateString();
         @endphp
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Left Sidebar -->
             <div class="lg:col-span-1 bg-[#f8f9fc] border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[700px] overflow-hidden">
                 <div class="p-8 border-b border-slate-200 bg-white text-center">
-                    <h2 id="selectedDateNumber" class="text-7xl font-black text-[#06112e] tracking-tight">{{ now()->format('d') }}</h2>
-                    <p id="selectedDateDay" class="text-sm font-bold uppercase tracking-widest text-slate-500 mt-2">{{ now()->format('l') }}</p>
+                    <h2 id="selectedDateNumber" class="text-7xl font-black text-[#06112e] tracking-tight">{{ $selectedDateCarbon->format('d') }}</h2>
+                    <p id="selectedDateDay" class="text-sm font-bold uppercase tracking-widest text-slate-500 mt-2">{{ $selectedDateCarbon->format('l') }}</p>
                 </div>
                 <div class="p-6 flex-1 overflow-y-auto">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-5">Attendance Records</h3>
@@ -84,9 +88,20 @@
 
             <!-- Right side Calendar -->
             <div class="lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]">
-                <div class="bg-[#06112e] text-white p-6 flex justify-between items-center">
-                    <h2 class="text-xl font-bold tracking-wider uppercase">{{ $monthName }}</h2>
-                    <h2 class="text-xl font-bold">{{ $year }}</h2>
+                <div class="bg-[#06112e] text-white p-6 flex justify-center items-center">
+                    <div class="flex items-center justify-between w-[300px]">
+                        <a href="{{ route('timekeeping.index') }}?date={{ $prevMonthDate }}&tab=calendar" 
+                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
+                           title="Previous Month">
+                            <i class="ti ti-chevron-left text-lg"></i>
+                        </a>
+                        <h2 class="text-xl font-bold tracking-wider uppercase flex-1 text-center select-none">{{ $monthName }} {{ $year }}</h2>
+                        <a href="{{ route('timekeeping.index') }}?date={{ $nextMonthDate }}&tab=calendar" 
+                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
+                           title="Next Month">
+                            <i class="ti ti-chevron-right text-lg"></i>
+                        </a>
+                    </div>
                 </div>
                 <div class="p-6 flex-1 flex flex-col">
                     <div class="grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr);">
@@ -142,7 +157,7 @@
                                     . ' | A: ' . $calendarDayStatusCounts['absent']
                                     . ' | E: ' . $calendarDayStatusCounts['excused'];
                             @endphp
-                            <div class="bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[80px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
+                            <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[80px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
                                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
                                     {{ $day }}
                                 </span>
@@ -230,22 +245,23 @@
                                 $workedHours = null;
 
                                 if ($attendance->check_in && $attendance->check_out) {
-                                    $timeIn = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_in->format('H:i:s'));
-                                    $timeOut = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_out->format('H:i:s'));
+                                    $timeIn = \Carbon\Carbon::parse($attendance->attendance_date->toDateString() . ' ' . $attendance->check_in->format('H:i:s'));
+                                    $timeOut = \Carbon\Carbon::parse($attendance->attendance_date->toDateString() . ' ' . $attendance->check_out->format('H:i:s'));
 
                                     if ($shift?->crosses_midnight && $timeOut->lt($timeIn)) {
                                         $timeOut->addDay();
                                     }
 
-                                    $totalMins = $timeOut->diffInMinutes($timeIn, true);
-                                    $breakMins = $shift ? $shift->break_minutes : 0;
-                                    $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
+                                    if ($timeOut->gte($timeIn)) {
+                                        $totalMins = $timeOut->diffInMinutes($timeIn);
+                                        $breakMins = $shift ? $shift->break_minutes : 0;
+                                        $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
+                                    } else {
+                                        $workedHours = 0;
+                                    }
                                 }
 
                                 $computedStatus = $attendance->status;
-                                if ($shift && $attendance->check_in) {
-                                    $computedStatus = $shift->getAttendanceStatusForClockIn($attendance->check_in, 10)['key'];
-                                }
 
                                 $statusKey = is_numeric($computedStatus) ? (int) $computedStatus : strtolower((string) $computedStatus);
                                 $statusLabel = $attendanceStatusLabels[$statusKey] ?? ucfirst((string) $computedStatus);
@@ -287,7 +303,7 @@
                                                         HALF DAY
                                                     </span>
                                                 @endif
-                                                @if(!is_null($workedHours) && abs($workedHours) <= 4.0)
+                                                @if(!is_null($workedHours) && $workedHours > 0 && $workedHours <= 4.0)
                                                     <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked 4 hours or less today">
                                                         <i class="ti ti-clock-2"></i>
                                                         WORKED HALF DAY
@@ -496,10 +512,10 @@
                 document.getElementById('tab-list').classList.add('border-transparent', 'text-slate-500');
 
                 if (!window.calendarInitialized) {
-                    const todayStr = '{{ \Carbon\Carbon::now()->toDateString() }}';
-                    const todayDay = '{{ \Carbon\Carbon::now()->format("d") }}';
-                    const todayDayName = '{{ strtoupper(\Carbon\Carbon::now()->format("l")) }}';
-                    selectDate(todayStr, todayDay, todayDayName, null);
+                    const initialDateStr = '{{ $selectedDate }}';
+                    const initialDay = '{{ $selectedDateCarbon->format("d") }}';
+                    const initialDayName = '{{ strtoupper($selectedDateCarbon->format("l")) }}';
+                    selectDate(initialDateStr, initialDay, initialDayName, null);
                     window.calendarInitialized = true;
                 }
             }
@@ -546,6 +562,23 @@
         function selectDate(dateStr, dayNum, dayName, element) {
             document.getElementById('selectedDateNumber').textContent = dayNum;
             document.getElementById('selectedDateDay').textContent = dayName;
+
+            // Remove active style from all day cells
+            document.querySelectorAll('.calendar-day-cell').forEach(cell => {
+                cell.classList.remove('bg-blue-50/70', 'border-blue-300', 'z-10');
+                cell.classList.add('bg-white', 'border-slate-100');
+            });
+
+            // Find element if not provided (e.g. on load)
+            if (!element) {
+                element = document.querySelector(`.calendar-day-cell[data-date="${dateStr}"]`);
+            }
+
+            // Add active style to the selected cell
+            if (element) {
+                element.classList.remove('bg-white', 'border-slate-100');
+                element.classList.add('bg-blue-50/70', 'border-blue-300', 'z-10');
+            }
 
             const listContainer = document.getElementById('attendanceRecordsList');
             listContainer.innerHTML = '';
@@ -604,7 +637,7 @@
                             </span>
                         `;
                     }
-                    if (workedHours !== null && workedHours <= 4.0) {
+                    if (workedHours !== null && workedHours > 0 && workedHours <= 4.0) {
                         shiftBadgesHtml += `
                             <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
                                 <i class="ti ti-circle-half"></i> HALF DAY

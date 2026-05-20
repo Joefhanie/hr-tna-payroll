@@ -67,16 +67,20 @@
                                 $workedHours = null;
 
                                 if ($record->check_in && $record->check_out) {
-                                    $timeIn = \Carbon\Carbon::createFromFormat('H:i:s', $record->check_in->format('H:i:s'));
-                                    $timeOut = \Carbon\Carbon::createFromFormat('H:i:s', $record->check_out->format('H:i:s'));
+                                    $timeIn = \Carbon\Carbon::parse($record->attendance_date->toDateString() . ' ' . $record->check_in->format('H:i:s'));
+                                    $timeOut = \Carbon\Carbon::parse($record->attendance_date->toDateString() . ' ' . $record->check_out->format('H:i:s'));
 
                                     if ($shift?->crosses_midnight && $timeOut->lt($timeIn)) {
                                         $timeOut->addDay();
                                     }
 
-                                    $totalMins = $timeOut->diffInMinutes($timeIn, true);
-                                    $breakMins = $shift ? $shift->break_minutes : 0;
-                                    $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
+                                    if ($timeOut->gte($timeIn)) {
+                                        $totalMins = $timeOut->diffInMinutes($timeIn);
+                                        $breakMins = $shift ? $shift->break_minutes : 0;
+                                        $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
+                                    } else {
+                                        $workedHours = 0;
+                                    }
                                 }
                             @endphp
                             <tr class="group hover:bg-slate-50/50 transition">
@@ -92,7 +96,7 @@
                                                         CROSS-DAY
                                                     </span>
                                                 @endif
-                                                @if(!is_null($workedHours) && $workedHours <= 4.0)
+                                                @if(!is_null($workedHours) && $workedHours > 0 && $workedHours <= 4.0)
                                                     <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked half day (4 hours or less)">
                                                         <i class="ti ti-circle-half"></i>
                                                         HALF DAY

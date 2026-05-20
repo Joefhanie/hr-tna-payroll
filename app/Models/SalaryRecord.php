@@ -29,12 +29,12 @@ class SalaryRecord extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'daily_divisor' => 'decimal:4',
-        'attendance_overtime_multiplier' => 'decimal:4',
-        'attendance_night_differential_multiplier' => 'decimal:4',
-        'attendance_late_deduction_multiplier' => 'decimal:4',
-        'attendance_undertime_deduction_multiplier' => 'decimal:4',
-        'attendance_absence_deduction_multiplier' => 'decimal:4',
+        'daily_divisor' => 'decimal:2',
+        'attendance_overtime_multiplier' => 'decimal:2',
+        'attendance_night_differential_multiplier' => 'decimal:2',
+        'attendance_late_deduction_multiplier' => 'decimal:2',
+        'attendance_undertime_deduction_multiplier' => 'decimal:2',
+        'attendance_absence_deduction_multiplier' => 'decimal:2',
         'effective_date' => 'date',
         'end_date' => 'date',
         'pay_frequency' => 'integer',

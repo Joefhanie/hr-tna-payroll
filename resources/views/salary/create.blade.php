@@ -51,8 +51,8 @@
             <!-- Daily Rate Divisor -->
             <div>
                 <label for="daily_divisor" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Daily Rate Divisor</label>
-                <input type="number" id="daily_divisor" name="daily_divisor" step="0.0001" min="1" value="{{ old('daily_divisor', 21.8) }}" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="21.8">
-                <p class="mt-1 text-xs text-slate-500">Usually 21.8 (5-day week) or 26.1667 (6-day week)</p>
+                <input type="number" id="daily_divisor" name="daily_divisor" step="0.01" min="1" value="{{ old('daily_divisor', '21.80') }}" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="21.80">
+                <p class="mt-1 text-xs text-slate-500">Usually 21.80 (5-day week) or 26.17 (6-day week)</p>
                 @error('daily_divisor')
                     <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                 @enderror
@@ -75,8 +75,8 @@
                      class="mt-4 grid gap-4 sm:grid-cols-2 {{ old('attendance_overtime_multiplier') !== null ? '' : 'hidden' }}">
                     <div>
                         <label for="attendance_overtime_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Overtime Pay Multiplier</label>
-                        <input type="number" id="attendance_overtime_multiplier" name="attendance_overtime_multiplier" step="0.0001" min="0" value="{{ old('attendance_overtime_multiplier', $global->attendance_overtime_multiplier ?? 1.25) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        <p class="mt-1 text-xs text-slate-500">Default 1.2500 = 125% of hourly rate.</p>
+                        <input type="number" id="attendance_overtime_multiplier" name="attendance_overtime_multiplier" step="0.01" min="0" value="{{ old('attendance_overtime_multiplier', isset($global->attendance_overtime_multiplier) ? number_format($global->attendance_overtime_multiplier, 2, '.', '') : '1.25') }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.25 = 125% of hourly rate.</p>
                         @error('attendance_overtime_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -84,8 +84,8 @@
 
                     <div>
                         <label for="attendance_night_differential_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Night Differential Multiplier</label>
-                        <input type="number" id="attendance_night_differential_multiplier" name="attendance_night_differential_multiplier" step="0.0001" min="0" value="{{ old('attendance_night_differential_multiplier', $global->attendance_night_differential_multiplier ?? 0.10) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        <p class="mt-1 text-xs text-slate-500">Default 0.1000 = 10% of hourly rate.</p>
+                        <input type="number" id="attendance_night_differential_multiplier" name="attendance_night_differential_multiplier" step="0.01" min="0" value="{{ old('attendance_night_differential_multiplier', isset($global->attendance_night_differential_multiplier) ? number_format($global->attendance_night_differential_multiplier, 2, '.', '') : '0.10') }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <p class="mt-1 text-xs text-slate-500">Default 0.10 = 10% of hourly rate.</p>
                         @error('attendance_night_differential_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -93,8 +93,8 @@
 
                     <div>
                         <label for="attendance_late_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Late Deduction Multiplier</label>
-                        <input type="number" id="attendance_late_deduction_multiplier" name="attendance_late_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_late_deduction_multiplier', $global->attendance_late_deduction_multiplier ?? 1.00) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        <p class="mt-1 text-xs text-slate-500">Default 1.0000 = full late deduction.</p>
+                        <input type="number" id="attendance_late_deduction_multiplier" name="attendance_late_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_late_deduction_multiplier', isset($global->attendance_late_deduction_multiplier) ? number_format($global->attendance_late_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full late deduction.</p>
                         @error('attendance_late_deduction_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -102,8 +102,8 @@
 
                     <div>
                         <label for="attendance_undertime_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Undertime Deduction Multiplier</label>
-                        <input type="number" id="attendance_undertime_deduction_multiplier" name="attendance_undertime_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_undertime_deduction_multiplier', $global->attendance_undertime_deduction_multiplier ?? 1.00) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        <p class="mt-1 text-xs text-slate-500">Default 1.0000 = full undertime deduction.</p>
+                        <input type="number" id="attendance_undertime_deduction_multiplier" name="attendance_undertime_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_undertime_deduction_multiplier', isset($global->attendance_undertime_deduction_multiplier) ? number_format($global->attendance_undertime_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full undertime deduction.</p>
                         @error('attendance_undertime_deduction_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                         @enderror
@@ -111,8 +111,8 @@
 
                     <div>
                         <label for="attendance_absence_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Absence Deduction Multiplier</label>
-                        <input type="number" id="attendance_absence_deduction_multiplier" name="attendance_absence_deduction_multiplier" step="0.0001" min="0" value="{{ old('attendance_absence_deduction_multiplier', $global->attendance_absence_deduction_multiplier ?? 1.00) }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                        <p class="mt-1 text-xs text-slate-500">Default 1.0000 = full absence deduction.</p>
+                        <input type="number" id="attendance_absence_deduction_multiplier" name="attendance_absence_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_absence_deduction_multiplier', isset($global->attendance_absence_deduction_multiplier) ? number_format($global->attendance_absence_deduction_multiplier, 2, '.', '') : '1.00') }}" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full absence deduction.</p>
                         @error('attendance_absence_deduction_multiplier')
                             <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                         @enderror

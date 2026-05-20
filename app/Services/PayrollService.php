@@ -287,8 +287,22 @@ class PayrollService
             $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
             $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
 
-            $checkIn = $attendance->check_in ? Carbon::parse($attendance->check_in) : null;
-            $checkOut = $attendance->check_out ? Carbon::parse($attendance->check_out) : null;
+            $checkIn = null;
+            if ($attendance->check_in) {
+                $timeStr = $attendance->check_in instanceof Carbon ? $attendance->check_in->format('H:i:s') : Carbon::parse($attendance->check_in)->format('H:i:s');
+                $checkIn = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+            }
+
+            $checkOut = null;
+            if ($attendance->check_out) {
+                $timeStr = $attendance->check_out instanceof Carbon ? $attendance->check_out->format('H:i:s') : Carbon::parse($attendance->check_out)->format('H:i:s');
+                $checkOut = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+            }
+
+            if ($checkIn && $checkOut && $checkOut->lt($checkIn) && $dayShift?->crosses_midnight) {
+                $checkOut->addDay();
+            }
+
             $isAbsent = (int) $attendance->status === 3 || (!$checkIn && !$checkOut);
 
             if ($isAbsent) {
@@ -300,30 +314,28 @@ class PayrollService
                 $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
                 $summary['late_minutes'] += $dayLateMinutes;
 
-                // Apply late policy thresholds:
-                if ($dayLateMinutes >= 11 && $dayLateMinutes <= 30) {
-                    $totalLateDeductionHours += 1.0;
-                } elseif ($dayLateMinutes >= 31 && $dayLateMinutes <= 60) {
-                    $totalLateDeductionHours += 4.0;
-                } elseif ($dayLateMinutes >= 61) {
-                    $totalLateDeductionHours += 8.0;
+                // Apply late policy thresholds from LateDeductionService
+                $lateDeductionService = app(\App\Services\LateDeductionService::class);
+                $deduction = $lateDeductionService->getDeductionForLateMinutes($dayLateMinutes);
+                $totalLateDeductionHours += (float) ($deduction['deduction_hours'] ?? 0.0);
+            }
+
+            if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
+                if ($checkOut->lt($shiftEnd)) {
+                    $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
                 }
-            }
 
-            if ($checkOut && $checkOut->lt($shiftEnd)) {
-                $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
-            }
+                if ($checkOut->gt($shiftEnd)) {
+                    $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+                }
 
-            if ($checkOut && $checkOut->gt($shiftEnd)) {
-                $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
-            }
+                if ($checkOut->gt($premiumStart)) {
+                    $nightStart = $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
+                    $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
 
-            if ($checkOut && $checkOut->gt($premiumStart)) {
-                $nightStart = $checkIn && $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
-                $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
-
-                if ($nightEnd->gt($nightStart)) {
-                    $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                    if ($nightEnd->gt($nightStart)) {
+                        $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                    }
                 }
             }
         }

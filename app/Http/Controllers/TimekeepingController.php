@@ -83,11 +83,13 @@ class TimekeepingController extends Controller
             ? Employee::with(['currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
             : collect();
 
+        $selectedDateCarbon = Carbon::parse($selectedDate);
+
         $calendarData = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
                 ->whereBetween('attendance_date', [
-                    Carbon::now()->startOfMonth()->toDateString(),
-                    Carbon::now()->endOfMonth()->toDateString()
+                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
+                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
                 ])
                 ->orderBy('check_in')
                 ->get()
@@ -179,7 +181,7 @@ class TimekeepingController extends Controller
 
         // Auto-determine status from the assigned shift if not explicitly provided
         if (empty($validated['status'])) {
-            $validated['status'] = $shift->getAttendanceStatusForClockIn($checkInDateTime, 10)['key'];
+            $validated['status'] = $shift->getAttendanceStatusForClockIn($checkInDateTime)['key'];
         }
 
         $checkOutDateTime = !empty($validated['check_out'])
