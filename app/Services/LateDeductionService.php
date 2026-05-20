@@ -237,9 +237,15 @@ class LateDeductionService
         }
 
         // Convert salary to hourly rate
-        // Assuming salary is monthly and we use 22 working days, 8 hours/day
+        // Assuming salary is monthly and we use 22 working days
         $dailyRate = $salary->amount / 22;
-        $hourlyRate = $dailyRate / 8;
+
+        $shift = $this->getEmployeeShiftForDate($employee, $date);
+        $workingHoursPerDay = 8.0;
+        if ($shift) {
+            $workingHoursPerDay = max(0.1, $shift->getWorkingHoursPerDay());
+        }
+        $hourlyRate = $dailyRate / $workingHoursPerDay;
 
         return round($hourlyRate, 2);
     }

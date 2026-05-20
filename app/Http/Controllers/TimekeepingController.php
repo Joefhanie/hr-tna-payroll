@@ -233,27 +233,44 @@ class TimekeepingController extends Controller
             'employee_id' => 'required|exists:employees,id',
             'start_time' => 'required',
             'end_time' => 'required',
+            'break_minutes' => 'nullable|integer|min:0',
             'days' => 'array',
             'days.*' => 'string',
         ]);
 
         $days = $validated['days'] ?? [];
+        $breakMinutes = (int) ($validated['break_minutes'] ?? 60);
 
         $start = date('H:i:s', strtotime($validated['start_time']));
         $end = date('H:i:s', strtotime($validated['end_time']));
 
+        $startCarbon = Carbon::parse($start);
+        $endCarbon = Carbon::parse($end);
+        $crossesMidnight = $end < $start;
+
+        if ($crossesMidnight) {
+            $durationMinutes = $endCarbon->copy()->addDay()->diffInMinutes($startCarbon);
+        } else {
+            $durationMinutes = $endCarbon->diffInMinutes($startCarbon);
+        }
+
+        $isNightShift = ($startCarbon->hour >= 22 || $startCarbon->hour < 6);
+
         $shift = \App\Models\Shift::where('start_time', $start)
             ->where('end_time', $end)
+            ->where('break_minutes', $breakMinutes)
             ->where('days_of_week', json_encode($days))
             ->first();
 
         if (!$shift) {
             $shift = \App\Models\Shift::create([
-                'name' => 'Shift ' . $start . '-' . $end,
+                'name' => 'Shift ' . date('g:i A', strtotime($start)) . ' - ' . date('g:i A', strtotime($end)),
                 'start_time' => $start,
                 'end_time' => $end,
-                'break_minutes' => 60,
-                'is_night_shift' => false,
+                'break_minutes' => $breakMinutes,
+                'is_night_shift' => $isNightShift,
+                'crosses_midnight' => $crossesMidnight,
+                'shift_duration_minutes' => $durationMinutes,
                 'days_of_week' => $days,
                 'is_active' => true,
             ]);
@@ -269,7 +286,8 @@ class TimekeepingController extends Controller
 
     public function show(User $user)
     {
-        $attendances = Attendance::where('user_id', $user->id)
+        $attendances = Attendance::with(['shift', 'user.employee.currentShift.shift'])
+            ->where('user_id', $user->id)
             ->orderByDesc('attendance_date')
             ->paginate(30);
 

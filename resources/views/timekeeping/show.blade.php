@@ -48,6 +48,7 @@
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                         <tr>
                             <th class="px-6 py-3">Date</th>
+                            <th class="px-6 py-3">Shift</th>
                             <th class="px-6 py-3">Time In</th>
                             <th class="px-6 py-3">Time Out</th>
                             <th class="px-6 py-3">Status</th>
@@ -60,9 +61,33 @@
                                 $statusKey = is_numeric($record->status) ? (int) $record->status : strtolower((string) $record->status);
                                 $statusLabel = $attendanceStatusLabels[$statusKey] ?? ucfirst((string) $record->status);
                                 $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
+                                
+                                $shift = $record->shift ?? $record->user?->employee?->currentShift?->shift;
+                                $displayShiftTime = $shift?->getDisplayTimeRange() ?? null;
                             @endphp
                             <tr class="group hover:bg-slate-50/50 transition">
                                 <td class="px-6 py-4 font-medium text-slate-900">{{ $record->attendance_date->format('M d, Y') }} <span class="text-xs text-slate-400 font-normal ml-1">{{ $record->attendance_date->format('D') }}</span></td>
+                                <td class="px-6 py-4 text-slate-600">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-medium text-slate-900">{{ $displayShiftTime ?? '—' }}</span>
+                                        @if($shift)
+                                            <div class="flex flex-wrap gap-1 mt-0.5">
+                                                @if($shift->crosses_midnight)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700" title="Cross-day Shift (Crosses Midnight)">
+                                                        <i class="ti ti-moon text-indigo-500"></i>
+                                                        Cross-day
+                                                    </span>
+                                                @endif
+                                                @if($shift->getWorkingHoursPerDay() <= 4.0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Half Day Shift (4 hours or less)">
+                                                        <i class="ti ti-circle-half text-teal-500"></i>
+                                                        Half Day
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="px-6 py-4 text-slate-900">{{ $record->check_in ? $record->check_in->format('h:i A') : '—' }}</td>
                                 <td class="px-6 py-4 text-slate-900">{{ $record->check_out ? $record->check_out->format('h:i A') : '—' }}</td>
                                 <td class="px-6 py-4">

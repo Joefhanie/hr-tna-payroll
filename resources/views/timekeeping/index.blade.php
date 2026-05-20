@@ -243,7 +243,25 @@
                                 <td class="px-4 py-3 font-medium text-slate-900">{{ $employeeDisplayName }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $attendance->attendance_date->format('M d, Y') }}</td>
                                 <td class="px-4 py-3 text-slate-600">
-                                    {{ $displayShiftTime ?? '—' }}
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-medium text-slate-900">{{ $displayShiftTime ?? '—' }}</span>
+                                        @if($shift)
+                                            <div class="flex flex-wrap gap-1 mt-0.5">
+                                                @if($shift->crosses_midnight)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700" title="Cross-day Shift (Crosses Midnight)">
+                                                        <i class="ti ti-moon text-indigo-500"></i>
+                                                        Cross-day
+                                                    </span>
+                                                @endif
+                                                @if($shift->getWorkingHoursPerDay() <= 4.0)
+                                                    <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700" title="Half Day Shift (4 hours or less)">
+                                                        <i class="ti ti-circle-half text-teal-500"></i>
+                                                        Half Day
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</td>
                                 <td class="px-4 py-3 text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</td>
@@ -524,13 +542,37 @@
                 const rawEmployeeName = record.user ? (record.user.display_name || record.user.name) : 'Unknown';
                 const employeeName = formatEmployeeName(rawEmployeeName);
 
+                // Get shift details for cross-day / half day badges
+                const shift = record.shift || (record.user && record.user.employee && record.user.employee.current_shift ? record.user.employee.current_shift.shift : null);
+                let shiftBadgesHtml = '';
+                if (shift) {
+                    const workingHours = (shift.shift_duration_minutes - (shift.break_minutes || 0)) / 60;
+                    if (shift.crosses_midnight) {
+                        shiftBadgesHtml += `
+                            <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wide" title="Cross-day Shift (Crosses Midnight)">
+                                <i class="ti ti-moon"></i> Cross-day
+                            </span>
+                        `;
+                    }
+                    if (workingHours <= 4.0) {
+                        shiftBadgesHtml += `
+                            <span class="inline-flex items-center gap-1 rounded bg-teal-50 border border-teal-200 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 uppercase tracking-wide" title="Half Day Shift (4 hours or less)">
+                                <i class="ti ti-circle-half"></i> Half Day
+                            </span>
+                        `;
+                    }
+                }
+
                 const card = document.createElement('div');
                 card.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-sm transition hover:shadow-md';
                 card.innerHTML = `
                     <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-0.5">In: ${timeIn}</p>
                     <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Out: ${timeOut}</p>
                     <p class="text-sm font-bold text-[#06112e] mb-3">${employeeName}</p>
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider ${statusClass}">${statusLabel}</span>
+                    <div class="flex flex-wrap gap-1.5 items-center">
+                        <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider ${statusClass}">${statusLabel}</span>
+                        ${shiftBadgesHtml}
+                    </div>
                 `;
                 listContainer.appendChild(card);
             });
