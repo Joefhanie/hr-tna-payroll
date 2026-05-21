@@ -103,7 +103,7 @@
                                             </svg>
                                         </a>
                                     @endif
-                                    <form method="POST" action="{{ route('payroll.destroy', $payRun) }}" class="inline" onsubmit="return confirm('Are you sure? This will soft delete the payroll run.');">
+                                    <form method="POST" action="{{ route('payroll.destroy', $payRun) }}" class="inline" data-confirm="Are you sure? This will soft delete the payroll run.">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="text-red-600 hover:text-red-800 transition" title="Delete">

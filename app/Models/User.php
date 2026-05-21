@@ -59,19 +59,10 @@ class User extends Authenticatable
             2 => [ // Supervisor
                 'employees.view',
                 'onboarding.view',
+                'onboarding.edit',
                 'timekeeping.view',
-                'timekeeping.create',
-                'timekeeping.edit',
-                'timekeeping.delete',
                 'leaves.view',
                 'leaves.create',
-                'leaves.edit',
-                'leaves.delete',
-                'reports.view',
-                'self-service.view',
-                'self-service.create',
-                'self-service.edit',
-                'self-service.delete',
             ],
             3 => [ // OIC
                 'timekeeping.view',
@@ -88,10 +79,10 @@ class User extends Authenticatable
                 'self-service.delete',
             ],
             1 => [ // Employee
-                'self-service.view',
-                'self-service.create',
-                'self-service.edit',
-                'self-service.delete',
+                'onboarding.view',
+                'timekeeping.view',
+                'leaves.view',
+                'leaves.create',
             ],
         ];
 

@@ -576,11 +576,9 @@
         let activeUserRole = null;
         const roleDefaults = {
             2: [
-                'employees.view', 'onboarding.view',
-                'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
-                'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete',
-                'reports.view',
-                'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
+                'employees.view', 'onboarding.view', 'onboarding.edit',
+                'timekeeping.view',
+                'leaves.view', 'leaves.create'
             ], // Supervisor
             3: [
                 'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
@@ -588,7 +586,9 @@
                 'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
             ], // OIC
             1: [
-                'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
+                'onboarding.view',
+                'timekeeping.view',
+                'leaves.view', 'leaves.create'
             ], // Employee
             4: [] // HR gets everything via backend, no defaults needed
         };
