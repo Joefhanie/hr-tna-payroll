@@ -18,7 +18,7 @@ class PayrollService
     /**
      * Get the active salary record for an employee on a given date.
      */
-    public function getSalaryRecordForDate(Employee $employee, Carbon $date = null): ?SalaryRecord
+    public function getSalaryRecordForDate(Employee $employee, ?Carbon $date = null): ?SalaryRecord
     {
         $date = $date ?? Carbon::now();
         return $employee->salaryRecords()
@@ -555,7 +555,7 @@ class PayrollService
     /**
      * Generate draft payslips for all active employees to allow previewing.
      */
-    public function generateDraftPayRun(PayRun $payRun, array $employeeIds = null): void
+    public function generateDraftPayRun(PayRun $payRun, ?array $employeeIds = null): void
     {
         $query = Employee::whereNull('termination_date');
         if ($employeeIds) {
