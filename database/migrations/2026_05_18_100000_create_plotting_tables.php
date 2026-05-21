@@ -11,19 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('supervisor_assignments')) {
-            Schema::create('supervisor_assignments', function (Blueprint $table) {
-                $table->id();
-                $table->unsignedInteger('supervisor_id');
-                $table->string('location', 120);
-                $table->date('date');
-                $table->timestamps();
-
-                $table->unique(['supervisor_id', 'date'], 'uq_sv_date');
-                $table->foreign('supervisor_id')->references('id')->on('employees')->onDelete('cascade');
-            });
-        }
-
         if (!Schema::hasTable('employee_plottings')) {
             Schema::create('employee_plottings', function (Blueprint $table) {
                 $table->id();
@@ -47,6 +34,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('employee_plottings');
-        Schema::dropIfExists('supervisor_assignments');
     }
 };
