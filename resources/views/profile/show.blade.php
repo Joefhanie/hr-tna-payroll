@@ -14,7 +14,7 @@
             'Approved', 'Released', 'Present', 'Completed', 'Stored' => 'badge-green',
             'Late' => 'badge-amber',
             'Rejected', 'Absent' => 'badge-red',
-            'Excused' => 'badge-gray',
+            'On Leave' => 'badge-gray',
             default => 'badge-gray',
         };
     @endphp

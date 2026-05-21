@@ -17,11 +17,11 @@
             1 => 'Present',
             2 => 'Late',
             3 => 'Absent',
-            4 => 'Excused',
+            4 => 'On Leave',
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
-            'excused' => 'Excused',
+            'excused' => 'On Leave',
         ];
         
         $statusClasses = [

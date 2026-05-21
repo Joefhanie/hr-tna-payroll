@@ -133,12 +133,12 @@ class TimekeepingController extends Controller
             1 => 'Present',
             2 => 'Late',
             3 => 'Absent',
-            4 => 'Excused',
+            4 => 'On Leave',
             5 => 'Shift Not Started',
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
-            'excused' => 'Excused',
+            'excused' => 'On Leave',
             'not_started' => 'Shift Not Started',
         ];
 
@@ -157,6 +157,7 @@ class TimekeepingController extends Controller
         $presentToday = (int) ($statusCounts[1] ?? $statusCounts['present'] ?? 0);
         $lateToday = (int) ($statusCounts[2] ?? $statusCounts['late'] ?? 0);
         $absentToday = (int) ($statusCounts[3] ?? $statusCounts['absent'] ?? 0);
+        $onLeaveToday = (int) ($statusCounts[4] ?? $statusCounts['excused'] ?? 0);
 
         $activeAttendance = $todayAttendance->first(function ($attendance) use ($normalizeStatus) {
             $status = $normalizeStatus($attendance->status);
@@ -183,6 +184,7 @@ class TimekeepingController extends Controller
             'presentToday' => $presentToday,
             'lateToday' => $lateToday,
             'absentToday' => $absentToday,
+            'onLeaveToday' => $onLeaveToday,
             'activeAttendance' => $activeAttendance,
             'todayDate' => Carbon::now(),
             'selectedDate' => $selectedDate,

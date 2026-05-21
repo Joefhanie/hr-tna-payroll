@@ -22,7 +22,7 @@
 
 
     {{-- Summary cards --}}
-    <div class="grid gap-4 md:grid-cols-3">
+    <div class="grid gap-4 md:grid-cols-4">
         <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
             <p class="text-sm font-medium text-slate-500">Present today</p>
             <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $presentToday }}</p>
@@ -36,6 +36,11 @@
         <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
             <p class="text-sm font-medium text-slate-500">Absent</p>
             <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $absentToday }}</p>
+        </div>
+
+        <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
+            <p class="text-sm font-medium text-slate-500">On Leave</p>
+            <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $onLeaveToday }}</p>
         </div>
     </div>
 
@@ -110,7 +115,7 @@
                             @php
                                 $prevMonthDay = $daysInPrevMonth - $firstDayOfWeek + $i + 1;
                             @endphp
-                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[80px] flex items-start justify-center pt-4">
+                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[90px] flex items-start justify-center pt-4">
                                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
                                     {{ $prevMonthDay }}
                                 </span>
@@ -151,14 +156,14 @@
                                 $calendarStatusSummary = 'P: ' . $calendarDayStatusCounts['present']
                                     . ' | L: ' . $calendarDayStatusCounts['late']
                                     . ' | A: ' . $calendarDayStatusCounts['absent']
-                                    . ' | E: ' . $calendarDayStatusCounts['excused'];
+                                    . ' | OL: ' . $calendarDayStatusCounts['excused'];
                             @endphp
-                            <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[80px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
+                            <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[90px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
                                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
                                     {{ $day }}
                                 </span>
                                 @if($hasEvents)
-                                    <div class="absolute right-2 top-2 flex flex-col gap-0.5">
+                                    <div class="absolute bottom-1.5 left-0 right-0 flex flex-wrap justify-center gap-1 px-1">
                                         @if($calendarDayStatusCounts['present'] > 0)
                                             <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.62rem] font-bold text-white shadow-sm" title="Present: {{ $calendarDayStatusCounts['present'] }}">
                                                 {{ $calendarDayStatusCounts['present'] }}
@@ -175,7 +180,7 @@
                                             </span>
                                         @endif
                                         @if($calendarDayStatusCounts['excused'] > 0)
-                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-[0.62rem] font-bold text-white shadow-sm" title="Excused: {{ $calendarDayStatusCounts['excused'] }}">
+                                            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-400 text-[0.62rem] font-bold text-white shadow-sm" title="On Leave: {{ $calendarDayStatusCounts['excused'] }}">
                                                 {{ $calendarDayStatusCounts['excused'] }}
                                             </span>
                                         @endif
@@ -191,7 +196,7 @@
                             @php
                                 $nextMonthDay = $i + 1;
                             @endphp
-                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[80px] flex items-start justify-center pt-4">
+                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[90px] flex items-start justify-center pt-4">
                                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
                                     {{ $nextMonthDay }}
                                 </span>
@@ -428,7 +433,7 @@
                             <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Present</option>
                             <option value="2" {{ old('status') == '2' ? 'selected' : '' }}>Late</option>
                             <option value="3" {{ old('status') == '3' ? 'selected' : '' }}>Absent</option>
-                            <option value="4" {{ old('status') == '4' ? 'selected' : '' }}>Excused</option>
+                            <option value="4" {{ old('status') == '4' ? 'selected' : '' }}>On Leave</option>
                         </select>
                     </div>
 

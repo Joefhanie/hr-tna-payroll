@@ -621,7 +621,7 @@ class SelfServiceController extends Controller
             case 3:
                 return 'Absent';
             case 4:
-                return 'Excused';
+                return 'On Leave';
             default:
                 return 'Present';
         }

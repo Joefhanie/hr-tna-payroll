@@ -71,7 +71,7 @@
 
             <div class="space-y-2.5">
                 @php
-                    $attendanceStatus = [1 => 'Present', 2 => 'Late', 3 => 'Absent', 4 => 'Excused'];
+                    $attendanceStatus = [1 => 'Present', 2 => 'Late', 3 => 'Absent', 4 => 'On Leave'];
                     $attendanceClasses = [
                         1 => 'badge-green',
                         2 => 'badge-amber',

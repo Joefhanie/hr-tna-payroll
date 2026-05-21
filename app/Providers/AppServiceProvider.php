@@ -90,7 +90,7 @@ class AppServiceProvider extends ServiceProvider
                                             ->where('end_date', '>=', $dateStr)
                                             ->exists();
                                             
-                                        $expectedStatus = $hasApprovedLeave ? 4 : 3; // 4 = Excused, 3 = Absent
+                                        $expectedStatus = $hasApprovedLeave ? 4 : 3; // 4 = On Leave, 3 = Absent
                                         $expectedNotes = $hasApprovedLeave ? 'Auto-marked: Approved Leave' : 'Auto-marked absent: no time-in by shift start.';
                                         
                                         if ($existingRecord) {

@@ -218,8 +218,31 @@ class LeaveController extends Controller
             ? DB::table('leave_types')->where('is_active', 1)->get()->keyBy('id')
             : collect();
 
+        $employees = Employee::with(['shiftAssignments.shift'])->get();
+
+        $getActiveShiftForDateInMemory = function ($employee, $date) {
+            $dayOfWeek = $date->format('D');
+
+            $assignments = $employee->shiftAssignments
+                ->filter(function ($assignment) use ($date) {
+                    return $assignment->isActiveOn($date);
+                })
+                ->sortByDesc('effective_from');
+
+            foreach ($assignments as $assignment) {
+                if ($assignment->shift && is_array($assignment->shift->days_of_week)) {
+                    if (in_array($dayOfWeek, $assignment->shift->days_of_week)) {
+                        return $assignment->shift;
+                    }
+                }
+            }
+
+            return $assignments->first()?->shift;
+        };
+
         // Build a map: date => [ array of leave entries active on that day ]
         $calendarData   = [];
+        $availableCounts = [];
         $cursor         = Carbon::parse($startOfMonth);
         $endCarbon      = Carbon::parse($endOfMonth);
 
@@ -234,6 +257,7 @@ class LeaveController extends Controller
                     $calendarData[$dateStr][] = [
                         'id'       => $leave->id,
                         'employee' => $leave->employee?->full_name ?? 'Unknown',
+                        'employee_id' => $leave->employee_id,
                         'type'     => $leaveTypes[$leave->leave_type_id]->name ?? 'Leave',
                         'status'   => (int) $leave->status,
                         'status_label' => match ((int) $leave->status) { 2 => 'Approved', 3 => 'Rejected', default => 'Pending' },
@@ -241,6 +265,23 @@ class LeaveController extends Controller
                     ];
                 }
             }
+
+            $approvedLeaveEmployeeIds = collect($calendarData[$dateStr])
+                ->where('status', 2)
+                ->pluck('employee_id')
+                ->all();
+
+            $availableCount = 0;
+            foreach ($employees as $employee) {
+                $dayShift = $getActiveShiftForDateInMemory($employee, $cursor);
+                $isScheduled = $dayShift && is_array($dayShift->days_of_week) && in_array($cursor->format('D'), $dayShift->days_of_week);
+                $isOnLeave = in_array($employee->id, $approvedLeaveEmployeeIds);
+
+                if ($isScheduled && !$isOnLeave) {
+                    $availableCount++;
+                }
+            }
+            $availableCounts[$dateStr] = $availableCount;
 
             $cursor->addDay();
         }
@@ -252,6 +293,7 @@ class LeaveController extends Controller
             'selectedDate'       => $selectedDate,
             'selectedDateCarbon' => $selectedDateCarbon,
             'totalEmployees'     => $totalEmployees,
+            'availableCounts'    => $availableCounts,
             'prevMonthDate'      => $selectedDateCarbon->copy()->subMonth()->startOfMonth()->toDateString(),
             'nextMonthDate'      => $selectedDateCarbon->copy()->addMonth()->startOfMonth()->toDateString(),
         ]);

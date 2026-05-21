@@ -13,7 +13,7 @@
             'Approved', 'Released', 'Present', 'Completed' => 'badge-green',
             'Late' => 'badge-amber',
             'Rejected', 'Absent' => 'badge-red',
-            'Excused' => 'badge-gray',
+            'On Leave' => 'badge-gray',
             default => 'badge-gray',
         };
 

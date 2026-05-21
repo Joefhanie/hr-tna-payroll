@@ -68,7 +68,7 @@
                     <p class="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">On Leave</p>
                 </div>
                 <div class="py-3 text-center">
-                    <p id="lc-availableCount" class="text-lg font-black text-emerald-600">{{ $totalEmployees }}</p>
+                    <p id="lc-availableCount" class="text-lg font-black text-emerald-600">—</p>
                     <p class="text-[0.65rem] font-semibold uppercase tracking-wider text-slate-400 mt-0.5">Available</p>
                 </div>
             </div>
@@ -193,7 +193,7 @@
     <script>
     // Full calendar data keyed by YYYY-MM-DD
     const lcCalendarData = @json($calendarData);
-    const lcTotalEmployees = {{ $totalEmployees }};
+    const lcAvailableCounts = @json($availableCounts);
 
     // Status config
     const lcStatusCfg = {
@@ -227,7 +227,7 @@
 
         // Stats bar — only count approved as "on leave"
         const onLeave    = approved.length + pending.length;
-        const available  = Math.max(0, lcTotalEmployees - approved.length);
+        const available  = lcAvailableCounts[dateStr] !== undefined ? lcAvailableCounts[dateStr] : 0;
 
         document.getElementById('lc-onLeaveCount').textContent   = onLeave;
         document.getElementById('lc-availableCount').textContent = available;
