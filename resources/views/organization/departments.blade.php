@@ -87,8 +87,9 @@
                                     <a href="{{ route('organization.departments.edit', $department) }}" class="text-slate-500 hover:text-slate-700 transition" title="Edit Department">
                                         <i class="ti ti-edit text-lg"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" onsubmit="return confirm('Delete this department?');" style="display: inline;">
+                                    <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?" style="display: inline;">
                                         @csrf
+                                            @method('DELETE')
                                         @method('DELETE')
                                         <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Delete Department">
                                             <i class="ti ti-trash text-lg"></i>
@@ -131,8 +132,8 @@
                                                                     <a href="{{ route('organization.positions.edit', $position) }}" class="text-slate-400 hover:text-slate-700 transition">
                                                                         <i class="ti ti-edit text-[1.1rem]"></i>
                                                                     </a>
-                                                                    <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" onsubmit="return confirm('Delete this position?');" style="display: inline;">
-                                                                        @csrf
+                                                                     <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" data-confirm="Delete this position?" style="display: inline;">
+                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="text-red-400 hover:text-red-600 transition">
                                                                             <i class="ti ti-trash text-[1.1rem]"></i>

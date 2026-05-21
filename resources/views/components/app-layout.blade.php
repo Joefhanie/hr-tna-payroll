@@ -325,6 +325,30 @@
         </div>
     </div>
 
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4">
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div class="border-b border-slate-100 px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                        <i class="ti ti-alert-triangle text-xl text-amber-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900" id="confirmModalTitle">Confirm Action</h3>
+                        <p class="mt-1 text-sm text-slate-500" id="confirmModalMessage">Are you sure you want to proceed?</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 px-6 py-4">
+                <button type="button" id="confirmCancel" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button type="button" id="confirmProceed" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{ $scripts ?? '' }}
 
     <script>
@@ -392,6 +416,81 @@
                     closeLogoutModal();
                 }
             });
+
+            // Confirm Modal
+            let __pendingConfirmForm = null;
+
+            const confirmModal = document.getElementById('confirmModal');
+            const confirmCancel = document.getElementById('confirmCancel');
+            const confirmProceed = document.getElementById('confirmProceed');
+            const confirmModalTitle = document.getElementById('confirmModalTitle');
+            const confirmModalMessage = document.getElementById('confirmModalMessage');
+
+            function openConfirmModal(title, message) {
+                if (!confirmModal) return;
+                confirmModalTitle.textContent = title || 'Confirm Action';
+                confirmModalMessage.textContent = message || 'Are you sure you want to proceed?';
+                confirmModal.classList.remove('hidden');
+                confirmModal.classList.add('flex');
+            }
+
+            function closeConfirmModal() {
+                if (!confirmModal) return;
+                confirmModal.classList.remove('flex');
+                confirmModal.classList.add('hidden');
+            }
+
+            function initConfirmModal() {
+                document.querySelectorAll('[data-confirm]').forEach(function (el) {
+                    el.addEventListener('click', function (e) {
+                        const message = el.getAttribute('data-confirm') || 'Are you sure you want to proceed?';
+                        const title = el.getAttribute('data-confirm-title') || 'Confirm Action';
+                        const form = el.closest('form');
+
+                        if (!form) return;
+
+                        e.preventDefault();
+                        __pendingConfirmForm = form;
+                        confirmModalTitle.textContent = title;
+                        confirmModalMessage.textContent = message;
+                        confirmModal.classList.remove('hidden');
+                        confirmModal.classList.add('flex');
+                    });
+                });
+
+                if (confirmCancel) {
+                    confirmCancel.addEventListener('click', function () {
+                        closeConfirmModal();
+                        __pendingConfirmForm = null;
+                    });
+                }
+
+                if (confirmProceed) {
+                    confirmProceed.addEventListener('click', function () {
+                        if (__pendingConfirmForm) {
+                            __pendingConfirmForm.submit();
+                        }
+                    });
+                }
+
+                if (confirmModal) {
+                    confirmModal.addEventListener('click', function (event) {
+                        if (event.target === confirmModal) {
+                            closeConfirmModal();
+                            __pendingConfirmForm = null;
+                        }
+                    });
+                }
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && confirmModal && confirmModal.classList.contains('flex')) {
+                        closeConfirmModal();
+                        __pendingConfirmForm = null;
+                    }
+                });
+            }
+
+            initConfirmModal();
 
             // Toast Notification System
             function initToast(toast, index) {

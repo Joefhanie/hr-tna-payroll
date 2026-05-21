@@ -306,7 +306,7 @@
                                                             <i class="ti ti-edit text-lg"></i>
                                                         </button>
 
-                                                        <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" onsubmit="return confirm('Delete this onboarding task?')">
+                                                        <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" data-confirm="Delete this onboarding task?" data-confirm-title="Delete Task">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" title="Delete task" aria-label="Delete task" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">

@@ -70,14 +70,14 @@ return new class extends Migration
             [
                 'title' => 'Laptop & accessories setup',
                 'category' => 'IT Setup',
-                'assigned_role' => 'staff',
+                'assigned_role' => \App\Models\OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
                 'sequence' => 3,
                 'is_active' => true,
             ],
             [
                 'title' => 'Email & system access',
                 'category' => 'IT Setup',
-                'assigned_role' => 'staff',
+                'assigned_role' => \App\Models\OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
                 'sequence' => 4,
                 'is_active' => true,
             ],

@@ -211,7 +211,7 @@
 
                                     {{-- Revoke Temporary Role Assignment --}}
                                     @if ($user && ($isCurrentTemporary || $isScheduled))
-                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to revoke this temporary role assignment?');">
+                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" data-confirm="Are you sure you want to revoke this temporary role assignment?">
                                             @csrf
                                             <button type="submit"
                                                     class="text-red-600 hover:text-red-800 transition"
