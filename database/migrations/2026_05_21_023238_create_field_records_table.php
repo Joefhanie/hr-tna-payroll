@@ -24,8 +24,8 @@ return new class extends Migration
                 $table->integer('status');
                 $table->text('remarks')->nullable();
                 $table->string('location', 120)->nullable();
-                $table->text('notes')->nullable();
                 $table->dateTime('created_at')->useCurrent();
+                $table->text('notes')->nullable();
                 $table->integer('created_by');
                 $table->dateTime('updated_at')->nullable();
                 $table->integer('updated_by')->nullable();
@@ -37,16 +37,17 @@ return new class extends Migration
             });
         }
 
-        if (!DB::table('field_records')->exists()) {
+        // Insert initial data
+        if (DB::table('field_records')->count() === 0) {
             DB::table('field_records')->insert([
-                ['id' => 1, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:00', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:00', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 2, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:01', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:01', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 3, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:04', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:04', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 4, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:05', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:05', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 5, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:08', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:08', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 6, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:11', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:11', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 7, 'empid' => 'CG010', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:36', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:36', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
-                ['id' => 8, 'empid' => 'PM006', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:44', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'location' => null, 'notes' => null, 'created_at' => '2026-05-19 16:41:44', 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 1, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:00', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:00', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 2, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:01', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:01', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 3, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:04', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:04', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 4, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:05', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:05', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 5, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:08', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:08', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 6, 'empid' => 'JP001', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:11', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:11', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 7, 'empid' => 'CG010', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:36', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:36', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
+                ['id' => 8, 'empid' => 'PM006', 'Date' => '2026-05-20', 'sup_id' => 'AD002', 'company_id' => 1, 'time' => '2026-05-19 16:41:44', 'function' => 1, 'status' => 1, 'remarks' => 'Developing Websites', 'created_at' => '2026-05-19 16:41:44', 'notes' => null, 'created_by' => 2, 'updated_at' => null, 'updated_by' => null, 'deleted_at' => null, 'deleted_by' => null],
             ]);
         }
     }

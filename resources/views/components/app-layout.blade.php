@@ -1,5 +1,5 @@
 @props([
-    'showGlobalAlerts' => true,
+    'showGlobalAlerts' => false,
 ])
 
 <!DOCTYPE html>
