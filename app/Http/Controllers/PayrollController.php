@@ -477,7 +477,22 @@ class PayrollController extends Controller
     public function create(): View
     {
         $employees = \App\Models\Employee::whereNull('termination_date')->orderBy('last_name')->get();
-        return view('payroll.create', compact('employees'));
+
+        $activePayRuns = PayRun::whereNotIn('status', [4, 13])
+            ->with('payslips')
+            ->get()
+            ->map(function ($payRun) {
+                return [
+                    'id' => $payRun->id,
+                    'name' => $payRun->name,
+                    'period_start' => Carbon::parse($payRun->period_start)->toDateString(),
+                    'period_end' => Carbon::parse($payRun->period_end)->toDateString(),
+                    'status_label' => $payRun->status === 3 ? 'Completed' : ($payRun->status === 2 ? 'Processing' : 'Draft'),
+                    'employee_ids' => $payRun->payslips->pluck('employee_id')->all(),
+                ];
+            });
+
+        return view('payroll.create', compact('employees', 'activePayRuns'));
     }
 
     /**

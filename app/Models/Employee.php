@@ -250,4 +250,12 @@ class Employee extends Model
         return $this->belongsToMany(BenefitPlan::class, 'benefit_enrollments', 'employee_id', 'plan_id')
             ->withPivot(['id', 'enrollment_date', 'coverage_start', 'coverage_end', 'status']);
     }
+
+    /**
+     * Get the payslips for the employee.
+     */
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
+    }
 }
