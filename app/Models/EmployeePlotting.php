@@ -13,7 +13,6 @@ class EmployeePlotting extends Model
         'employee_id',
         'supervisor_id',
         'date',
-        'location',
         'amount',
     ];
 
