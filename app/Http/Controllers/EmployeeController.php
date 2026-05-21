@@ -221,6 +221,7 @@ class EmployeeController extends Controller
             'from_date' => $fromDate->toDateTimeString(),
             'to_date' => $toDate->toDateTimeString(),
             'is_active' => true,
+            'granted_by' => auth()->id(),
         ]);
 
         $fromLabel = $fromDate->format('M d, Y' . ($fromDate->format('H:i') !== '00:00' ? ' H:i' : ''));
@@ -263,7 +264,7 @@ class EmployeeController extends Controller
         $employees = Employee::whereDoesntHave('user', function ($query) {
                 $query->whereIn('role', [2, 4]);
             })
-            ->with(['department', 'position', 'user.temporaryAssignments'])
+            ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
             ->paginate(15);
 
         $allEmployees = Employee::whereDoesntHave('user', function ($query) {
@@ -281,7 +282,7 @@ class EmployeeController extends Controller
     public function showTemporaryAccess(Employee $employee): \Illuminate\View\View
     {
         $employee->load(['department', 'position', 'user.temporaryAssignments' => function ($query) {
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('created_at', 'desc')->with('grantedBy');
         }]);
 
         return view('employees.temporary-access-show', compact('employee'));

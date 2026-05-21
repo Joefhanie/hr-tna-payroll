@@ -61,6 +61,7 @@
     </div>
 
     @php
+        $user = auth()->user();
         $navGroups = [
             'Overview' => [
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],

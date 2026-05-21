@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\User;
 
 class TemporaryAssignment extends Model
 {
@@ -16,13 +17,23 @@ class TemporaryAssignment extends Model
         'from_date',
         'to_date',
         'is_active',
+        'granted_by',
     ];
 
     protected $casts = [
         'from_date' => 'datetime',
         'to_date' => 'datetime',
         'is_active' => 'boolean',
+        'granted_by' => 'int',
     ];
+
+    /**
+     * Relationship to the user who granted the temporary access.
+     */
+    public function grantedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'granted_by');
+    }
 
     /**
      * Get the user associated with this temporary assignment.

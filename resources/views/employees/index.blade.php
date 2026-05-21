@@ -54,8 +54,8 @@
             <table id="emp-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Position</th>
                         <th class="px-4 py-3">Department</th>
@@ -68,8 +68,8 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
                         <tr class="emp-row hover:bg-slate-50 transition">
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
