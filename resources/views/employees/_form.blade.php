@@ -99,7 +99,28 @@
         </div>
         <div>
             <label class="{{ $lbl }}" for="nationality">Nationality</label>
-            <input id="nationality" name="nationality" type="text" value="{{ old('nationality', $employee->nationality ?? '') }}" placeholder="e.g. Filipino" class="{{ $inp }}">
+            <select id="nationality" name="nationality" class="{{ $sel }}">
+                <option value="">Select nationality</option>
+                @foreach ([
+                    'Filipino',
+                    'American',
+                    'Australian',
+                    'British',
+                    'Canadian',
+                    'Chinese',
+                    'Indian',
+                    'Indonesian',
+                    'Japanese',
+                    'Korean',
+                    'Malaysian',
+                    'Singaporean',
+                    'Thai',
+                    'Vietnamese',
+                    'Other'
+                ] as $nationality)
+                    <option value="{{ $nationality }}" @selected(old('nationality', $employee->nationality ?? '') === $nationality)>{{ $nationality }}</option>
+                @endforeach
+            </select>
             @error('nationality')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
@@ -212,6 +233,11 @@
     </div>
 
     <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+            <label class="{{ $lbl }}" for="employee_code">Employee Code <span class="text-red-500">*</span></label>
+            <input id="employee_code" name="employee_code" type="text" value="{{ old('employee_code', $employee->employee_code ?? '') }}" placeholder="e.g. EMP-001" class="{{ $inp }}" required>
+            @error('employee_code')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
         <div>
             <label class="{{ $lbl }}" for="employment_type">Employment Type</label>
             @php

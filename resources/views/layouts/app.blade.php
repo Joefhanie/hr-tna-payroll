@@ -44,7 +44,7 @@
       ['url' => route('dashboard'),     'label' => 'Dashboard',     'group' => 'Overview'],
       ['label' => 'Employees', 'group' => 'Modules', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete', 'children' => [
         ['url' => route('employees.index'),           'label' => 'Employee List'],
-        ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access'],
+        ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access', 'roles' => [4]],
       ]],
       ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules', 'permission' => 'onboarding.view'],
       ['label' => 'Timekeeping', 'group' => 'Modules', 'permission' => 'timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete', 'children' => [

@@ -210,6 +210,8 @@ class EmployeeController extends Controller
      */
     public function grantRole(Request $request, Employee $employee): RedirectResponse
     {
+        abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access management.');
+
         $validated = $request->validate([
             'role' => ['required', 'in:1,2,4'],
             'from_date' => ['required', 'date'], // accepts date or datetime-local ISO formats
@@ -270,6 +272,8 @@ class EmployeeController extends Controller
      */
     public function revokeRole(Employee $employee): RedirectResponse
     {
+        abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access management.');
+
         if (!$employee->user) {
             return redirect()->back()->with('error', 'Employee does not have a user account.');
         }
@@ -287,7 +291,7 @@ class EmployeeController extends Controller
      */
     public function temporaryAccess(): \Illuminate\View\View
     {
-        abort_if(!in_array(auth()->user()->role, [2, 4]), 403, 'Unauthorized access to temporary access management.');
+        abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access management.');
 
         $employees = Employee::whereDoesntHave('user', function ($query) {
                 $query->whereIn('role', [2, 4]);
@@ -309,6 +313,8 @@ class EmployeeController extends Controller
      */
     public function showTemporaryAccess(Employee $employee): \Illuminate\View\View
     {
+        abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access details.');
+
         $employee->load(['department', 'position', 'user.temporaryAssignments' => function ($query) {
             $query->orderBy('created_at', 'desc')->with('grantedBy');
         }]);
