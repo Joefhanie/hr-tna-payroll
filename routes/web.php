@@ -27,12 +27,17 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-
-    Route::get('/self-service', [SelfServiceController::class, 'index'])->name('self-service');
-    Route::get('/self-service/profile/{employee}', [SelfServiceController::class, 'profile'])->name('self-service.profile');
-    Route::post('/self-service/profile/{employee}/leave-requests', [SelfServiceController::class, 'storeLeaveRequest'])->name('self-service.leave-requests.store');
-    Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
-    Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
+    
+    Route::middleware('permission:self-service.view')->group(function () {
+        Route::get('/self-service', [SelfServiceController::class, 'index'])->name('self-service');
+        Route::get('/self-service/profile/{employee}', [SelfServiceController::class, 'profile'])->name('self-service.profile');
+    });
+    
+    Route::middleware('permission:self-service.create')->group(function () {
+        Route::post('/self-service/profile/{employee}/leave-requests', [SelfServiceController::class, 'storeLeaveRequest'])->name('self-service.leave-requests.store');
+        Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
+        Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
+    });
 
     // Timekeeping Management
     Route::middleware('permission:timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete')->group(function () {
@@ -46,7 +51,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Onboarding, Leave, Benefits, Reports
-    Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:employees.view,employees.create,employees.edit,employees.delete');
+    Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:onboarding.view');
     Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete');
     Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete');
     Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');

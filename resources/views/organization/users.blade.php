@@ -312,6 +312,43 @@
                         </div>
                     </div>
 
+                    <!-- Onboarding -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-user-plus text-base text-indigo-500"></i> Onboarding
+                        </h4>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="onboarding.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View onboarding list</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="onboarding.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Add onboarding task</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="onboarding.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update onboarding info</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="onboarding.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Delete tasks/records</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Timekeeping -->
                     <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
@@ -460,45 +497,76 @@
                         </div>
                     </div>
 
-                    <!-- Settings & Reports -->
+
+                    <!-- Reports -->
                     <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
                         <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
-                            <i class="ti ti-settings text-base text-indigo-500"></i> Settings & Reports
+                            <i class="ti ti-chart-bar text-base text-indigo-500"></i> Reports
                         </h4>
                         <div class="grid grid-cols-2 gap-x-4 gap-y-3">
-                            <label class="flex items-start gap-2 cursor-pointer col-span-2 border-b border-slate-200/40 pb-1.5 mb-0.5">
+                            <label class="flex items-start gap-2 cursor-pointer">
                                 <input type="checkbox" name="permissions[]" value="reports.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Reports & Dashboard</span>
-                                    <p class="text-[9px] text-slate-500">Access charts, analytics, and overview data</p>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View analytics & charts</p>
                                 </div>
                             </label>
                             <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="settings.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
-                                <div>
-                                    <span class="text-xs font-semibold text-slate-800">View Settings</span>
-                                    <p class="text-[9px] text-slate-500">View departments & positions</p>
-                                </div>
-                            </label>
-                            <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="settings.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <input type="checkbox" name="permissions[]" value="reports.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
                                     <span class="text-xs font-semibold text-slate-800">Create</span>
-                                    <p class="text-[9px] text-slate-500">Add department/position</p>
+                                    <p class="text-[9px] text-slate-500">Generate new reports</p>
                                 </div>
                             </label>
                             <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="settings.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <input type="checkbox" name="permissions[]" value="reports.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Edit Settings</span>
-                                    <p class="text-[9px] text-slate-500">Modify dept/positions</p>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update report configs</p>
                                 </div>
                             </label>
                             <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="checkbox" name="permissions[]" value="settings.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <input type="checkbox" name="permissions[]" value="reports.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
                                 <div>
-                                    <span class="text-xs font-semibold text-slate-800">Delete Settings</span>
-                                    <p class="text-[9px] text-slate-500">Remove dept/positions</p>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Remove saved reports</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Self-Service -->
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                            <i class="ti ti-user-circle text-base text-indigo-500"></i> Self-Service
+                        </h4>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="self-service.view" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">View</span>
+                                    <p class="text-[9px] text-slate-500">View personal portal</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="self-service.create" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Create</span>
+                                    <p class="text-[9px] text-slate-500">Submit requests</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="self-service.edit" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Edit</span>
+                                    <p class="text-[9px] text-slate-500">Update personal info</p>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="permissions[]" value="self-service.delete" class="perm-checkbox mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800">Delete</span>
+                                    <p class="text-[9px] text-slate-500">Cancel requests</p>
                                 </div>
                             </label>
                         </div>
@@ -520,16 +588,20 @@
         let activeUserRole = null;
         const roleDefaults = {
             2: [
-                'employees.view',
+                'employees.view', 'onboarding.view',
                 'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
                 'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete',
-                'reports.view'
+                'reports.view',
+                'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
             ], // Supervisor
             3: [
                 'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
-                'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete'
+                'leaves.view', 'leaves.create', 'leaves.edit', 'leaves.delete',
+                'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
             ], // OIC
-            1: ['self-service.view'], // Employee
+            1: [
+                'self-service.view', 'self-service.create', 'self-service.edit', 'self-service.delete'
+            ], // Employee
             4: [] // HR gets everything via backend, no defaults needed
         };
 

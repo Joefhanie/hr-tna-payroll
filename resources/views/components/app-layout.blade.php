@@ -71,7 +71,7 @@
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
                     ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access', 'roles' => [2, 4]],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete'],
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'onboarding.view'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
@@ -191,17 +191,13 @@
                         @endforeach
                     @endforeach
 
-                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view') || $user->hasPermission('settings.create') || $user->hasPermission('settings.edit') || $user->hasPermission('settings.delete')))
+                    @if ($user && $user->role === 4)
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php
                         $departmentsRouteExists = \Illuminate\Support\Facades\Route::has('organization.departments.index');
                         $departmentsHref = $departmentsRouteExists ? route('organization.departments.index') : url('/organization/departments');
-                        $departmentsActive = $departmentsRouteExists ? request()->routeIs('organization.departments.*') : request()->is('organization/departments*');
-
-                        $positionsRouteExists = \Illuminate\Support\Facades\Route::has('organization.positions.index');
-                        $positionsHref = $positionsRouteExists ? route('organization.positions.index') : url('/organization/positions');
-                        $positionsActive = $positionsRouteExists ? request()->routeIs('organization.positions.*') : request()->is('organization/positions*');
+                        $departmentsActive = $departmentsRouteExists ? request()->routeIs('organization.departments.*', 'organization.positions.*') : request()->is('organization/departments*');
 
                         $usersRouteExists = \Illuminate\Support\Facades\Route::has('organization.users.index');
                         $usersHref = $usersRouteExists ? route('organization.users.index') : url('/organization/users');
@@ -224,13 +220,6 @@
                             <i class="ti ti-building sidebar-icon text-xl"></i>
                         </span>
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
-                    </a>
-
-                    <a href="{{ $positionsHref }}" class="sidebar-link {{ $positionsActive ? 'sidebar-link-active' : '' }}">
-                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
-                            <i class="ti ti-hierarchy sidebar-icon text-xl"></i>
-                        </span>
-                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Positions</span>
                     </a>
 
                     <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
