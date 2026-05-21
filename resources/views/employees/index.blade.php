@@ -7,12 +7,14 @@
             <h1 class="text-3xl font-bold text-slate-900">Employees</h1>
             <p class="mt-1 text-sm text-slate-600">Manage employee records, positions, and departments.</p>
         </div>
+        @if(auth()->user()->hasPermission('employees.create'))
         <a href="{{ route('employees.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-sm hover:bg-blue-700 transition">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
             <span>Add Employee</span>
         </a>
+        @endif
     </div>
 
     {{-- Tabs removed --}}
@@ -38,21 +40,6 @@
         </button>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <ul class="space-y-1 text-sm text-red-700">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    @if (session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
 
     <!-- Employees Table -->
     <div class="card overflow-hidden">
@@ -60,8 +47,8 @@
             <table id="emp-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Position</th>
                         <th class="px-4 py-3">Department</th>
@@ -74,8 +61,8 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
                         <tr class="emp-row hover:bg-slate-50 transition">
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
@@ -135,19 +122,23 @@
                                     </a>
 
                                     {{-- Edit --}}
+                                    @if(auth()->user()->hasPermission('employees.edit'))
                                     <a href="{{ route('employees.edit', $employee) }}"
                                        class="text-blue-600 hover:text-blue-800 transition"
                                        title="Edit Employee">
                                         <i class="ti ti-edit text-base"></i>
                                     </a>
+                                    @endif
 
                                     {{-- Terminate --}}
+                                    @if(auth()->check() && auth()->user()->role === 4)
                                     <button type="button"
                                             class="text-red-600 hover:text-red-800 transition"
                                             title="Terminate Employee"
                                             onclick="openTerminationModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}')">
                                         <i class="ti ti-ban text-base"></i>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

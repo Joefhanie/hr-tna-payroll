@@ -13,7 +13,57 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-screen overflow-hidden font-sans text-slate-900">
+<body class="min-h-screen font-sans text-slate-900 bg-slate-50">
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+        @if (session('success'))
+            <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-emerald-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="success">
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <i class="ti ti-check text-sm font-semibold"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-semibold text-slate-900">Success</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ session('success') }}</p>
+                </div>
+                <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-rose-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="error">
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <i class="ti ti-x text-sm font-semibold"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-semibold text-slate-900">Error</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ session('error') }}</p>
+                </div>
+                <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            @foreach ($errors->all() as $error)
+                <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-rose-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="validation-error">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                        <i class="ti ti-alert-triangle text-sm font-semibold"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold text-slate-900">Validation Error</p>
+                        <p class="mt-0.5 text-xs text-slate-500">{{ $error }}</p>
+                    </div>
+                    <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                </div>
+            @endforeach
+        @endif
+    </div>
+
     @php
         $user = auth()->user();
         $navGroups = [
@@ -21,27 +71,30 @@
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
             ],
             'Modules' => [
-                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view', 'children' => [
+                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete', 'children' => [
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
-                    ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access'],
+                    ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access', 'roles' => [2, 4]],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
-                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view', 'children' => [
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'onboarding.view'],
+                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
-                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view'],
-                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view', 'children' => [
+                ['label' => 'Leave', 'icon' => 'calendar-event', 'path' => '/leave', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete', 'children' => [
+                    ['route' => 'leave.index',    'path' => '/leave',          'label' => 'Requests'],
+                    ['route' => 'leave.calendar', 'path' => '/leave/calendar', 'label' => 'Calendar'],
+                ]],
+                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
                 ]],
-                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view', 'children' => [
+                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
-                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view'],
+                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
-                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view'],
+                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
             ],
         ];
 
@@ -49,7 +102,12 @@
         foreach ($navGroups as $groupName => &$items) {
             $items = array_filter($items, function ($item) use ($user) {
                 if (isset($item['permission'])) {
-                    return $user && $user->hasPermission($item['permission']);
+                    if (!$user) return false;
+                    $perms = explode(',', $item['permission']);
+                    foreach ($perms as $p) {
+                        if ($user->hasPermission(trim($p))) return true;
+                    }
+                    return false;
                 }
                 return true;
             });
@@ -103,6 +161,9 @@
 
                                     <div class="mt-1 space-y-1 pl-2">
                                         @foreach ($item['children'] as $child)
+                                            @if(isset($child['roles']) && !in_array($user->role ?? 0, $child['roles']))
+                                                @continue
+                                            @endif
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                                 $childIsActive = $childRouteExists
@@ -137,17 +198,13 @@
                         @endforeach
                     @endforeach
 
-                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view')))
+                    @if ($user && $user->role === 4)
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php
                         $departmentsRouteExists = \Illuminate\Support\Facades\Route::has('organization.departments.index');
                         $departmentsHref = $departmentsRouteExists ? route('organization.departments.index') : url('/organization/departments');
-                        $departmentsActive = $departmentsRouteExists ? request()->routeIs('organization.departments.*') : request()->is('organization/departments*');
-
-                        $positionsRouteExists = \Illuminate\Support\Facades\Route::has('organization.positions.index');
-                        $positionsHref = $positionsRouteExists ? route('organization.positions.index') : url('/organization/positions');
-                        $positionsActive = $positionsRouteExists ? request()->routeIs('organization.positions.*') : request()->is('organization/positions*');
+                        $departmentsActive = $departmentsRouteExists ? request()->routeIs('organization.departments.*', 'organization.positions.*') : request()->is('organization/departments*');
 
                         $usersRouteExists = \Illuminate\Support\Facades\Route::has('organization.users.index');
                         $usersHref = $usersRouteExists ? route('organization.users.index') : url('/organization/users');
@@ -172,7 +229,7 @@
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
                     </a>
 
-                      <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
+                    <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
                             <i class="ti ti-settings sidebar-icon text-xl"></i>
                         </span>
@@ -209,9 +266,13 @@
                         <button class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50" type="button" aria-label="Notifications">
                             <i class="ti ti-bell text-xl"></i>
                         </button>
-                        <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">
-                            {{ $userInitials }}
-                        </div>
+                        <a href="{{ route('profile.show') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-blue-600 text-sm font-bold text-white shadow-sm transition hover:opacity-90 hover:scale-105" title="View Profile">
+                            @if ($user && $user->employee && $user->employee->profile_picture)
+                                <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
+                            @else
+                                {{ $userInitials }}
+                            @endif
+                        </a>
                     </div>
                 </div>
             </header>
@@ -331,6 +392,71 @@
                     closeLogoutModal();
                 }
             });
+
+            // Toast Notification System
+            function initToast(toast, index) {
+                // Trigger enter animation
+                setTimeout(() => {
+                    toast.classList.remove('toast-enter');
+                    toast.classList.add('toast-enter-active');
+                }, index * 100);
+
+                // Auto dismiss
+                const timeoutId = setTimeout(() => {
+                    dismissToast(toast);
+                }, 6000 + (index * 150));
+
+                // Close button click
+                toast.querySelector('.toast-close')?.addEventListener('click', () => {
+                    clearTimeout(timeoutId);
+                    dismissToast(toast);
+                });
+            }
+
+            function dismissToast(toast) {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit');
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                });
+                // Fallback if transitionend event doesn't fire
+                setTimeout(() => {
+                    toast.remove();
+                }, 400);
+            }
+
+            // Initialize static toasts (rendered from server session)
+            document.querySelectorAll('.toast-item').forEach((toast, idx) => {
+                initToast(toast, idx);
+            });
+
+            // Global function to trigger a toast programmatically
+            window.showToast = function(type, title, message) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+
+                const isSuccess = type === 'success';
+                const iconClass = isSuccess ? 'ti ti-check text-emerald-600' : 'ti ti-alert-triangle text-rose-600';
+                const bgClass = isSuccess ? 'bg-emerald-50' : 'bg-rose-50';
+                const borderClass = isSuccess ? 'border-emerald-100' : 'border-rose-100';
+
+                const toast = document.createElement('div');
+                toast.className = `toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border ${borderClass} p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]`;
+                toast.innerHTML = `
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${bgClass}">
+                        <i class="${iconClass} text-sm font-semibold"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold text-slate-900">${title}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">${message}</p>
+                    </div>
+                    <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                `;
+                container.appendChild(toast);
+                initToast(toast, container.querySelectorAll('.toast-item').length - 1);
+            };
         });
     </script>
 </body>

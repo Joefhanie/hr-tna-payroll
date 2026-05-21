@@ -397,4 +397,23 @@
 })();
 </script>
 
+@if(auth()->check() && !auth()->user()->hasPermission('payroll.edit'))
+<style>
+    button[type="submit"], 
+    #add-late-rule-btn, 
+    #add-tax-bracket-btn, 
+    #add-contribution-btn, 
+    #add-deduction-btn, 
+    .remove-row-btn {
+        display: none !important;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.disabled = true;
+        });
+    });
+</script>
+@endif
 </x-app-layout>

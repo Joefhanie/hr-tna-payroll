@@ -58,6 +58,7 @@ class User extends Authenticatable
         $defaults = [
             2 => [ // Supervisor
                 'employees.view',
+                'onboarding.view',
                 'timekeeping.view',
                 'timekeeping.create',
                 'timekeeping.edit',
@@ -67,6 +68,10 @@ class User extends Authenticatable
                 'leaves.edit',
                 'leaves.delete',
                 'reports.view',
+                'self-service.view',
+                'self-service.create',
+                'self-service.edit',
+                'self-service.delete',
             ],
             3 => [ // OIC
                 'timekeeping.view',
@@ -77,9 +82,16 @@ class User extends Authenticatable
                 'leaves.create',
                 'leaves.edit',
                 'leaves.delete',
+                'self-service.view',
+                'self-service.create',
+                'self-service.edit',
+                'self-service.delete',
             ],
             1 => [ // Employee
                 'self-service.view',
+                'self-service.create',
+                'self-service.edit',
+                'self-service.delete',
             ],
         ];
 

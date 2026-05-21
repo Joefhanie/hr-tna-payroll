@@ -41,6 +41,9 @@ class DatabaseSeeder extends Seeder
         DB::table('employee_tax_bracket')->truncate();
         DB::table('employee_government_contribution')->truncate();
         DB::table('employee_deduction_rule')->truncate();
+        DB::table('leave_requests')->truncate();
+        DB::table('leave_balances')->truncate();
+        DB::table('leave_types')->truncate();
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
@@ -447,6 +450,31 @@ class DatabaseSeeder extends Seeder
                     'date' => $date,
                     'location' => $location,
                     'amount' => $amount
+                ]);
+            }
+        }
+
+        // 8. Seed Leave Types and Balances
+        DB::table('leave_types')->insert([
+            ['name' => 'Vacation Leave', 'code' => 'VL', 'is_paid' => 1, 'max_days_per_year' => 15, 'is_accrued' => 0, 'accrual_rate' => 0, 'requires_approval' => 1, 'min_notice_days' => 3, 'is_active' => 1],
+            ['name' => 'Sick Leave', 'code' => 'SL', 'is_paid' => 1, 'max_days_per_year' => 10, 'is_accrued' => 0, 'accrual_rate' => 0, 'requires_approval' => 1, 'min_notice_days' => 0, 'is_active' => 1],
+            ['name' => 'Emergency Leave', 'code' => 'EL', 'is_paid' => 1, 'max_days_per_year' => 3, 'is_accrued' => 0, 'accrual_rate' => 0, 'requires_approval' => 1, 'min_notice_days' => 0, 'is_active' => 1],
+            ['name' => 'Bereavement Leave', 'code' => 'BL', 'is_paid' => 1, 'max_days_per_year' => 5, 'is_accrued' => 0, 'accrual_rate' => 0, 'requires_approval' => 1, 'min_notice_days' => 0, 'is_active' => 1],
+        ]);
+
+        $leaveTypes = DB::table('leave_types')->get();
+        $allEmployees = Employee::all();
+        foreach ($allEmployees as $emp) {
+            foreach ($leaveTypes as $lt) {
+                DB::table('leave_balances')->insert([
+                    'employee_id' => $emp->id,
+                    'leave_type_id' => $lt->id,
+                    'year' => 2026,
+                    'entitled_days' => $lt->max_days_per_year,
+                    'used_days' => 0,
+                    'accrued_days' => 0,
+                    'carried_over' => 0,
+                    'updated_at' => now(),
                 ]);
             }
         }
