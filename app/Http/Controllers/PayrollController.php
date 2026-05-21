@@ -60,21 +60,19 @@ class PayrollController extends Controller
      */
     public function plottingPayment(): View
     {
-        $dates = [
-            '2026-05-18' => 'May 18',
-            '2026-05-19' => 'May 19',
-            '2026-05-20' => 'May 20',
-            '2026-05-21' => 'May 21',
-            '2026-05-22' => 'May 22',
-        ];
+        $dates = $this->fieldRecordDates();
 
-        // Fetch both regular employees and supervisors (exclude role = 4 / HR)
-        $employees = Employee::whereNull('termination_date')
-            ->where(function($query) {
-                $query->whereHas('user', function($q) {
-                    $q->where('role', '!=', 4);
-                })->orWhereDoesntHave('user');
-            })
+        $scannedEmployeeCodes = DB::table('field_records')
+            ->whereIn('Date', array_keys($dates))
+            ->distinct()
+            ->orderBy('empid')
+            ->pluck('empid')
+            ->all();
+
+        // Build the plotting grid from scanned employees only.
+        $employees = Employee::whereIn('employee_code', $scannedEmployeeCodes)
+            ->whereNull('termination_date')
+            ->with(['user', 'manager'])
             ->orderBy('first_name')
             ->get();
 
@@ -84,9 +82,10 @@ class PayrollController extends Controller
             $plottingMap[$p->employee_id][Carbon::parse($p->date)->format('Y-m-d')] = $p;
         }
 
-        $locationMap = $this->fieldRecordLocationMap(array_keys($dates));
+        [$fieldRecordMap, $fieldSupervisorMap] = $this->fieldRecordMaps(array_keys($dates));
 
         $employeeMap = $employees->keyBy('id');
+        $employeeCodeMap = $employees->keyBy('employee_code');
 
         $gridData = [];
         foreach ($employees as $employee) {
@@ -98,36 +97,39 @@ class PayrollController extends Controller
             foreach (array_keys($dates) as $date) {
                 $plotting = $plottingMap[$employee->id][$date] ?? null;
                 $amount = $plotting ? $plotting->amount : 0.00;
+                $fieldRecord = $fieldRecordMap[$employee->employee_code][$date] ?? null;
+                $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord['sup_id']][$date] ?? null) : null;
+                $supervisorCode = $fieldRecord['sup_id'] ?? ($employee->manager?->employee_code ?? null);
                 
                 // Location resolution logic
                 $isSupervisor = $employee->user && $employee->user->role === 2;
+                $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
 
                 if ($isSupervisor) {
-                    $location = $locationMap[$employee->employee_code][$date] ?? 'General';
+                    $location = $fieldRecord['location'] ?? ($fieldSupervisor['location'] ?? 'General');
                     $svName = 'None';
                 } else {
-                    // Regular employees:
-                    if ($plotting && $plotting->location && $plotting->location !== 'General') {
-                        // Use explicitly recorded custom scan location
-                        $location = $plotting->location;
+                    if ($fieldRecord && !empty($fieldRecord['location'])) {
+                        $location = $fieldRecord['location'];
+                    } elseif ($fieldSupervisor && !empty($fieldSupervisor['location'])) {
+                        $location = $fieldSupervisor['location'];
                     } else {
-                        // Otherwise, inherit their daily supervisor's assigned location
-                        $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
+                        $dailySupervisorId = $employee->manager_id;
                         $dailySupervisor = $dailySupervisorId ? ($employeeMap[$dailySupervisorId] ?? Employee::find($dailySupervisorId)) : null;
-                        $location = ($dailySupervisor && isset($locationMap[$dailySupervisor->employee_code][$date]))
-                            ? $locationMap[$dailySupervisor->employee_code][$date]
+                        $location = ($dailySupervisor && isset($fieldSupervisorMap[$dailySupervisor->employee_code][$date]))
+                            ? $fieldSupervisorMap[$dailySupervisor->employee_code][$date]['location']
                             : 'General';
                     }
 
-                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
-                    $svEmployee = $dailySupervisorId ? ($employeeMap[$dailySupervisorId] ?? Employee::find($dailySupervisorId)) : null;
-                    $svName = $svEmployee ? ($svEmployee->first_name . ' ' . $svEmployee->last_name) : 'None';
+                    $svName = $supervisor ? ($supervisor->first_name . ' ' . $supervisor->last_name) : 'None';
                 }
 
                 $row['days'][$date] = [
                     'amount' => $amount,
                     'location' => $location,
-                    'supervisor_name' => $svName
+                    'supervisor_name' => $svName,
+                    'supervisor_code' => $supervisorCode,
+                    'supervisor_note' => $fieldRecord['notes'] ?? ($fieldSupervisor['notes'] ?? null)
                 ];
             }
 
@@ -184,7 +186,6 @@ class PayrollController extends Controller
                         'employee_id' => $employee->id,
                         'date' => $date,
                         'supervisor_id' => $supervisorId,
-                        'location' => $location,
                         'amount' => $cleanAmount
                     ]);
                 }
@@ -199,13 +200,7 @@ class PayrollController extends Controller
      */
     public function showPlottingEmployee(Employee $employee): View
     {
-        $dates = [
-            '2026-05-18' => 'May 18',
-            '2026-05-19' => 'May 19',
-            '2026-05-20' => 'May 20',
-            '2026-05-21' => 'May 21',
-            '2026-05-22' => 'May 22',
-        ];
+        $dates = $this->fieldRecordDates();
 
         $plottings = EmployeePlotting::where('employee_id', $employee->id)
             ->whereIn('date', array_keys($dates))
@@ -214,12 +209,17 @@ class PayrollController extends Controller
                 return Carbon::parse($p->date)->format('Y-m-d');
             });
 
-        $locationMap = $this->fieldRecordLocationMap(array_keys($dates));
+        [$fieldRecordMap, $fieldSupervisorMap] = $this->fieldRecordMaps(array_keys($dates));
+        $employeeCodeMap = Employee::whereNull('termination_date')->get()->keyBy('employee_code');
 
         $weekData = [];
         foreach ($dates as $dateString => $dateLabel) {
             $plotting = $plottings->get($dateString);
             $amount = $plotting ? $plotting->amount : 0.00;
+            $fieldRecord = $fieldRecordMap[$employee->employee_code][$dateString] ?? null;
+            $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord['sup_id']][$dateString] ?? null) : null;
+            $supervisorCode = $fieldRecord['sup_id'] ?? ($employee->manager?->employee_code ?? null);
+            $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
 
             // Location & Supervisor name resolution
             $location = 'General';
@@ -228,25 +228,28 @@ class PayrollController extends Controller
             $isSupervisor = $employee->user && $employee->user->role === 2;
 
             if ($isSupervisor) {
-                $location = $locationMap[$employee->employee_code][$dateString] ?? 'General';
+                $location = $fieldRecord['location'] ?? ($fieldSupervisor['location'] ?? 'General');
             } else {
-                $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
+                $dailySupervisorId = $employee->manager_id;
                 
-                if ($plotting && $plotting->location && $plotting->location !== 'General') {
-                    $location = $plotting->location;
-                    if ($plotting->supervisor) {
-                        $supervisorName = $plotting->supervisor->first_name . ' ' . $plotting->supervisor->last_name;
-                    }
+                if ($fieldRecord && !empty($fieldRecord['location'])) {
+                    $location = $fieldRecord['location'];
+                } elseif ($fieldSupervisor && !empty($fieldSupervisor['location'])) {
+                    $location = $fieldSupervisor['location'];
                 } else {
                     if ($dailySupervisorId) {
-                        $supervisor = Employee::find($dailySupervisorId);
-                        if ($supervisor) {
-                            $supervisorName = $supervisor->first_name . ' ' . $supervisor->last_name;
-                        }
-                        if ($supervisor && isset($locationMap[$supervisor->employee_code][$dateString])) {
-                            $location = $locationMap[$supervisor->employee_code][$dateString];
+                        $fallbackSupervisor = $employee->manager?->employee_code
+                            ? ($employeeCodeMap[$employee->manager->employee_code] ?? Employee::find($dailySupervisorId))
+                            : Employee::find($dailySupervisorId);
+                        if ($fallbackSupervisor) {
+                            $supervisorName = $fallbackSupervisor->first_name . ' ' . $fallbackSupervisor->last_name;
+                            $location = $fieldSupervisorMap[$fallbackSupervisor->employee_code][$dateString]['location'] ?? 'General';
                         }
                     }
+                }
+
+                if ($supervisor) {
+                    $supervisorName = $supervisor->first_name . ' ' . $supervisor->last_name;
                 }
             }
 
@@ -255,6 +258,8 @@ class PayrollController extends Controller
                 'date' => $dateLabel,
                 'workplace' => $location,
                 'supervisor' => $supervisorName,
+                'supervisor_code' => $supervisorCode,
+                'supervisor_note' => $fieldRecord['notes'] ?? ($fieldSupervisor['notes'] ?? null),
                 'amount' => $amount
             ];
         }
@@ -303,7 +308,6 @@ class PayrollController extends Controller
                     'employee_id' => $employee->id,
                     'date' => $date,
                     'supervisor_id' => $supervisorId,
-                    'location' => $location,
                     'amount' => $cleanAmount
                 ]);
             }
@@ -318,11 +322,12 @@ class PayrollController extends Controller
 
         // Get all employees (SVs and regular)
         $allEmployees = Employee::with(['user', 'manager'])->get();
+        $employeeByCode = $allEmployees->keyBy('employee_code');
 
         $employeeData = [];
 
         // For location resolution
-        $locationMap = $this->fieldRecordLocationMap([$date]);
+        [$fieldRecordMap, $fieldSupervisorMap] = $this->fieldRecordMaps([$date]);
 
         foreach ($allEmployees as $emp) {
             $isSupervisor = $emp->user && $emp->user->role === 2;
@@ -332,18 +337,25 @@ class PayrollController extends Controller
                 ->where('date', $date)
                 ->first();
 
+            $fieldRecord = $fieldRecordMap[$emp->employee_code][$date] ?? null;
+            $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord['sup_id']][$date] ?? null) : null;
+            $supervisorCode = $fieldRecord['sup_id'] ?? ($emp->manager?->employee_code ?? null);
+            $supervisor = $supervisorCode ? ($employeeByCode[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
+
             // Resolve daily location
             $loc = 'General';
             if ($isSupervisor) {
-                $loc = $locationMap[$emp->employee_code][$date] ?? 'General';
+                $loc = $fieldRecord['location'] ?? ($fieldSupervisor['location'] ?? 'General');
             } else {
-                if ($plotting && $plotting->location && $plotting->location !== 'General') {
-                    $loc = $plotting->location;
+                if ($fieldRecord && !empty($fieldRecord['location'])) {
+                    $loc = $fieldRecord['location'];
+                } elseif ($fieldSupervisor && !empty($fieldSupervisor['location'])) {
+                    $loc = $fieldSupervisor['location'];
                 } else {
-                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
+                    $dailySupervisorId = $emp->manager_id;
                     $dailySupervisor = $dailySupervisorId ? Employee::find($dailySupervisorId) : null;
-                    $loc = ($dailySupervisor && isset($locationMap[$dailySupervisor->employee_code][$date]))
-                        ? $locationMap[$dailySupervisor->employee_code][$date]
+                    $loc = ($dailySupervisor && isset($fieldSupervisorMap[$dailySupervisor->employee_code][$date]))
+                        ? $fieldSupervisorMap[$dailySupervisor->employee_code][$date]['location']
                         : 'General';
                 }
             }
@@ -351,8 +363,10 @@ class PayrollController extends Controller
             if ($loc === $workplaceName) {
                 // Determine supervisor name
                 $supervisorName = 'None';
-                if (!$isSupervisor) {
-                    $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
+                if ($supervisor) {
+                    $supervisorName = $supervisor->first_name . ' ' . $supervisor->last_name;
+                } elseif (!$isSupervisor) {
+                    $dailySupervisorId = $emp->manager_id;
                     if ($dailySupervisorId) {
                         $sv = Employee::find($dailySupervisorId);
                         if ($sv) {
@@ -365,6 +379,7 @@ class PayrollController extends Controller
                     'id' => $emp->id,
                     'name' => $emp->first_name . ' ' . $emp->last_name,
                     'supervisor' => $supervisorName,
+                    'supervisor_code' => $supervisorCode,
                     'amount' => $plotting ? $plotting->amount : 0.00
                 ];
             }
@@ -376,19 +391,64 @@ class PayrollController extends Controller
     /**
      * Build a lookup of work locations from field records keyed by employee code and date.
      */
-    private function fieldRecordLocationMap(array $dates): array
+    private function fieldRecordDates(): array
+    {
+        $dates = DB::table('field_records')
+            ->whereNotNull('Date')
+            ->distinct()
+            ->orderBy('Date')
+            ->pluck('Date')
+            ->all();
+
+        if (empty($dates)) {
+            $dates = [now()->toDateString()];
+        }
+
+        return collect($dates)->mapWithKeys(function ($date) {
+            return [$date => Carbon::parse($date)->format('M d')];
+        })->all();
+    }
+
+    /**
+     * Build lookups of field records keyed by employee code and supervisor code.
+     */
+    private function fieldRecordMaps(array $dates): array
     {
         $records = DB::table('field_records')
-            ->select('empid', 'Date', 'location', 'time', 'id')
+            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'time', 'id')
             ->whereIn('Date', $dates)
-            ->whereNotNull('location')
             ->orderBy('time')
             ->orderBy('id')
             ->get();
 
-        $locationMap = [];
+        $employeeMap = [];
+        $supervisorMap = [];
         foreach ($records as $record) {
-            $locationMap[$record->empid][$record->Date] = $record->location;
+            $payload = [
+                'sup_id' => $record->sup_id,
+                'location' => $record->location,
+                'notes' => $record->notes,
+            ];
+
+            $employeeMap[$record->empid][$record->Date] = $payload;
+            $supervisorMap[$record->sup_id][$record->Date] = $payload;
+        }
+
+        return [$employeeMap, $supervisorMap];
+    }
+
+    /**
+     * Compatibility wrapper for call sites that only need employee-date locations.
+     */
+    private function fieldRecordLocationMap(array $dates): array
+    {
+        [$employeeMap] = $this->fieldRecordMaps($dates);
+        $locationMap = [];
+
+        foreach ($employeeMap as $empCode => $dateMap) {
+            foreach ($dateMap as $date => $payload) {
+                $locationMap[$empCode][$date] = $payload['location'] ?? null;
+            }
         }
 
         return $locationMap;

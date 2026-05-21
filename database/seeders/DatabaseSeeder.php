@@ -468,7 +468,6 @@ class DatabaseSeeder extends Seeder
                     'employee_id' => $emp->id,
                     'supervisor_id' => $svId,
                     'date' => $date,
-                    'location' => $location,
                     'amount' => $amount
                 ]);
             }

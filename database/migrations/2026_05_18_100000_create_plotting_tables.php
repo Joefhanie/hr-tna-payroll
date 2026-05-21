@@ -17,7 +17,6 @@ return new class extends Migration
                 $table->unsignedInteger('employee_id');
                 $table->unsignedInteger('supervisor_id')->nullable();
                 $table->date('date');
-                $table->string('location', 120)->nullable();
                 $table->decimal('amount', 14, 2)->default(0.00);
                 $table->timestamps();
 

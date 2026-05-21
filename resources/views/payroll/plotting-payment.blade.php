@@ -127,6 +127,10 @@
                                                         <span class="text-slate-600">{{ $dayData['supervisor_name'] }}</span>
                                                     </div>
                                                     <div class="text-xs text-slate-700">
+                                                        <span class="font-semibold text-slate-900">Supervisor ID:</span>
+                                                        <span class="text-slate-600">{{ $dayData['supervisor_code'] ?? '—' }}</span>
+                                                    </div>
+                                                    <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Supervisor's note:</span>
                                                         <span class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
                                                     </div>
@@ -136,7 +140,7 @@
                                                 <div class="pt-1.5 mt-1.5 border-t border-slate-200 flex items-center justify-between gap-2">
                                                     <span class="text-xs text-slate-400 italic note-preview-text">No payroll note</span>
                                                     <button type="button"
-                                                        class="note-add-btn flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
+                                                        class="note-add-btn shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
                                                         title="Add payroll note">+</button>
                                                 </div>
 
