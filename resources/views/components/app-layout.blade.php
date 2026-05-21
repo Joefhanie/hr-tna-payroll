@@ -9,7 +9,57 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-screen overflow-hidden font-sans text-slate-900">
+<body class="min-h-screen font-sans text-slate-900 bg-slate-50">
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+        @if (session('success'))
+            <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-emerald-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="success">
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <i class="ti ti-check text-sm font-semibold"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-semibold text-slate-900">Success</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ session('success') }}</p>
+                </div>
+                <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-rose-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="error">
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                    <i class="ti ti-x text-sm font-semibold"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-semibold text-slate-900">Error</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ session('error') }}</p>
+                </div>
+                <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            @foreach ($errors->all() as $error)
+                <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-rose-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="validation-error">
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                        <i class="ti ti-alert-triangle text-sm font-semibold"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold text-slate-900">Validation Error</p>
+                        <p class="mt-0.5 text-xs text-slate-500">{{ $error }}</p>
+                    </div>
+                    <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                </div>
+            @endforeach
+        @endif
+    </div>
+
     @php
         $user = auth()->user();
         $navGroups = [
@@ -176,7 +226,14 @@
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
                     </a>
 
-                      <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
+                    <a href="{{ $positionsHref }}" class="sidebar-link {{ $positionsActive ? 'sidebar-link-active' : '' }}">
+                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                            <i class="ti ti-hierarchy sidebar-icon text-xl"></i>
+                        </span>
+                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Positions</span>
+                    </a>
+
+                    <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
                             <i class="ti ti-settings sidebar-icon text-xl"></i>
                         </span>
@@ -335,6 +392,71 @@
                     closeLogoutModal();
                 }
             });
+
+            // Toast Notification System
+            function initToast(toast, index) {
+                // Trigger enter animation
+                setTimeout(() => {
+                    toast.classList.remove('toast-enter');
+                    toast.classList.add('toast-enter-active');
+                }, index * 100);
+
+                // Auto dismiss
+                const timeoutId = setTimeout(() => {
+                    dismissToast(toast);
+                }, 6000 + (index * 150));
+
+                // Close button click
+                toast.querySelector('.toast-close')?.addEventListener('click', () => {
+                    clearTimeout(timeoutId);
+                    dismissToast(toast);
+                });
+            }
+
+            function dismissToast(toast) {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit');
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                });
+                // Fallback if transitionend event doesn't fire
+                setTimeout(() => {
+                    toast.remove();
+                }, 400);
+            }
+
+            // Initialize static toasts (rendered from server session)
+            document.querySelectorAll('.toast-item').forEach((toast, idx) => {
+                initToast(toast, idx);
+            });
+
+            // Global function to trigger a toast programmatically
+            window.showToast = function(type, title, message) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+
+                const isSuccess = type === 'success';
+                const iconClass = isSuccess ? 'ti ti-check text-emerald-600' : 'ti ti-alert-triangle text-rose-600';
+                const bgClass = isSuccess ? 'bg-emerald-50' : 'bg-rose-50';
+                const borderClass = isSuccess ? 'border-emerald-100' : 'border-rose-100';
+
+                const toast = document.createElement('div');
+                toast.className = `toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border ${borderClass} p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]`;
+                toast.innerHTML = `
+                    <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${bgClass}">
+                        <i class="${iconClass} text-sm font-semibold"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold text-slate-900">${title}</p>
+                        <p class="mt-0.5 text-xs text-slate-500">${message}</p>
+                    </div>
+                    <button type="button" class="toast-close text-slate-400 hover:text-slate-600 transition">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                `;
+                container.appendChild(toast);
+                initToast(toast, container.querySelectorAll('.toast-item').length - 1);
+            };
         });
     </script>
 </body>

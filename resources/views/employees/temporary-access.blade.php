@@ -67,8 +67,8 @@
             <table id="ta-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">ID</th>
+                         <th class="px-4 py-3">Code</th>
                         <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Position</th>
                         <th class="px-4 py-3">Dep</th>
@@ -137,8 +137,8 @@
                             $roleColor = $baseRole ? ($roleColors[$baseRole] ?? 'badge-gray') : 'badge-gray';
                         @endphp
                         <tr class="ta-row hover:bg-slate-50 transition">
-                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
 
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
@@ -189,13 +189,16 @@
                                 @else
                                     <span class="text-slate-400">—</span>
                                 @endif
+                                @if ($temporaryAssignment && $temporaryAssignment->temporary_role == 2)
+                                    <div class="text-xs text-slate-400 mt-1">Granted by: {{ $temporaryAssignment->grantedBy?->display_name ?? $temporaryAssignment->grantedBy?->name ?? '—' }}</div>
+                                @endif
                             </td>
 
                             {{-- Actions --}}
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     {{-- Eye (View Details) --}}
-                                    <a href="{{ route('employees.show', $employee) }}"
+                                    <a href="{{ route('employees.temporary-access.show', $employee) }}"
                                        class="text-slate-500 hover:text-slate-900 transition"
                                        title="View Details">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
