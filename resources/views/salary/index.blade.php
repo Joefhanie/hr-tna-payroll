@@ -9,11 +9,7 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
+
 
     <!-- Salary Summary Cards -->
     <div class="grid gap-4 sm:grid-cols-3 mb-6">

@@ -21,11 +21,7 @@
 
     <div class="mb-4 h-px w-full bg-slate-200"></div>
 
-    @if (session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
+
 
     <section class="card p-6">
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -102,15 +98,7 @@
             <form method="POST" action="{{ route('organization.users.store') }}" class="flex-1 overflow-y-auto px-4 py-3">
                 @csrf
 
-                @if ($errors->any())
-                    <div class="mb-3 rounded-lg border border-red-200 bg-red-50 p-2">
-                        <ul class="space-y-0.5 text-[0.75rem] text-red-700">
-                            @foreach ($errors->all() as $error)
-                                <li>• {{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+
 
                 <div class="grid gap-2.5">
                     <div>

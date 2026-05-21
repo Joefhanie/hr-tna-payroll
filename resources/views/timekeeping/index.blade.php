@@ -19,11 +19,7 @@
 
     <div class="mb-4 h-px w-full bg-slate-200"></div>
 
-    @if (session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
+
 
     {{-- Summary cards --}}
     <div class="grid gap-4 md:grid-cols-3">
@@ -355,16 +351,7 @@
                 </button>
             </div>
 
-            {{-- Validation errors --}}
-            @if($errors->any())
-                <div class="mx-6 mt-5 rounded-lg border border-red-200 bg-red-50 p-3">
-                    <ul class="space-y-1 text-[0.8rem] text-red-700">
-                        @foreach($errors->all() as $error)
-                            <li>• {{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+
 
             {{-- Form --}}
             <form method="POST" action="{{ route('timekeeping.manual.store') }}" class="p-6">

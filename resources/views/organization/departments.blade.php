@@ -17,11 +17,7 @@
 
     <div class="mb-4 h-px w-full bg-slate-200"></div>
 
-    @if (session('success'))
-        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
+
 
     <section class="card p-6">
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -180,15 +176,7 @@
             <form method="POST" action="{{ route('organization.departments.store') }}" class="p-6">
                 @csrf
 
-                @if ($errors->has('name') || $errors->has('parent_dept_id'))
-                    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-3">
-                        <ul class="space-y-1 text-[0.8rem] text-red-700">
-                            @foreach ($errors->all() as $error)
-                                <li>• {{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+
 
                 <div class="grid gap-5">
                     <div>
@@ -265,15 +253,7 @@
             <form method="POST" action="{{ route('organization.positions.store') }}" class="p-6">
                 @csrf
 
-                @if ($errors->has('title') || $errors->has('level') || $errors->has('department_id') || $errors->has('min_salary') || $errors->has('max_salary'))
-                    <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-3">
-                        <ul class="space-y-1 text-[0.8rem] text-red-700">
-                            @foreach ($errors->all() as $error)
-                                <li>• {{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+
 
                 <div class="grid gap-5">
                     <div>
