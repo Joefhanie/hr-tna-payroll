@@ -9,37 +9,7 @@
                 {{ $isEmployeeView ? 'Complete your onboarding requirements here.' : 'Track onboarding progress and assign action items.' }}
             </p>
         </div>
-        @if ($warningMessage)
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
-                {{ $warningMessage }}
-            </div>
-        @endif
     </div>
-
-    @if (session('success'))
-        <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if (session('error'))
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p class="font-semibold">Please check the onboarding form and try again.</p>
-            <ul class="mt-2 list-disc pl-5">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <div class="mb-4 h-px w-full bg-slate-200"></div>
 
     @php
         $statusBadge = fn (string $status) => match ($status) {
@@ -54,6 +24,13 @@
             'Supervisor' => 'bg-sky-50 text-sky-700',
             default => 'bg-slate-100 text-slate-600',
         };
+
+        $taskFormAction = old('task_id')
+            ? route('onboarding.tasks.update', old('task_id'))
+            : (($selectedEmployee && ($selectedEmployee['has_assignment'] ?? false))
+                ? route('onboarding.tasks.store', $selectedEmployee['id'])
+                : '#');
+        $taskFormMode = old('task_id') ? 'edit' : 'create';
     @endphp
 
     @if ($isEmployeeView)
@@ -310,12 +287,41 @@
                                                     Completed
                                                 </span>
                                             @elseif ($canManageTasks)
-                                                <form method="POST" action="{{ route('onboarding.tasks.complete', $task['id']) }}">
-                                                    @csrf
-                                                    <button type="submit" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[0.75rem] font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">
-                                                        Mark done
-                                                    </button>
-                                                </form>
+                                                <div class="flex items-center gap-2">
+                                                    @if ($canCreateTasks)
+                                                        <button
+                                                            type="button"
+                                                            title="Edit task"
+                                                            aria-label="Edit task"
+                                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
+                                                            data-task-edit
+                                                            data-task-id="{{ $task['id'] }}"
+                                                            data-task-title="{{ $task['title'] }}"
+                                                            data-task-category="{{ $task['category'] }}"
+                                                            data-task-instructions="{{ $task['instructions'] ?? '' }}"
+                                                            data-task-owner="{{ $task['assigned_role'] }}"
+                                                            data-task-action="{{ $task['action_type'] }}"
+                                                            data-task-document="{{ $task['document_type'] ?? '' }}"
+                                                        >
+                                                            <i class="ti ti-edit text-lg"></i>
+                                                        </button>
+
+                                                        <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" onsubmit="return confirm('Delete this onboarding task?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" title="Delete task" aria-label="Delete task" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                                                <i class="ti ti-x text-lg"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+
+                                                    <form method="POST" action="{{ route('onboarding.tasks.complete', $task['id']) }}">
+                                                        @csrf
+                                                        <button type="submit" title="Mark done" aria-label="Mark done" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                                            <i class="ti ti-check text-lg"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             @endif
                                         </div>
                                     </div>
@@ -342,8 +348,12 @@
             <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[1.1rem] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
                 <div class="mb-4 flex items-start justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-bold text-[#06112e]">Add Task</h3>
-                        <p class="mt-1 text-sm text-slate-500">Create employee, HR, or supervisor onboarding tasks for {{ $selectedEmployee['name'] }}.</p>
+                        <h3 id="task-modal-title" class="text-lg font-bold text-[#06112e]">{{ $taskFormMode === 'edit' ? 'Edit Task' : 'Add Task' }}</h3>
+                        <p id="task-modal-subtitle" class="mt-1 text-sm text-slate-500">
+                            {{ $taskFormMode === 'edit'
+                                ? 'Update the onboarding task details for ' . $selectedEmployee['name'] . '.'
+                                : 'Create employee, HR, or supervisor onboarding tasks for ' . $selectedEmployee['name'] . '.' }}
+                        </p>
                     </div>
                     <button
                         type="button"
@@ -354,16 +364,22 @@
                     </button>
                 </div>
 
-                <form method="POST" action="{{ route('onboarding.tasks.store', $selectedEmployee['id']) }}" class="space-y-4" id="onboarding-task-form">
+                <form method="POST" action="{{ $taskFormAction }}" class="space-y-4" id="onboarding-task-form" data-create-action="{{ route('onboarding.tasks.store', $selectedEmployee['id']) }}">
                     @csrf
+                    <input type="hidden" name="task_id" id="task_form_task_id" value="{{ old('task_id') }}">
+                    <div id="task-form-method-spoof">
+                        @if ($taskFormMode === 'edit')
+                            @method('PUT')
+                        @endif
+                    </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Task title</label>
-                            <input type="text" name="title" value="{{ old('title') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Assist employee">
+                            <input type="text" name="title" id="task_form_title" value="{{ old('title') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Assist employee">
                         </div>
                         <div>
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Category</label>
-                            <select name="category" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <select name="category" id="task_form_category" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                                 <option value="">Select category</option>
                                 @foreach ($selectedEmployee['category_options'] as $option)
                                     <option value="{{ $option['value'] }}" @selected(old('category') === $option['value'])>{{ $option['label'] }}</option>
@@ -374,13 +390,13 @@
 
                     <div>
                         <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Instructions</label>
-                        <textarea name="instructions" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Describe what needs to happen">{{ old('instructions') }}</textarea>
+                        <textarea name="instructions" id="task_form_instructions" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Describe what needs to happen">{{ old('instructions') }}</textarea>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Task owner</label>
-                            <select name="assigned_role" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" data-assigned-role>
+                            <select name="assigned_role" id="task_form_assigned_role" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" data-assigned-role>
                                 @foreach ($selectedEmployee['task_owner_options'] as $option)
                                     <option value="{{ $option['value'] }}" @selected(old('assigned_role') === $option['value'])>{{ $option['label'] }}</option>
                                 @endforeach
@@ -388,7 +404,7 @@
                         </div>
                         <div data-employee-action-group class="sm:col-span-1">
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Employee action</label>
-                            <select name="action_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <select name="action_type" id="task_form_action_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                                 @foreach ($selectedEmployee['employee_action_options'] as $option)
                                     <option value="{{ $option['value'] }}" @selected(old('action_type') === $option['value'])>{{ $option['label'] }}</option>
                                 @endforeach
@@ -396,7 +412,7 @@
                         </div>
                         <div data-document-type-group class="sm:col-span-1">
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Document type</label>
-                            <select name="document_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <select name="document_type" id="task_form_document_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                                 <option value="">Select document type</option>
                                 @foreach ($selectedEmployee['document_type_options'] as $option)
                                     <option value="{{ $option['value'] }}" @selected(old('document_type') === $option['value'])>{{ $option['label'] }}</option>
@@ -409,12 +425,13 @@
                         <button
                             type="button"
                             class="rounded-[0.55rem] border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            data-task-cancel
                             data-close-modal="add-task-modal"
                         >
                             Cancel
                         </button>
-                        <button type="submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
-                            Create task
+                        <button type="submit" id="task-form-submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
+                            {{ $taskFormMode === 'edit' ? 'Save changes' : 'Create task' }}
                         </button>
                     </div>
                 </form>
@@ -479,6 +496,45 @@
             const actionGroup = form.querySelector('[data-employee-action-group]');
             const documentTypeGroup = form.querySelector('[data-document-type-group]');
             const actionSelect = actionGroup ? actionGroup.querySelector('select[name="action_type"]') : null;
+            const taskIdInput = document.getElementById('task_form_task_id');
+            const methodSpoof = document.getElementById('task-form-method-spoof');
+            const titleField = document.getElementById('task_form_title');
+            const categoryField = document.getElementById('task_form_category');
+            const instructionsField = document.getElementById('task_form_instructions');
+            const ownerField = document.getElementById('task_form_assigned_role');
+            const actionField = document.getElementById('task_form_action_type');
+            const documentField = document.getElementById('task_form_document_type');
+            const modalTitle = document.getElementById('task-modal-title');
+            const modalSubtitle = document.getElementById('task-modal-subtitle');
+            const submitButton = document.getElementById('task-form-submit');
+            const createAction = form.dataset.createAction;
+
+            const setTaskFormMode = (mode, task = null) => {
+                if (mode === 'edit' && task) {
+                    form.action = `/onboarding/tasks/${task.id}`;
+                    taskIdInput.value = task.id;
+                    methodSpoof.innerHTML = '<input type="hidden" name="_method" value="PUT">';
+                    modalTitle.textContent = 'Edit Task';
+                    modalSubtitle.textContent = `Update the onboarding task details for {{ $selectedEmployee['name'] }}.`;
+                    submitButton.textContent = 'Save changes';
+                    titleField.value = task.title || '';
+                    categoryField.value = task.category || '';
+                    instructionsField.value = task.instructions || '';
+                    ownerField.value = task.owner || 'employee';
+                    actionField.value = task.action || 'checklist';
+                    documentField.value = task.document || '';
+                } else {
+                    form.action = createAction;
+                    taskIdInput.value = '';
+                    methodSpoof.innerHTML = '';
+                    modalTitle.textContent = 'Add Task';
+                    modalSubtitle.textContent = 'Create employee, HR, or supervisor onboarding tasks for {{ $selectedEmployee['name'] }}.';
+                    submitButton.textContent = 'Create task';
+                    form.reset();
+                }
+
+                syncTaskForm();
+            };
 
             const syncTaskForm = () => {
                 const isEmployeeTask = ownerSelect && ownerSelect.value === 'employee';
@@ -496,6 +552,34 @@
             ownerSelect?.addEventListener('change', syncTaskForm);
             actionSelect?.addEventListener('change', syncTaskForm);
             syncTaskForm();
+
+            document.querySelectorAll('[data-task-edit]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    setTaskFormMode('edit', {
+                        id: button.dataset.taskId,
+                        title: button.dataset.taskTitle,
+                        category: button.dataset.taskCategory,
+                        instructions: button.dataset.taskInstructions,
+                        owner: button.dataset.taskOwner,
+                        action: button.dataset.taskAction,
+                        document: button.dataset.taskDocument,
+                    });
+
+                    openModal('add-task-modal');
+                });
+            });
+
+            document.querySelectorAll('[data-open-modal="add-task-modal"]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    setTaskFormMode('create');
+                });
+            });
+
+            document.querySelectorAll('[data-task-cancel]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    setTaskFormMode('create');
+                });
+            });
 
             @if ($errors->any())
                 openModal('add-task-modal');

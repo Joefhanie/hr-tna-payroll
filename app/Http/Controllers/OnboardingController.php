@@ -202,6 +202,60 @@ class OnboardingController extends Controller
             ->with('success', 'Onboarding task created successfully.');
     }
 
+    public function updateTask(Request $request, OnboardingTask $task): RedirectResponse
+    {
+        abort_unless((int) (Auth::user()?->role ?? 0) === 4, 403);
+
+        if (!$this->hasOnboardingTables()) {
+            return redirect()
+                ->route('onboarding', ['employee' => $task->assignment->employee_id])
+                ->with('error', 'Onboarding is not available until the latest migration is run.');
+        }
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:80'],
+            'instructions' => ['nullable', 'string', 'max:2000'],
+            'assigned_role' => ['required', Rule::in($this->assignableRoles())],
+            'action_type' => ['nullable', Rule::in($this->employeeActionTypes())],
+            'document_type' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $assignedRole = $validated['assigned_role'];
+        $actionType = $assignedRole === OnboardingTask::ASSIGNED_ROLE_EMPLOYEE
+            ? ($validated['action_type'] ?? OnboardingTask::ACTION_CHECKLIST)
+            : OnboardingTask::ACTION_CHECKLIST;
+
+        $task->update([
+            'title' => $validated['title'],
+            'category' => $validated['category'],
+            'instructions' => $validated['instructions'] ?? null,
+            'assigned_role' => $assignedRole,
+            'action_type' => $actionType,
+            'document_type' => $actionType === OnboardingTask::ACTION_DOCUMENT_UPLOAD
+                ? ($validated['document_type'] ?? $validated['category'])
+                : null,
+        ]);
+
+        return redirect()
+            ->route('onboarding', ['employee' => $task->assignment->employee_id])
+            ->with('success', 'Onboarding task updated successfully.');
+    }
+
+    public function destroyTask(OnboardingTask $task): RedirectResponse
+    {
+        abort_unless((int) (Auth::user()?->role ?? 0) === 4, 403);
+
+        $employeeId = $task->assignment->employee_id;
+
+        $task->delete();
+        $this->syncAssignmentStatus($task->assignment()->with('tasks')->first());
+
+        return redirect()
+            ->route('onboarding', ['employee' => $employeeId])
+            ->with('success', 'Onboarding task deleted successfully.');
+    }
+
     public function submitEmployeeTask(Request $request, OnboardingTask $task): RedirectResponse
     {
         $employee = $this->employeeForCurrentUser();
@@ -341,6 +395,7 @@ class OnboardingController extends Controller
                     'submission_notes' => $task->submission_notes,
                     'submission_file_name' => $task->submission_file_name,
                     'submitted_at' => $task->submitted_at?->format('M d, Y h:i A'),
+                    'completed_at' => $task->completed_at?->format('M d, Y h:i A'),
                     'completed' => $task->completed_at !== null,
                 ];
             })->values(),
