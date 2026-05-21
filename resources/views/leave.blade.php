@@ -114,9 +114,10 @@
                         <td class="pl-5 pr-2 py-4">
                             @php
                                 $statusClass = match($req['status']) {
-                                    'Approved' => 'bg-[#dcfce7] text-[#166534]',
-                                    'Rejected' => 'bg-[#fee2e2] text-[#991b1b]',
-                                    default    => 'bg-[#fef3c7] text-[#92400e]',
+                                    'Approved'  => 'bg-[#dcfce7] text-[#166534]',
+                                    'Rejected'  => 'bg-[#fee2e2] text-[#991b1b]',
+                                    'Cancelled' => 'bg-slate-100 text-slate-700 border border-slate-200',
+                                    default     => 'bg-[#fef3c7] text-[#92400e]',
                                 };
                             @endphp
                             <span class="rounded-full px-2.5 py-1 text-[0.7rem] font-bold {{ $statusClass }}">
@@ -142,8 +143,21 @@
                                         Decline
                                     </button>
                                 </div>
-                            @elseif($req['status_code'] === 3 && $req['rejection_note'])
-                                <span class="text-xs text-slate-400 italic" title="{{ $req['rejection_note'] }}">Note: {{ Str::limit($req['rejection_note'], 30) }}</span>
+                            @elseif($req['status_code'] === 2 && auth()->user()->hasPermission('leaves.edit'))
+                                {{-- Cancel Approved --}}
+                                <div class="flex items-center justify-center">
+                                    <button type="button"
+                                        class="open-cancel-modal inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:text-rose-700 hover:scale-[1.05] active:scale-[0.95]"
+                                        data-id="{{ $req['id'] }}"
+                                        data-employee="{{ $req['employee'] }}"
+                                        title="Cancel Leave Request">
+                                        <i class="ti ti-ban text-base"></i>
+                                    </button>
+                                </div>
+                            @elseif(($req['status_code'] === 3 || $req['status_code'] === 4) && $req['rejection_note'])
+                                <span class="text-xs text-slate-400 italic" title="{{ $req['rejection_note'] }}">
+                                    Note: {{ Str::limit($req['rejection_note'], 30) }}
+                                </span>
                             @else
                                 <span class="text-xs text-slate-300">—</span>
                             @endif
@@ -293,6 +307,45 @@
     </div>
     @endif
 
+    {{-- =========================================================
+         CANCEL MODAL
+    ========================================================= --}}
+    @if(auth()->user()->hasPermission('leaves.edit'))
+    <div id="cancelModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div>
+                    <h3 class="text-base font-semibold text-slate-900">Cancel Approved Leave</h3>
+                    <p class="mt-0.5 text-xs text-slate-500" id="cancel_employee_label">Provide a reason for cancellation.</p>
+                </div>
+                <button type="button" id="closeCancelModal"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+            <form id="cancelForm" method="POST" action="" class="px-6 py-5 space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Reason for Cancellation</label>
+                    <textarea name="cancellation_reason" rows="3" required placeholder="e.g. Schedule conflict, client request…"
+                        class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-rose-300"></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="cancelBtnDismiss"
+                        class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                        Close
+                    </button>
+                    <button type="submit"
+                        class="rounded-[0.5rem] bg-rose-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700">
+                        Confirm Cancellation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     <x-slot:scripts>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -367,11 +420,40 @@
         cancelDecline?.addEventListener('click', closeDeclineM);
         declineModal?.addEventListener('click', e => { if (e.target === declineModal) closeDeclineM(); });
 
+        // ── Cancel Modal ──
+        const cancelModal  = document.getElementById('cancelModal');
+        const cancelForm   = document.getElementById('cancelForm');
+        const closeCancel  = document.getElementById('closeCancelModal');
+        const cancelBtnDismiss = document.getElementById('cancelBtnDismiss');
+        const cancelLabel  = document.getElementById('cancel_employee_label');
+
+        function openCancel()  { cancelModal?.classList.remove('hidden'); cancelModal?.classList.add('flex'); }
+        function closeCancelM(){ cancelModal?.classList.remove('flex');   cancelModal?.classList.add('hidden'); }
+
+        document.querySelectorAll('.open-cancel-modal').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const leaveId  = this.dataset.id;
+                const employee = this.dataset.employee;
+                if (cancelForm) {
+                    cancelForm.action = '/leave/' + leaveId + '/cancel';
+                }
+                if (cancelLabel) {
+                    cancelLabel.textContent = 'Cancelling approved leave for ' + employee + '.';
+                }
+                openCancel();
+            });
+        });
+
+        closeCancel?.addEventListener('click', closeCancelM);
+        cancelBtnDismiss?.addEventListener('click', closeCancelM);
+        cancelModal?.addEventListener('click', e => { if (e.target === cancelModal) closeCancelM(); });
+
         // ── ESC to close any modal ──
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
             closeModal();
             closeDeclineM();
+            closeCancelM();
         });
     });
     </script>

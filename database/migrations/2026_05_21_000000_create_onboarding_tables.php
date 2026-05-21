@@ -24,13 +24,16 @@ return new class extends Migration
         if (!Schema::hasTable('onboarding_assignments')) {
             Schema::create('onboarding_assignments', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
-                $table->foreignId('assigned_by')->nullable()->constrained('users')->nullOnDelete();
+                $table->unsignedInteger('employee_id');
+                $table->unsignedInteger('assigned_by')->nullable();
                 $table->unsignedTinyInteger('status')->default(1);
                 $table->timestamp('started_at')->nullable();
                 $table->timestamp('completed_at')->nullable();
                 $table->timestamps();
+                
                 $table->unique('employee_id');
+                $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
+                $table->foreign('assigned_by')->references('id')->on('users')->nullOnDelete();
             });
         }
 
@@ -44,7 +47,7 @@ return new class extends Migration
                 $table->string('assigned_role', 20);
                 $table->unsignedInteger('sequence')->default(0);
                 $table->timestamp('completed_at')->nullable();
-                $table->unsignedBigInteger('completed_by')->nullable()->index();
+                $table->unsignedInteger('completed_by')->nullable()->index();
                 $table->timestamps();
             });
         }

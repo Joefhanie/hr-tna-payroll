@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\PayRun;
 use App\Models\Employee;
-use App\Models\SupervisorAssignment;
 use App\Models\EmployeePlotting;
 use App\Services\PayrollService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PayrollController extends Controller
@@ -84,11 +84,7 @@ class PayrollController extends Controller
             $plottingMap[$p->employee_id][Carbon::parse($p->date)->format('Y-m-d')] = $p;
         }
 
-        $assignments = SupervisorAssignment::whereIn('date', array_keys($dates))->get();
-        $assignmentMap = [];
-        foreach ($assignments as $a) {
-            $assignmentMap[$a->supervisor_id][Carbon::parse($a->date)->format('Y-m-d')] = $a->location;
-        }
+        $locationMap = $this->fieldRecordLocationMap(array_keys($dates));
 
         $employeeMap = $employees->keyBy('id');
 
@@ -107,8 +103,7 @@ class PayrollController extends Controller
                 $isSupervisor = $employee->user && $employee->user->role === 2;
 
                 if ($isSupervisor) {
-                    // Supervisors ALWAYS resolve directly from their daily assignment!
-                    $location = $assignmentMap[$employee->id][$date] ?? 'General';
+                    $location = $locationMap[$employee->employee_code][$date] ?? 'General';
                     $svName = 'None';
                 } else {
                     // Regular employees:
@@ -118,8 +113,9 @@ class PayrollController extends Controller
                     } else {
                         // Otherwise, inherit their daily supervisor's assigned location
                         $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
-                        $location = ($dailySupervisorId && isset($assignmentMap[$dailySupervisorId][$date])) 
-                            ? $assignmentMap[$dailySupervisorId][$date] 
+                        $dailySupervisor = $dailySupervisorId ? ($employeeMap[$dailySupervisorId] ?? Employee::find($dailySupervisorId)) : null;
+                        $location = ($dailySupervisor && isset($locationMap[$dailySupervisor->employee_code][$date]))
+                            ? $locationMap[$dailySupervisor->employee_code][$date]
                             : 'General';
                     }
 
@@ -169,26 +165,17 @@ class PayrollController extends Controller
                     $isSupervisor = $employee->user && $employee->user->role === 2;
                     $supervisorId = null;
                     $location = 'General';
+                    $locationMap = $this->fieldRecordLocationMap([$date]);
 
                     if ($isSupervisor) {
-                        $assign = SupervisorAssignment::where('supervisor_id', $employee->id)
-                            ->where('date', $date)
-                            ->first();
-                        if ($assign) {
-                            $location = $assign->location;
-                        }
+                        $location = $locationMap[$employee->employee_code][$date] ?? 'General';
                     } else {
                         if ($employee->manager_id) {
                             $manager = $employee->manager;
                             $isManagerSupervisor = $manager && $manager->user && $manager->user->role === 2;
                             if ($isManagerSupervisor) {
                                 $supervisorId = $employee->manager_id;
-                                $assign = SupervisorAssignment::where('supervisor_id', $employee->manager_id)
-                                    ->where('date', $date)
-                                    ->first();
-                                if ($assign) {
-                                    $location = $assign->location;
-                                }
+                                $location = $locationMap[$manager->employee_code][$date] ?? 'General';
                             }
                         }
                     }
@@ -227,11 +214,7 @@ class PayrollController extends Controller
                 return Carbon::parse($p->date)->format('Y-m-d');
             });
 
-        $assignments = SupervisorAssignment::whereIn('date', array_keys($dates))->get();
-        $assignmentMap = [];
-        foreach ($assignments as $a) {
-            $assignmentMap[$a->supervisor_id][Carbon::parse($a->date)->format('Y-m-d')] = $a->location;
-        }
+        $locationMap = $this->fieldRecordLocationMap(array_keys($dates));
 
         $weekData = [];
         foreach ($dates as $dateString => $dateLabel) {
@@ -245,7 +228,7 @@ class PayrollController extends Controller
             $isSupervisor = $employee->user && $employee->user->role === 2;
 
             if ($isSupervisor) {
-                $location = $assignmentMap[$employee->id][$dateString] ?? 'General';
+                $location = $locationMap[$employee->employee_code][$dateString] ?? 'General';
             } else {
                 $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $employee->manager_id;
                 
@@ -260,8 +243,8 @@ class PayrollController extends Controller
                         if ($supervisor) {
                             $supervisorName = $supervisor->first_name . ' ' . $supervisor->last_name;
                         }
-                        if (isset($assignmentMap[$dailySupervisorId][$dateString])) {
-                            $location = $assignmentMap[$dailySupervisorId][$dateString];
+                        if ($supervisor && isset($locationMap[$supervisor->employee_code][$dateString])) {
+                            $location = $locationMap[$supervisor->employee_code][$dateString];
                         }
                     }
                 }
@@ -285,6 +268,7 @@ class PayrollController extends Controller
     public function savePlottingEmployee(Request $request, Employee $employee)
     {
         $entries = $request->input('entries', []);
+        $locationMap = $this->fieldRecordLocationMap(array_keys($entries));
 
         foreach ($entries as $date => $amount) {
             $cleanAmount = (float) str_replace([',', '$', ' '], '', $amount);
@@ -303,24 +287,14 @@ class PayrollController extends Controller
                 $location = 'General';
 
                 if ($isSupervisor) {
-                    $assign = SupervisorAssignment::where('supervisor_id', $employee->id)
-                        ->where('date', $date)
-                        ->first();
-                    if ($assign) {
-                        $location = $assign->location;
-                    }
+                    $location = $locationMap[$employee->employee_code][$date] ?? 'General';
                 } else {
                     if ($employee->manager_id) {
                         $manager = $employee->manager;
                         $isManagerSupervisor = $manager && $manager->user && $manager->user->role === 2;
                         if ($isManagerSupervisor) {
                             $supervisorId = $employee->manager_id;
-                            $assign = SupervisorAssignment::where('supervisor_id', $employee->manager_id)
-                                ->where('date', $date)
-                                ->first();
-                            if ($assign) {
-                                $location = $assign->location;
-                            }
+                            $location = $locationMap[$manager->employee_code][$date] ?? 'General';
                         }
                     }
                 }
@@ -348,10 +322,7 @@ class PayrollController extends Controller
         $employeeData = [];
 
         // For location resolution
-        $assignmentMap = SupervisorAssignment::where('date', $date)
-            ->get()
-            ->groupBy('supervisor_id')
-            ->map(fn($group) => $group->first()->location);
+        $locationMap = $this->fieldRecordLocationMap([$date]);
 
         foreach ($allEmployees as $emp) {
             $isSupervisor = $emp->user && $emp->user->role === 2;
@@ -364,13 +335,16 @@ class PayrollController extends Controller
             // Resolve daily location
             $loc = 'General';
             if ($isSupervisor) {
-                $loc = $assignmentMap[$emp->id] ?? 'General';
+                $loc = $locationMap[$emp->employee_code][$date] ?? 'General';
             } else {
                 if ($plotting && $plotting->location && $plotting->location !== 'General') {
                     $loc = $plotting->location;
                 } else {
                     $dailySupervisorId = ($plotting && $plotting->supervisor_id) ? $plotting->supervisor_id : $emp->manager_id;
-                    $loc = $dailySupervisorId ? ($assignmentMap[$dailySupervisorId] ?? 'General') : 'General';
+                    $dailySupervisor = $dailySupervisorId ? Employee::find($dailySupervisorId) : null;
+                    $loc = ($dailySupervisor && isset($locationMap[$dailySupervisor->employee_code][$date]))
+                        ? $locationMap[$dailySupervisor->employee_code][$date]
+                        : 'General';
                 }
             }
 
@@ -397,6 +371,27 @@ class PayrollController extends Controller
         }
 
         return view('payroll.work-location-details', compact('date', 'workplaceName', 'employeeData'));
+    }
+
+    /**
+     * Build a lookup of work locations from field records keyed by employee code and date.
+     */
+    private function fieldRecordLocationMap(array $dates): array
+    {
+        $records = DB::table('field_records')
+            ->select('empid', 'Date', 'location', 'time', 'id')
+            ->whereIn('Date', $dates)
+            ->whereNotNull('location')
+            ->orderBy('time')
+            ->orderBy('id')
+            ->get();
+
+        $locationMap = [];
+        foreach ($records as $record) {
+            $locationMap[$record->empid][$record->Date] = $record->location;
+        }
+
+        return $locationMap;
     }
 
     public function showPerDateDetails(string $date): View
