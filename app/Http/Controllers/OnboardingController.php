@@ -31,6 +31,12 @@ class OnboardingController extends Controller
         $isSupervisor = $role === 2;
         $canManageTasks = $isHr || $isSupervisor;
         $isEmployeeView = !$canManageTasks;
+        $filters = [
+            'q' => trim((string) $request->string('q')),
+            'employment_type' => (string) $request->string('employment_type'),
+            'employee_status' => (string) $request->string('employee_status'),
+            'onboarding_status' => (string) $request->string('onboarding_status'),
+        ];
 
         if (!$this->hasOnboardingTables()) {
             return view('onboarding', [
@@ -39,6 +45,8 @@ class OnboardingController extends Controller
                 'isEmployeeView' => $isEmployeeView,
                 'canAssignOnboarding' => false,
                 'canManageTasks' => false,
+                'filters' => $filters,
+                'filterOptions' => $this->filterOptions(),
                 'warningMessage' => 'Onboarding is not available until the latest migration is run.',
             ]);
         }
@@ -56,6 +64,8 @@ class OnboardingController extends Controller
                 'canAssignOnboarding' => false,
                 'canManageTasks' => false,
                 'canCreateTasks' => false,
+                'filters' => $filters,
+                'filterOptions' => $this->filterOptions(),
                 'warningMessage' => null,
             ]);
         }
@@ -72,6 +82,22 @@ class OnboardingController extends Controller
             ])
             ->whereNotNull('hire_date')
             ->whereNotIn('status', [4, 5])
+            ->when($filters['q'] !== '', function ($query) use ($filters) {
+                $search = $filters['q'];
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('employee_code', 'like', '%' . $search . '%')
+                        ->orWhere('first_name', 'like', '%' . $search . '%')
+                        ->orWhere('last_name', 'like', '%' . $search . '%')
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $search . '%'])
+                        ->orWhereRaw("CONCAT(first_name, ' ', COALESCE(middle_name, ''), ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
+            ->when($filters['employment_type'] !== '', function ($query) use ($filters) {
+                $query->where('employment_type', (int) $filters['employment_type']);
+            })
+            ->when($filters['employee_status'] !== '', function ($query) use ($filters) {
+                $query->where('status', (int) $filters['employee_status']);
+            })
             ->orderByRaw(
                 'CASE WHEN YEAR(hire_date) = ? AND MONTH(hire_date) = ? THEN 0 ELSE 1 END',
                 [$now->year, $now->month]
@@ -80,6 +106,9 @@ class OnboardingController extends Controller
             ->orderBy('first_name')
             ->get()
             ->map(fn (Employee $employee) => $this->buildEmployeeCard($employee, true))
+            ->when($filters['onboarding_status'] !== '', function ($employees) use ($filters) {
+                return $employees->where('status_key', $filters['onboarding_status'])->values();
+            })
             ->sortBy([
                 fn (array $employee) => $employee['is_priority_hire'] ? 0 : 1,
                 fn (array $employee) => -1 * ($employee['hire_date_sort'] ?? 0),
@@ -96,6 +125,8 @@ class OnboardingController extends Controller
             'canAssignOnboarding' => $isHr,
             'canManageTasks' => true,
             'canCreateTasks' => $isHr,
+            'filters' => $filters,
+            'filterOptions' => $this->filterOptions(),
             'warningMessage' => null,
         ]);
     }
@@ -337,12 +368,18 @@ class OnboardingController extends Controller
 
         return [
             'id' => $employee->id,
+            'employee_code' => $employee->employee_code,
             'name' => $employee->full_name,
             'type' => $this->onboardingTypeForEmployee($employee),
             'status' => $status,
+            'status_key' => $this->onboardingStatusKey($status),
             'progress' => $progress,
             'hire_date' => $employee->hire_date?->format('M d, Y') ?? 'N/A',
             'hire_date_sort' => $employee->hire_date?->timestamp ?? 0,
+            'employment_type' => (int) ($employee->employment_type ?? 0),
+            'employment_type_label' => $this->employmentTypeLabel((int) ($employee->employment_type ?? 0)),
+            'employee_status' => (int) ($employee->status ?? 0),
+            'employee_status_label' => $this->employeeStatusLabel((int) ($employee->status ?? 0)),
             'is_priority_hire' => $employee->hire_date !== null
                 && (int) $employee->hire_date->year === (int) $now->year
                 && (int) $employee->hire_date->month === (int) $now->month,
@@ -381,6 +418,62 @@ class OnboardingController extends Controller
         }
 
         return 'General Onboarding';
+    }
+
+    private function onboardingStatusKey(string $status): string
+    {
+        return match ($status) {
+            'Completed' => 'completed',
+            'In Progress' => 'in_progress',
+            default => 'not_assigned',
+        };
+    }
+
+    private function employmentTypeLabel(int $type): string
+    {
+        return match ($type) {
+            1 => 'Full-time',
+            2 => 'Part-time',
+            3 => 'Contractual',
+            4 => 'Intern',
+            default => 'Unknown',
+        };
+    }
+
+    private function employeeStatusLabel(int $status): string
+    {
+        return match ($status) {
+            1 => 'Active',
+            2 => 'Probationary',
+            3 => 'On Leave',
+            4 => 'Resigned',
+            5 => 'Terminated',
+            default => 'Unknown',
+        };
+    }
+
+    private function filterOptions(): array
+    {
+        return [
+            'employment_types' => [
+                ['value' => '1', 'label' => 'Full-time'],
+                ['value' => '2', 'label' => 'Part-time'],
+                ['value' => '3', 'label' => 'Contractual'],
+                ['value' => '4', 'label' => 'Intern'],
+            ],
+            'employee_statuses' => [
+                ['value' => '1', 'label' => 'Active'],
+                ['value' => '2', 'label' => 'Probationary'],
+                ['value' => '3', 'label' => 'On Leave'],
+                ['value' => '4', 'label' => 'Resigned'],
+                ['value' => '5', 'label' => 'Terminated'],
+            ],
+            'onboarding_statuses' => [
+                ['value' => 'not_assigned', 'label' => 'Not Yet Assigned'],
+                ['value' => 'in_progress', 'label' => 'In Progress'],
+                ['value' => 'completed', 'label' => 'Completed'],
+            ],
+        ];
     }
 
     private function hasOnboardingTables(): bool

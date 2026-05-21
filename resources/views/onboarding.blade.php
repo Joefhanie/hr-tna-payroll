@@ -2,16 +2,55 @@
     <x-slot:title>Onboarding</x-slot:title>
     <x-slot:header>Onboarding</x-slot:header>
 
-    <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
             <h1 class="text-[1.65rem] font-bold text-[#06112e]">Onboarding</h1>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $isEmployeeView ? 'Complete your onboarding requirements here.' : 'Track onboarding progress and assign action items.' }}
             </p>
         </div>
+        @if (!$isEmployeeView)
+            <form method="GET" action="{{ route('onboarding') }}" class="w-full xl:w-auto" id="onboarding-filters-form">
+                <input type="hidden" name="employee" value="{{ $selectedEmployee['id'] ?? '' }}">
+                <div class="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
+                    <div class="relative w-full lg:w-[12rem] xl:w-[13rem]">
+                        <i class="ti ti-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400"></i>
+                        <input
+                            type="search"
+                            name="q"
+                            value="{{ $filters['q'] ?? '' }}"
+                            placeholder="Search name or employee code"
+                            class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100"
+                            data-auto-submit-search
+                        >
+                    </div>
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto">
+                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[11rem] xl:w-[12rem]" data-auto-submit-filter>
+                            <option value="">All types</option>
+                            @foreach (($filterOptions['employment_types'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['employment_type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[12rem] xl:w-[13rem]" data-auto-submit-filter>
+                            <option value="">All employee statuses</option>
+                            @foreach (($filterOptions['employee_statuses'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['employee_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <select name="onboarding_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[12rem] xl:w-[13rem]" data-auto-submit-filter>
+                            <option value="">All onboarding statuses</option>
+                            @foreach (($filterOptions['onboarding_statuses'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['onboarding_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </form>
+        @endif
     </div>
 
     @php
+        $selectedEmployeeName = $selectedEmployee['name'] ?? 'the selected employee';
         $statusBadge = fn (string $status) => match ($status) {
             'Completed' => 'bg-[#dcfce7] text-[#166534]',
             'In Progress' => 'bg-[#e0f2fe] text-[#0369a1]',
@@ -185,7 +224,10 @@
                         @forelse ($employees as $emp)
                             <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-[#1a56db] bg-blue-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
                                 <div class="flex items-center justify-between gap-3">
-                                    <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
+                                    <div>
+                                        <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
+                                        <p class="mt-0.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">{{ $emp['employee_code'] ?: 'No Code' }}</p>
+                                    </div>
                                     <span class="rounded-full px-2.5 py-0.5 text-[0.7rem] font-bold {{ $statusBadge($emp['status']) }}">{{ $emp['status'] }}</span>
                                 </div>
                                 <div class="mt-1 flex items-center gap-2">
@@ -193,6 +235,10 @@
                                     @if ($emp['is_priority_hire'])
                                         <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-amber-700">Priority</span>
                                     @endif
+                                </div>
+                                <div class="mt-2 flex flex-wrap items-center gap-2">
+                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600">{{ $emp['employment_type_label'] }}</span>
+                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600">{{ $emp['employee_status_label'] }}</span>
                                 </div>
                                 <p class="mt-1 text-[0.75rem] text-slate-400">Hire date: {{ $emp['hire_date'] }}</p>
 
@@ -205,7 +251,7 @@
                             </a>
                         @empty
                             <div class="rounded-[0.8rem] border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                                No employees with hire dates are available for onboarding.
+                                No employees matched the current search and filters.
                             </div>
                         @endforelse
                         </div>
@@ -447,6 +493,27 @@
 
     <script>
         (() => {
+            const filterForm = document.getElementById('onboarding-filters-form');
+            const searchField = filterForm?.querySelector('[data-auto-submit-search]');
+            let filterSubmitTimer = null;
+
+            searchField?.addEventListener('input', () => {
+                if (!filterForm) {
+                    return;
+                }
+
+                window.clearTimeout(filterSubmitTimer);
+                filterSubmitTimer = window.setTimeout(() => {
+                    filterForm.submit();
+                }, 250);
+            });
+
+            filterForm?.querySelectorAll('[data-auto-submit-filter]').forEach((field) => {
+                field.addEventListener('change', () => {
+                    filterForm.submit();
+                });
+            });
+
             const form = document.getElementById('onboarding-task-form');
             const openModal = (modalId) => {
                 const modal = document.getElementById(modalId);
@@ -521,7 +588,7 @@
                     taskIdInput.value = task.id;
                     methodSpoof.innerHTML = '<input type="hidden" name="_method" value="PUT">';
                     modalTitle.textContent = 'Edit Task';
-                    modalSubtitle.textContent = `Update the onboarding task details for {{ $selectedEmployee['name'] }}.`;
+                    modalSubtitle.textContent = `Update the onboarding task details for {{ $selectedEmployeeName }}.`;
                     submitButton.textContent = 'Save changes';
                     titleField.value = task.title || '';
                     categoryField.value = task.category || '';
@@ -534,7 +601,7 @@
                     taskIdInput.value = '';
                     methodSpoof.innerHTML = '';
                     modalTitle.textContent = 'Add Task';
-                    modalSubtitle.textContent = 'Create employee, HR, or supervisor onboarding tasks for {{ $selectedEmployee['name'] }}.';
+                    modalSubtitle.textContent = 'Create employee, HR, or supervisor onboarding tasks for {{ $selectedEmployeeName }}.';
                     submitButton.textContent = 'Create task';
                     form.reset();
                 }
