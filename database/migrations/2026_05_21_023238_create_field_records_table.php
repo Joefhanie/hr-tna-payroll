@@ -31,9 +31,10 @@ return new class extends Migration
             $table->dateTime('deleted_at')->nullable();
             $table->integer('deleted_by')->nullable();
 
-            $table->index('empid', 'idx_field_records_empid');
-            $table->index('sup_id', 'idx_field_records_sup_id');
-        });
+                $table->index('empid', 'idx_field_records_empid');
+                $table->index('sup_id', 'idx_field_records_sup_id');
+            });
+        }
 
         // Insert initial data
         DB::table('field_records')->insert([

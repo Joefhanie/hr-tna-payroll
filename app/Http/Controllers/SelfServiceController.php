@@ -9,6 +9,7 @@ use App\Models\Leave;
 use App\Models\Payslip;
 use App\Models\ProfileUpdateRequest;
 use App\Models\User;
+use App\Services\LeaveRequestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,6 +21,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SelfServiceController extends Controller
 {
+    public function __construct(
+        private readonly LeaveRequestService $leaveRequestService
+    ) {
+    }
+
     public function index(Request $request)
     {
         /** @var User|null $user */
@@ -226,6 +232,7 @@ class SelfServiceController extends Controller
             'employee' => $employee,
             'canSubmitRequests' => $this->canSubmitForEmployee($employee),
             'leaveTypeOptions' => $leaveTypes,
+            'leaveTypeChoices' => $this->leaveTypeChoices(),
             'leaveRequests' => $leaveRequests,
             'attendanceLogs' => $attendanceLogs,
             'profileUpdateRequests' => $profileUpdateRequests,
@@ -244,44 +251,18 @@ class SelfServiceController extends Controller
             ]);
         }
 
-        $validated = $request->validate([
-            'type' => ['required', 'string', 'max:100'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'reason' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = validator(
+            [
+                ...$request->all(),
+                'employee_id' => $employee->id,
+            ],
+            LeaveRequestService::rules()
+        )->validate();
 
-        $leaveType = null;
-
-        if (Schema::hasTable('leave_types')) {
-            $leaveType = DB::table('leave_types')
-                ->select(['id', 'name', 'code'])
-                ->where('is_active', 1)
-                ->where(function ($query) use ($validated) {
-                    $query->where('name', $validated['type'])
-                        ->orWhere('code', $validated['type']);
-                })
-                ->first();
-        }
-
-        if (!$leaveType) {
-            throw ValidationException::withMessages([
-                'type' => 'Select or enter a leave type that exists in the current database.',
-            ]);
-        }
-
-        $startDate = \Carbon\Carbon::parse($validated['start_date']);
-        $endDate = \Carbon\Carbon::parse($validated['end_date']);
-
-        Leave::create([
-            'employee_id' => $employee->id,
-            'leave_type_id' => $leaveType->id,
-            'start_date' => $startDate->toDateString(),
-            'end_date' => $endDate->toDateString(),
-            'days_requested' => (float) $startDate->diffInDays($endDate) + 1,
-            'status' => 1,
-            'reason' => $validated['reason'] ?? null,
-        ]);
+        $this->leaveRequestService->submit(
+            Auth::user(),
+            $validated
+        );
 
         return redirect()
             ->route('self-service.profile', $employee)
@@ -589,6 +570,17 @@ class SelfServiceController extends Controller
             ->orderBy('name')
             ->pluck('name', 'id')
             ->mapWithKeys(fn ($name, $id) => [(int) $id => (string) $name])
+            ->all();
+    }
+
+    private function leaveTypeChoices(): array
+    {
+        return collect($this->leaveTypeOptions())
+            ->map(fn ($name, $id) => [
+                'id' => (int) $id,
+                'name' => (string) $name,
+            ])
+            ->values()
             ->all();
     }
 

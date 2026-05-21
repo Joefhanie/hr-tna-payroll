@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\Leave;
+use App\Services\LeaveRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,11 @@ use Carbon\Carbon;
 
 class LeaveController extends Controller
 {
+    public function __construct(
+        private readonly LeaveRequestService $leaveRequestService
+    ) {
+    }
+
     /**
      * Display the main leave management page.
      */
@@ -145,32 +151,9 @@ class LeaveController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $validated = $request->validate([
-            'employee_id'   => ['required', 'exists:employees,id'],
-            'leave_type_id' => ['required', 'exists:leave_types,id'],
-            'start_date'    => ['required', 'date'],
-            'end_date'      => ['required', 'date', 'after_or_equal:start_date'],
-            'reason'        => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validate(LeaveRequestService::rules());
 
-        // Employees can only file for themselves
-        if ($user->role === 1 && (int) $validated['employee_id'] !== (int) $user->employee_id) {
-            abort(403);
-        }
-
-        $startDate = Carbon::parse($validated['start_date']);
-        $endDate   = Carbon::parse($validated['end_date']);
-        $days      = (float) ($startDate->diffInDays($endDate) + 1);
-
-        Leave::create([
-            'employee_id'   => $validated['employee_id'],
-            'leave_type_id' => $validated['leave_type_id'],
-            'start_date'    => $startDate->toDateString(),
-            'end_date'      => $endDate->toDateString(),
-            'days_requested'=> $days,
-            'reason'        => $validated['reason'] ?? null,
-            'status'        => 1, // Pending
-        ]);
+        $this->leaveRequestService->submit($user, $validated);
 
         return redirect()->route('leave.index')
             ->with('success', 'Leave request submitted successfully.');
