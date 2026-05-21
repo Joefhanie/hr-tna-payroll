@@ -233,4 +233,21 @@ class Employee extends Model
     {
         return $this->belongsToMany(DeductionRule::class, 'employee_deduction_rule')->withTimestamps();
     }
+
+    /**
+     * Benefit enrollments for this employee.
+     */
+    public function benefitEnrollments(): HasMany
+    {
+        return $this->hasMany(BenefitEnrollment::class, 'employee_id');
+    }
+
+    /**
+     * Benefit plans enrolled by this employee.
+     */
+    public function benefitPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(BenefitPlan::class, 'benefit_enrollments', 'employee_id', 'plan_id')
+            ->withPivot(['id', 'enrollment_date', 'coverage_start', 'coverage_end', 'status']);
+    }
 }
