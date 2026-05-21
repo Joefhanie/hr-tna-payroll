@@ -96,7 +96,6 @@
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
-                ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims', 'label' => 'Previous Claims', 'icon' => 'file-invoice', 'permission' => 'self-service.view'],
                 ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
             ],
         ];
