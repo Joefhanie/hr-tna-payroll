@@ -495,6 +495,40 @@ class PayrollController extends Controller
         $periodStart = Carbon::parse($validated['period_start']);
         $periodEnd = Carbon::parse($validated['period_end']);
 
+        // Check for duplicate pay runs (exact same period, active and NOT completed status)
+        $duplicatePayRun = PayRun::where('period_start', $periodStart->toDateString())
+            ->where('period_end', $periodEnd->toDateString())
+            ->whereNotIn('status', [3, 4, 13])
+            ->first();
+
+        if ($duplicatePayRun) {
+            return back()
+                ->withInput()
+                ->withErrors(['period_start' => 'A pay run for this exact period (' . $periodStart->format('Y-m-d') . ' to ' . $periodEnd->format('Y-m-d') . ') already exists and is not yet completed.']);
+        }
+
+        // Check if selected employees are already included in any overlapping active/completed pay runs
+        $overlappingPayRuns = PayRun::whereNotIn('status', [4, 13])
+            ->where('period_start', '<=', $periodEnd->toDateString())
+            ->where('period_end', '>=', $periodStart->toDateString())
+            ->get();
+
+        if ($overlappingPayRuns->isNotEmpty()) {
+            $overlappingPayRunIds = $overlappingPayRuns->pluck('id');
+            $alreadyPaidOrProcessing = Employee::whereIn('id', $validated['employee_ids'])
+                ->whereHas('payslips', function ($query) use ($overlappingPayRunIds) {
+                    $query->whereIn('pay_run_id', $overlappingPayRunIds);
+                })
+                ->get();
+
+            if ($alreadyPaidOrProcessing->isNotEmpty()) {
+                $names = $alreadyPaidOrProcessing->map(fn($emp) => $emp->full_name)->implode(', ');
+                return back()
+                    ->withInput()
+                    ->withErrors(['employee_ids' => 'The following selected employees are already included in another pay run (completed or processing) for an overlapping period: ' . $names]);
+            }
+        }
+
         // PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
         $payRun = PayRun::create([
             'name' => $periodStart->format('M d') . ' - ' . $periodEnd->format('M d, Y'),
@@ -561,6 +595,49 @@ class PayrollController extends Controller
             'pay_date' => 'required|date',
             'status' => 'required|integer|in:1,2,3,4',
         ]);
+
+        $periodStart = Carbon::parse($validated['period_start']);
+        $periodEnd = Carbon::parse($validated['period_end']);
+
+        // Check for duplicate pay runs (exact same period, excluding this one, active and NOT completed status)
+        $duplicatePayRun = PayRun::where('id', '!=', $payRun->id)
+            ->where('period_start', $periodStart->toDateString())
+            ->where('period_end', $periodEnd->toDateString())
+            ->whereNotIn('status', [3, 4, 13])
+            ->first();
+
+        if ($duplicatePayRun) {
+            return back()
+                ->withInput()
+                ->withErrors(['period_start' => 'A pay run for this exact period (' . $periodStart->format('Y-m-d') . ' to ' . $periodEnd->format('Y-m-d') . ') already exists and is not yet completed.']);
+        }
+
+        // Check if employees in this pay run are already included in any other overlapping active/completed pay runs
+        $overlappingPayRuns = PayRun::where('id', '!=', $payRun->id)
+            ->whereNotIn('status', [4, 13])
+            ->where('period_start', '<=', $periodEnd->toDateString())
+            ->where('period_end', '>=', $periodStart->toDateString())
+            ->get();
+
+        if ($overlappingPayRuns->isNotEmpty()) {
+            $overlappingPayRunIds = $overlappingPayRuns->pluck('id');
+            $employeeIds = $payRun->payslips()->pluck('employee_id')->toArray();
+
+            if (!empty($employeeIds)) {
+                $alreadyPaidOrProcessing = Employee::whereIn('id', $employeeIds)
+                    ->whereHas('payslips', function ($query) use ($overlappingPayRunIds) {
+                        $query->whereIn('pay_run_id', $overlappingPayRunIds);
+                    })
+                    ->get();
+
+                if ($alreadyPaidOrProcessing->isNotEmpty()) {
+                    $names = $alreadyPaidOrProcessing->map(fn($emp) => $emp->full_name)->implode(', ');
+                    return back()
+                        ->withInput()
+                        ->withErrors(['period_start' => 'The following employees in this pay run are already included in another pay run (completed or processing) for the overlapping period: ' . $names]);
+                }
+            }
+        }
 
         $payRun->update($validated);
 
