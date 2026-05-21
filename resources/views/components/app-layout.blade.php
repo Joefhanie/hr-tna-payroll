@@ -92,6 +92,7 @@
                     ['route' => 'payroll.index',                 'path' => '/payroll',                   'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment',      'path' => '/payroll/plotting-payment',  'label' => 'Plotting of Payments'],
                     ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims',   'label' => 'Previous Claims'],
+                    ['route' => 'payroll.disputes.index',        'path' => '/payroll/disputes',          'label' => 'Disputes'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],

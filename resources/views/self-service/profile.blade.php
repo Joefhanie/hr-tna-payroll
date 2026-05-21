@@ -655,7 +655,7 @@
         function renderEarningsLineItems(lineItems) {
             const groups        = [];
             const standaloneItems = [];
-            const GROUP_PREFIXES = ['attendance', 'previous claim'];
+            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes'];
 
             lineItems.forEach((item) => {
                 const description = item.description || 'Item';

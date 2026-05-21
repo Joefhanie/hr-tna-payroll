@@ -117,10 +117,14 @@
                                                 <div class="space-y-1">
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Work Assignment:</span>
-                                                        <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}"
-                                                            class="text-blue-600 hover:text-blue-800 hover:underline">
-                                                            {{ $dayData['location'] }}
-                                                        </a>
+                                                        @if(!empty(trim($dayData['location'])))
+                                                            <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}"
+                                                                class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                                {{ $dayData['location'] }}
+                                                            </a>
+                                                        @else
+                                                            <span class="text-slate-400 italic">Unassigned</span>
+                                                        @endif
                                                     </div>
                                                     <div class="text-xs text-slate-700">
                                                         <span class="font-semibold text-slate-900">Supervisor:</span>

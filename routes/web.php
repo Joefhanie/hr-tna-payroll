@@ -8,6 +8,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayslipDisputeController;
 use App\Http\Controllers\PreviousClaimController;
 use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
@@ -177,6 +178,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/previous-claims', [PreviousClaimController::class, 'index'])->name('payroll.previous-claims.index');
         Route::post('/payroll/previous-claims', [PreviousClaimController::class, 'store'])->name('payroll.previous-claims.store');
 
+        // Disputes — must be BEFORE the {payRun} wildcard
+        Route::get('/payroll/disputes', [PayslipDisputeController::class, 'index'])->name('payroll.disputes.index');
+        Route::post('/payroll/disputes', [PayslipDisputeController::class, 'store'])->name('payroll.disputes.store');
+        Route::get('/payroll/disputes/api/payslip-items/{payslip}', [PayslipDisputeController::class, 'getPayslipItems'])->name('payroll.disputes.api.payslip-items');
+
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
     });
 
@@ -184,6 +190,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:payroll.edit')->group(function () {
         Route::post('/payroll/previous-claims/{previousClaim}/approve', [PreviousClaimController::class, 'approve'])->name('payroll.previous-claims.approve');
         Route::post('/payroll/previous-claims/{previousClaim}/decline', [PreviousClaimController::class, 'decline'])->name('payroll.previous-claims.decline');
+        
+        // Disputes — HR resolve / reject
+        Route::post('/payroll/disputes/{dispute}/resolve', [PayslipDisputeController::class, 'resolve'])->name('payroll.disputes.resolve');
+        Route::post('/payroll/disputes/{dispute}/reject', [PayslipDisputeController::class, 'reject'])->name('payroll.disputes.reject');
+        Route::get('/payroll/disputes/api/payslips/{employeeId}', [PayslipDisputeController::class, 'getPayslips'])->name('payroll.disputes.api.payslips');
     });
     Route::middleware('permission:payroll.delete')->group(function () {
         Route::delete('/payroll/previous-claims/{previousClaim}', [PreviousClaimController::class, 'destroy'])->name('payroll.previous-claims.destroy');

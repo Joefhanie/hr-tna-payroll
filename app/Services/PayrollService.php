@@ -4,15 +4,17 @@ namespace App\Services;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\GovernmentContribution;
 use App\Models\PayRun;
 use App\Models\Payslip;
+use App\Models\PayslipDispute;
 use App\Models\PayslipLineItem;
-use App\Models\GovernmentContribution;
+use App\Models\PayrollSetting;
 use App\Models\PreviousClaim;
 use App\Models\SalaryRecord;
-use App\Models\PayrollSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PayrollService
 {
@@ -559,10 +561,44 @@ class PayrollService
                 }
             }
             $previousClaimsTotal = round($previousClaimsTotal, 2);
+
+            $approvedDisputesTotal = 0.0;
+
+            $approvedDisputes = PayslipDispute::with('lineItem')
+                ->where('employee_id', $employee->id)
+                ->where('status', 2)
+                ->whereNull('adjustment_pay_run_id')
+                ->get();
+
+            foreach ($approvedDisputes as $dispute) {
+                $disputeAmount = round((float) $dispute->dispute_amount, 2);
+
+                if ($disputeAmount <= 0) {
+                    continue;
+                }
+
+                $referenceLabel = $dispute->lineItem?->description
+                    ?: Str::limit($dispute->dispute_reason, 50);
+
+                PayslipLineItem::create([
+                    'payslip_id'     => $payslip->id,
+                    'component_type' => 1,
+                    'description'    => 'Disputes: ' . $referenceLabel,
+                    'amount'         => $disputeAmount,
+                    'is_taxable'     => true,
+                ]);
+
+                $approvedDisputesTotal += $disputeAmount;
+                $dispute->adjustment_pay_run_id = $payRun->id;
+                $dispute->adjustment_payslip_id = $payslip->id;
+                $dispute->save();
+            }
+
+            $approvedDisputesTotal = round($approvedDisputesTotal, 2);
             // ─────────────────────────────────────────────────────────────────
 
             // Calculate taxable amount
-            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal, 2);
+            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal, 2);
             $taxable = $totalGross;
 
             // Tax — using employee's assigned brackets
