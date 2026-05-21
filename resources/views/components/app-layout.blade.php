@@ -89,11 +89,13 @@
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
                 ]],
                 ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
-                    ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
-                    ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
+                    ['route' => 'payroll.index',                 'path' => '/payroll',                   'label' => 'Payroll Run'],
+                    ['route' => 'payroll.plotting-payment',      'path' => '/payroll/plotting-payment',  'label' => 'Plotting of Payments'],
+                    ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims',   'label' => 'Previous Claims'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
+                ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims', 'label' => 'Previous Claims', 'icon' => 'file-invoice', 'permission' => 'self-service.view'],
                 ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
             ],
         ];

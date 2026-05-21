@@ -8,6 +8,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PreviousClaimController;
 use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
@@ -171,7 +172,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
         Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
         Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
+
+        // Previous Claims — must be BEFORE the {payRun} wildcard
+        Route::get('/payroll/previous-claims', [PreviousClaimController::class, 'index'])->name('payroll.previous-claims.index');
+        Route::post('/payroll/previous-claims', [PreviousClaimController::class, 'store'])->name('payroll.previous-claims.store');
+
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
+    });
+
+    // Previous Claims — HR approve / decline / delete
+    Route::middleware('permission:payroll.edit')->group(function () {
+        Route::post('/payroll/previous-claims/{previousClaim}/approve', [PreviousClaimController::class, 'approve'])->name('payroll.previous-claims.approve');
+        Route::post('/payroll/previous-claims/{previousClaim}/decline', [PreviousClaimController::class, 'decline'])->name('payroll.previous-claims.decline');
+    });
+    Route::middleware('permission:payroll.delete')->group(function () {
+        Route::delete('/payroll/previous-claims/{previousClaim}', [PreviousClaimController::class, 'destroy'])->name('payroll.previous-claims.destroy');
     });
     Route::middleware('permission:payroll.edit')->group(function () {
         Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');

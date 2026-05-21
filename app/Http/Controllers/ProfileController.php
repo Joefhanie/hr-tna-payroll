@@ -153,6 +153,14 @@ class ProfileController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
+
+        // Employees (role 1) cannot directly edit their profile.
+        // They must file a profile update request through Self-Service.
+        if ($user->role === 1) {
+            return redirect()->route('profile.show')
+                ->with('error', 'Employees cannot edit their profile directly. Please file a Profile Update Request through Self-Service.');
+        }
+
         $employee = $user->employee;
 
         // Validation rules

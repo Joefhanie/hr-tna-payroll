@@ -17,6 +17,9 @@
             'On Leave' => 'badge-gray',
             default => 'badge-gray',
         };
+
+        // Employees (role 1) cannot self-edit; they must use Self-Service
+        $isEmployee = auth()->user()?->role === 1;
     @endphp
 
     <div class="mx-auto max-w-5xl">
@@ -39,7 +42,7 @@
                                 <img id="avatar-preview" src="" alt="Profile Picture" class="hidden h-full w-full object-cover">
                             @endif
 
-                            @if ($employee)
+                            @if ($employee && !$isEmployee)
                                 <label for="profile_picture" class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                     <i class="ti ti-camera text-2xl text-white"></i>
                                     <span class="mt-1 text-xs font-semibold text-white">Change photo</span>
@@ -90,6 +93,92 @@
 
             <!-- Tab 1: Profile Info -->
             <div id="tab-content-profile-info" class="tab-content block">
+
+                @if ($isEmployee)
+                {{-- ===== READ-ONLY VIEW FOR EMPLOYEES ===== --}}
+                <div class="mb-5 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                        <i class="ti ti-info-circle text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-amber-900">Your profile is managed by HR</p>
+                        <p class="mt-0.5 text-xs text-amber-700">To update your personal information, file a <strong>Profile Update Request</strong> through Self-Service. HR will review and apply the changes.</p>
+                        <a href="{{ route('self-service.profile', $employee) }}" class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition">
+                            <i class="ti ti-external-link"></i> Go to Self-Service
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div class="space-y-6 lg:col-span-2">
+                        <!-- Personal Info (Read-Only) -->
+                        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <h2 class="mb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i class="ti ti-user text-blue-600 text-xl"></i>
+                                Personal Information
+                            </h2>
+                            @if ($employee)
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">First Name</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->first_name ?? '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Last Name</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->last_name ?? '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Middle Name</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->middle_name ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Birth Date</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->birth_date?->format('M d, Y') ?? '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Gender</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->gender ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Marital Status</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->marital_status ?: '—' }}</p></div>
+                            </div>
+                            @endif
+                        </div>
+                        <!-- Contact Info (Read-Only) -->
+                        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <h2 class="mb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i class="ti ti-mail text-blue-600 text-xl"></i>
+                                Contact Information
+                            </h2>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $user->email }}</p></div>
+                                @if ($employee)
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Phone</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->phone ?: '—' }}</p></div>
+                                @endif
+                            </div>
+                        </div>
+                        <!-- Address (Read-Only) -->
+                        @if ($employee)
+                        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <h2 class="mb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i class="ti ti-map-pin text-blue-600 text-xl"></i>
+                                Address
+                            </h2>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Address Line 1</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->address_line1 ?: '—' }}</p></div>
+                                <div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Address Line 2</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->address_line2 ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">City</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->city ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Province</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->province ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Postal Code</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->postal_code ?: '—' }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Country</p><p class="mt-1 text-sm font-medium text-slate-800">{{ $employee->country ?: '—' }}</p></div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+
+                    <!-- Sidebar: Job Details (Read-Only) -->
+                    <div class="space-y-6">
+                        @if ($employee)
+                        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Job Details</h3>
+                            <div class="space-y-3.5 text-sm">
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Employee Code</span><span class="font-semibold text-slate-800">{{ $employee->employee_code ?? 'N/A' }}</span></div>
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Employment Type</span><span class="font-semibold text-slate-800">{{ match((int) $employee->employment_type) {1 => 'Full-time', 2 => 'Part-time', 3 => 'Contract', 4 => 'Temporary', default => 'N/A'} }}</span></div>
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Hire Date</span><span class="font-semibold text-slate-800">{{ $employee->hire_date?->format('M d, Y') ?? 'N/A' }}</span></div>
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Manager</span><span class="font-semibold text-slate-800">{{ $employee->manager?->full_name ?? 'Not Assigned' }}</span></div>
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Status</span><span class="badge {{ match((int) $employee->status) {1 => 'badge-green', 2 => 'badge-amber', 3 => 'badge-blue', 4 => 'badge-gray', 5 => 'badge-red', default => 'badge-gray'} }}">{{ match((int) $employee->status) {1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated', default => 'Unknown'} }}</span></div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                @else
+                {{-- ===== EDITABLE VIEW FOR HR / SUPERVISORS ===== --}}
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     
                     <!-- Main details (2 columns) -->
@@ -286,6 +375,7 @@
                     </div>
 
                 </div>
+                @endif
             </div>
 
             <!-- Tab 2: Leave Requests -->
