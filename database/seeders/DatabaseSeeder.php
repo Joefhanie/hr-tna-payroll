@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Position;
-use App\Models\SupervisorAssignment;
 use App\Models\EmployeePlotting;
 use App\Models\TaxBracket;
 use App\Models\GovernmentContributionRate;
@@ -31,7 +30,6 @@ class DatabaseSeeder extends Seeder
         Employee::truncate();
         Department::truncate();
         Position::truncate();
-        SupervisorAssignment::truncate();
         EmployeePlotting::truncate();
         TaxBracket::truncate();
         GovernmentContributionRate::truncate();
@@ -408,15 +406,37 @@ class DatabaseSeeder extends Seeder
             ]
         ];
 
-        // Create Supervisor Assignments
+        $svEmployeeMap = collect($svEmployees)->keyBy('id');
+        $fieldRecords = [];
         foreach ($svLocations as $svId => $locs) {
-            foreach ($locs as $date => $loc) {
-                SupervisorAssignment::create([
-                    'supervisor_id' => $svId,
-                    'location' => $loc,
-                    'date' => $date
-                ]);
+            $svEmployee = $svEmployeeMap->get($svId);
+            if (!$svEmployee) {
+                continue;
             }
+
+            foreach ($locs as $date => $loc) {
+                $fieldRecords[] = [
+                    'empid' => $svEmployee->employee_code,
+                    'Date' => $date,
+                    'sup_id' => $svEmployee->employee_code,
+                    'company_id' => 1,
+                    'time' => $date . ' 08:00:00',
+                    'function' => 1,
+                    'status' => 1,
+                    'remarks' => 'Supervisor location assignment',
+                    'location' => $loc,
+                    'created_at' => $date . ' 08:00:00',
+                    'created_by' => 2,
+                    'updated_at' => null,
+                    'updated_by' => null,
+                    'deleted_at' => null,
+                    'deleted_by' => null,
+                ];
+            }
+        }
+
+        if (!empty($fieldRecords)) {
+            DB::table('field_records')->insert($fieldRecords);
         }
 
         // Create Employee Plottings (QR Scans + Plotted Payments)
