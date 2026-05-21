@@ -297,7 +297,7 @@ class SelfServiceController extends Controller
             'last_name' => ['nullable', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
             'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'regex:/^\d{11}$/'],
             'address_line1' => ['nullable', 'string', 'max:200'],
             'address_line2' => ['nullable', 'string', 'max:200'],
             'city' => ['nullable', 'string', 'max:100'],

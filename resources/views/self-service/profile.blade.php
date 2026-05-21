@@ -228,36 +228,36 @@
         </div>
 
         <div id="profileUpdateModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="profileUpdateModal">
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-                <div class="mb-4 flex items-center justify-between">
+            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+                <div class="mb-3 flex items-center justify-between">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">Request Profile Update</h2>
+                        <h2 class="text-base font-semibold text-slate-900">Request Profile Update</h2>
                         <p class="text-sm text-slate-500">Submit the details you want HR to review and update.</p>
                     </div>
                     <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="profileUpdateModal">X</button>
                 </div>
-                <form method="POST" action="{{ route('self-service.profile-update-requests.store', $employee) }}" class="space-y-3">
+                <form method="POST" action="{{ route('self-service.profile-update-requests.store', $employee) }}" class="space-y-2.5">
                     @csrf
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                         <input type="text" name="first_name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="First name" value="{{ old('first_name') }}">
+                        <input type="text" name="middle_name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Middle name" value="{{ old('middle_name') }}">
                         <input type="text" name="last_name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Last name" value="{{ old('last_name') }}">
                     </div>
-                    <input type="text" name="middle_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Middle name" value="{{ old('middle_name') }}">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <input type="email" name="email" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Email" value="{{ old('email') }}">
-                        <input type="text" name="phone" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Phone" value="{{ old('phone') }}">
+                        <input type="text" name="phone" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="09XXXXXXXXX" value="{{ old('phone') }}" inputmode="numeric" maxlength="11" pattern="^\d{11}$" title="Use 11 digits like 09XXXXXXXXX" data-phone-input="true">
                     </div>
                     <input type="text" name="address_line1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Address line 1" value="{{ old('address_line1') }}">
                     <input type="text" name="address_line2" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Address line 2" value="{{ old('address_line2') }}">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <input type="text" name="city" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="City" value="{{ old('city') }}">
                         <input type="text" name="province" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Province" value="{{ old('province') }}">
                     </div>
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                         <input type="text" name="postal_code" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Postal code" value="{{ old('postal_code') }}">
                         <input type="text" name="country" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Country" value="{{ old('country') }}">
                     </div>
-                    <textarea name="notes" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Why is this update needed?">{{ old('notes') }}</textarea>
+                    <textarea name="notes" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Why is this update needed?">{{ old('notes') }}</textarea>
                     <div class="flex items-center justify-end gap-3">
                         <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="profileUpdateModal">Cancel</button>
                         <button type="submit" class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Submit Profile Update</button>
@@ -579,6 +579,12 @@
         document.querySelectorAll('[data-modal-backdrop]').forEach((modal) => {
             modal.addEventListener('click', (event) => {
                 closeRequestModalOnBackdrop(event, modal.dataset.modalBackdrop);
+            });
+        });
+
+        document.querySelectorAll('[data-phone-input="true"]').forEach((field) => {
+            field.addEventListener('input', () => {
+                field.value = field.value.replace(/\D/g, '').slice(0, 11);
             });
         });
 
