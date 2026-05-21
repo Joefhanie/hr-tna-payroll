@@ -91,9 +91,9 @@
                                         class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative">
                                         <div class="relative">
                                             <input type="text" inputmode="text" maxlength="10"
-                                                name="entries[{{ $employee->id }}][{{ $dateString }}]"
+                                                name="entries[{{ $employee->id }}][{{ $row['location'] }}][{{ $dateString }}]"
                                                 value="{{ $dayData['amount'] > 0 ? number_format($dayData['amount'], 2) : '' }}"
-                                                placeholder="0" data-workplace="{{ $dayData['location'] }}"
+                                                placeholder="0" data-workplace="{{ $row['location'] }}"
                                                 data-employee="{{ $employee->id }}"
                                                 oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
                                                 class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden">
@@ -106,7 +106,7 @@
 
                                             <!-- Hidden payroll note value (submitted with form) -->
                                             <input type="hidden"
-                                                name="payroll_notes[{{ $employee->id }}][{{ $dateString }}]"
+                                                name="payroll_notes[{{ $employee->id }}][{{ $row['location'] }}][{{ $dateString }}]"
                                                 class="payroll-note-input"
                                                 value="">
 

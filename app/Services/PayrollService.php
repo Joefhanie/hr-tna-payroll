@@ -10,6 +10,7 @@ use App\Models\Payslip;
 use App\Models\PayslipDispute;
 use App\Models\PayslipLineItem;
 use App\Models\PayrollSetting;
+use App\Models\GovernmentPremium;
 use App\Models\PreviousClaim;
 use App\Models\SalaryRecord;
 use Carbon\Carbon;
@@ -165,6 +166,65 @@ class PayrollService
                 $items[] = [
                     'name' => $rule->name,
                     'amount' => $amount,
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Calculate active government premium deductions and employer shares.
+     */
+    public function calculateGovernmentPremiums(float $gross, float $taxable, float $monthlyCompensation): array
+    {
+        $premiums = GovernmentPremium::active();
+        $items = [];
+
+        foreach ($premiums as $premium) {
+            $bracket = $premium->brackets
+                ->first(function ($row) use ($monthlyCompensation) {
+                    $min = (float) $row->min_compensation;
+                    $max = $row->max_compensation === null ? null : (float) $row->max_compensation;
+
+                    return $monthlyCompensation >= $min && ($max === null || $monthlyCompensation <= $max);
+                });
+
+            if ($bracket) {
+                $basisAmount = match ($bracket->basis) {
+                    'Taxable Pay' => $taxable,
+                    'Gross Pay' => $gross,
+                    default => $monthlyCompensation,
+                };
+                $calculationType = $bracket->calculation_type;
+                $employeeValue = (float) $bracket->employee_value;
+                $employerValue = (float) $bracket->employer_value;
+                $employerExtraValue = (float) $bracket->employer_extra_value;
+            } else {
+                $basisAmount = $premium->basis === 'Taxable Pay' ? $taxable : $gross;
+                $calculationType = $premium->calculation_type;
+                $employeeValue = (float) $premium->employee_value;
+                $employerValue = (float) $premium->employer_value;
+                $employerExtraValue = 0.0;
+            }
+
+            if ($calculationType === 'Percentage') {
+                $employeeShare = round($basisAmount * ($employeeValue / 100), 2);
+                $employerShare = round($basisAmount * ($employerValue / 100), 2);
+            } else {
+                $employeeShare = round($employeeValue, 2);
+                $employerShare = round($employerValue, 2);
+            }
+
+            $employerShare = round($employerShare + $employerExtraValue, 2);
+
+            if ($employeeShare > 0 || $employerShare > 0) {
+                $items[] = [
+                    'name' => $premium->name,
+                    'employee_share' => $employeeShare,
+                    'employer_share' => $employerShare,
+                    'is_taxable' => (bool) $premium->is_taxable,
+                    'matched_bracket' => $bracket?->label,
                 ];
             }
         }
@@ -633,6 +693,25 @@ class PayrollService
                 $totalGovEmployee += $gov['employee_share'];
             }
 
+            $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+            $premiumItems = $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation);
+            foreach ($premiumItems as $premium) {
+                GovernmentContribution::create([
+                    'payslip_id' => $payslip->id,
+                    'contribution_type' => $premium['name'],
+                    'employee_share' => $premium['employee_share'],
+                    'employer_share' => $premium['employer_share'],
+                ]);
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 4,
+                    'description' => 'Government Premium: ' . $premium['name'],
+                    'amount' => $premium['employee_share'],
+                    'is_taxable' => $premium['is_taxable'],
+                ]);
+                $totalGovEmployee += $premium['employee_share'];
+            }
+
             // Deduction rules — using employee's assigned rules
             $deductionItems = $this->calculateDeductionRules($gross, $employee);
             $totalDeductionRules = 0.0;
@@ -676,12 +755,15 @@ class PayrollService
 
         $tax = $this->calculateTax($gross + $bonusTotal, $employee);
         $govItems = $this->calculateGovernmentDeductions($gross, $employee);
+        $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+        $premiumItems = $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation);
         $deductionItems = $this->calculateDeductionRules($gross, $employee);
 
         $totalGovEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $govItems));
+        $totalPremiumEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $premiumItems));
         $totalDeductionRules = array_sum(array_map(fn($d) => $d['amount'], $deductionItems));
 
-        $totalDeductions = $tax + $totalGovEmployee + $totalDeductionRules;
+        $totalDeductions = $tax + $totalGovEmployee + $totalPremiumEmployee + $totalDeductionRules;
         $net = round($gross + $bonusTotal - $totalDeductions, 2);
 
         return [
@@ -689,6 +771,7 @@ class PayrollService
             'bonuses' => round($bonusTotal, 2),
             'tax' => $tax,
             'government' => $govItems,
+            'government_premiums' => $premiumItems,
             'deductions' => $deductionItems,
             'total_deductions' => $totalDeductions,
             'net' => $net,
@@ -704,6 +787,26 @@ class PayrollService
         $payslip->status = 2; // e.g., 2 = completed
         $payslip->save();
         return true;
+    }
+
+    private function estimateMonthlyCompensation(?SalaryRecord $record, float $periodGross): float
+    {
+        if (!$record) {
+            return $periodGross;
+        }
+
+        $amount = (float) $record->amount;
+        $dailyDivisor = (float) ($record->daily_divisor ?? 21.8);
+
+        return match ((int) ($record->pay_frequency ?? 5)) {
+            1 => round($amount * 8 * $dailyDivisor, 2),
+            2 => round($amount * $dailyDivisor, 2),
+            3 => round($amount * 52 / 12, 2),
+            4 => round($amount * 26 / 12, 2),
+            5 => round($amount, 2),
+            6 => round($amount / 12, 2),
+            default => round($periodGross, 2),
+        };
     }
 
     /**

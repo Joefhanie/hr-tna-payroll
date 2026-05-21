@@ -164,6 +164,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
         
         Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
+        Route::get('/salaries/government-premiums', [SalaryController::class, 'governmentPremiums'])->name('salary.government-premiums');
+        Route::get('/salaries/contribution-tables', [SalaryController::class, 'contributionTables'])->name('salary.contribution-tables');
 
         Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
@@ -203,6 +205,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
         Route::post('/salaries/settings/late-deduction-rules', [SalaryController::class, 'saveLateDeductionRules'])->name('salary.save-late-deduction-rules');
         Route::post('/salaries/settings/government-contributions', [SalaryController::class, 'saveGovernmentContributions'])->name('salary.save-government-contributions');
+        Route::post('/salaries/government-premiums', [SalaryController::class, 'saveGovernmentPremiums'])->name('salary.government-premiums.save');
+        Route::post('/salaries/contribution-tables/{governmentPremium}', [SalaryController::class, 'saveContributionTable'])->name('salary.contribution-tables.save');
         Route::post('/salaries/settings/deduction-rules', [SalaryController::class, 'saveDeductionRules'])->name('salary.save-deduction-rules');
         Route::post('/salaries/settings/payroll', [SalaryController::class, 'savePayrollSettings'])->name('salary.save-payroll-settings');
 
