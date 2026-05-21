@@ -183,25 +183,32 @@
         }
 
         function renderEarningsLineItems(lineItems) {
-            const groups = [];
+            const groups   = [];
             const standaloneItems = [];
+
+            // Known group prefixes (case-insensitive). Any "GroupName: item" description
+            // is rendered as a labelled group with indented rows.
+            const GROUP_PREFIXES = ['attendance', 'previous claim'];
 
             lineItems.forEach((item) => {
                 const description = item.description || 'Item';
-                const parts = description.split(':');
+                const colonIdx    = description.indexOf(':');
 
-                if (parts.length > 1 && parts[0].trim().toLowerCase() === 'attendance') {
-                    const groupName = parts.shift().trim();
-                    const itemName = parts.join(':').trim();
-                    let group = groups.find((entry) => entry.name === groupName);
+                if (colonIdx > 0) {
+                    const prefix = description.slice(0, colonIdx).trim().toLowerCase();
 
-                    if (!group) {
-                        group = { name: groupName, items: [] };
-                        groups.push(group);
+                    if (GROUP_PREFIXES.includes(prefix)) {
+                        const groupName = description.slice(0, colonIdx).trim();
+                        const itemName  = description.slice(colonIdx + 1).trim();
+
+                        let group = groups.find((g) => g.name.toLowerCase() === groupName.toLowerCase());
+                        if (!group) {
+                            group = { name: groupName, items: [] };
+                            groups.push(group);
+                        }
+                        group.items.push({ ...item, label: itemName || description });
+                        return;
                     }
-
-                    group.items.push({ ...item, label: itemName || description });
-                    return;
                 }
 
                 standaloneItems.push({ ...item, label: description });
@@ -223,15 +230,11 @@
             groups.forEach((group) => {
                 html += `<div class="space-y-1 pt-1">`;
                 html += `<div class="text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">${escapeHtml(group.name)}:</div>`;
-                group.items.forEach((item) => {
-                    html += renderItem(item);
-                });
+                group.items.forEach((item) => { html += renderItem(item); });
                 html += `</div>`;
             });
 
-            standaloneItems.forEach((item) => {
-                html += renderItem(item);
-            });
+            standaloneItems.forEach((item) => { html += renderItem(item); });
 
             return html;
         }

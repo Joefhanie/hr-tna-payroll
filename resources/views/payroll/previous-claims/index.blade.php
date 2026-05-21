@@ -38,35 +38,40 @@
     </div>
     @endif
 
-    {{-- Filters --}}
+    {{-- Live Filters --}}
     <div class="card p-4 mb-4">
-        <form method="GET" action="{{ route('payroll.previous-claims.index') }}" class="flex flex-wrap gap-3 items-end">
+        <div class="flex flex-wrap gap-3 items-end">
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
-                <input type="text" name="q" value="{{ $filters['q'] }}" placeholder="Employee, type, description…"
-                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="relative">
+                    <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="filterSearch" placeholder="Employee, type, description…"
+                        class="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <select name="status" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All</option>
-                    <option value="pending"  @selected($filters['status']==='pending')>Pending</option>
-                    <option value="approved" @selected($filters['status']==='approved')>Approved</option>
-                    <option value="declined" @selected($filters['status']==='declined')>Declined</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="declined">Declined</option>
                 </select>
             </div>
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Claim Type</label>
-                <select name="type" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="filterType" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Types</option>
                     @foreach($claimTypes as $ct)
-                        <option value="{{ $ct }}" @selected($filters['type']===$ct)>{{ $ct }}</option>
+                        <option value="{{ strtolower($ct) }}">{{ $ct }}</option>
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition">Filter</button>
-            <a href="{{ route('payroll.previous-claims.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition">Reset</a>
-        </form>
+            <button type="button" id="clearFilters" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                <i class="ti ti-x text-xs"></i> Clear
+            </button>
+        </div>
+        <p id="filterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
     </div>
 
     {{-- Claims Table --}}
@@ -86,9 +91,13 @@
                         <th class="px-4 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody id="claimsTableBody" class="divide-y divide-slate-100">
                     @forelse($claims as $claim)
-                    <tr class="hover:bg-slate-50 transition">
+                    <tr class="hover:bg-slate-50 transition claim-row"
+                        data-employee="{{ strtolower($claim->employee?->full_name ?? '') }}"
+                        data-type="{{ strtolower($claim->claim_type) }}"
+                        data-status="{{ strtolower($claim->status_label) }}"
+                        data-description="{{ strtolower($claim->description ?? '') }}">
                         @if($isHR)
                         <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
                             {{ $claim->employee?->full_name ?? '—' }}
@@ -126,7 +135,6 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
-                                {{-- HR: Approve / Decline --}}
                                 @if($isHR && $claim->status === 1)
                                     <button type="button"
                                         class="btn-approve text-emerald-600 hover:text-emerald-800 transition"
@@ -144,16 +152,12 @@
                                         <i class="ti ti-x text-lg"></i>
                                     </button>
                                 @endif
-
-                                {{-- Supporting Doc --}}
                                 @if($claim->supporting_document)
                                     <a href="{{ asset('storage/' . $claim->supporting_document) }}"
                                         target="_blank" class="text-slate-500 hover:text-slate-700 transition" title="View Document">
                                         <i class="ti ti-paperclip text-lg"></i>
                                     </a>
                                 @endif
-
-                                {{-- Delete (pending only) --}}
                                 @if($claim->status === 1 && ($isHR || $claim->submitted_by === $user?->id))
                                     <form method="POST" action="{{ route('payroll.previous-claims.destroy', $claim) }}">
                                         @csrf @method('DELETE')
@@ -170,7 +174,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr>
+                    <tr id="emptyRow">
                         <td colspan="{{ $isHR ? 9 : 8 }}" class="px-6 py-16 text-center text-slate-500">
                             <div class="flex flex-col items-center gap-3">
                                 <i class="ti ti-file-invoice text-4xl text-slate-300"></i>
@@ -349,14 +353,92 @@
     <x-slot:scripts>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // --- File Claim Modal ---
-        const claimModal   = document.getElementById('claimModal');
-        const openBtn      = document.getElementById('openClaimModal');
-        const closeBtn     = document.getElementById('closeClaimModal');
-        const cancelBtn    = document.getElementById('cancelClaimModal');
 
+        // ===== LIVE FILTERING =====
+        const searchInput  = document.getElementById('filterSearch');
+        const statusSelect = document.getElementById('filterStatus');
+        const typeSelect   = document.getElementById('filterType');
+        const clearBtn     = document.getElementById('clearFilters');
+        const filterCount  = document.getElementById('filterCount');
+        const rows         = document.querySelectorAll('.claim-row');
+        const totalRows    = rows.length;
+
+        // Dynamic empty-state row (injected when all rows are hidden)
+        let noResultsRow = null;
+        function getColspan() { return {{ $isHR ? 9 : 8 }}; }
+
+        function applyFilters() {
+            const q      = (searchInput?.value  || '').toLowerCase().trim();
+            const status = (statusSelect?.value || '').toLowerCase();
+            const type   = (typeSelect?.value   || '').toLowerCase();
+
+            let visible = 0;
+
+            rows.forEach(row => {
+                const matchQ = !q ||
+                    row.dataset.employee.includes(q) ||
+                    row.dataset.type.includes(q) ||
+                    row.dataset.description.includes(q);
+
+                const matchStatus = !status || row.dataset.status === status;
+                const matchType   = !type   || row.dataset.type === type;
+
+                const show = matchQ && matchStatus && matchType;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            // Show/hide dynamic no-results row
+            const tbody = document.getElementById('claimsTableBody');
+            if (visible === 0 && totalRows > 0) {
+                if (!noResultsRow) {
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.id = 'noResultsRow';
+                    noResultsRow.innerHTML = `<td colspan="${getColspan()}" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center gap-2"><i class="ti ti-search-off text-3xl text-slate-300"></i><p class="text-sm font-medium">No claims match your filters.</p></div></td>`;
+                    tbody.appendChild(noResultsRow);
+                }
+                noResultsRow.style.display = '';
+            } else if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+
+            // Filter count hint
+            const isFiltered = q || status || type;
+            if (isFiltered && filterCount) {
+                filterCount.textContent = `Showing ${visible} of ${totalRows} claim${totalRows !== 1 ? 's' : ''}`;
+                filterCount.classList.remove('hidden');
+            } else if (filterCount) {
+                filterCount.classList.add('hidden');
+            }
+        }
+
+        // Debounce helper for search input
+        let searchTimer;
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(applyFilters, 180);
+        });
+
+        // Dropdowns apply immediately
+        statusSelect?.addEventListener('change', applyFilters);
+        typeSelect?.addEventListener('change', applyFilters);
+
+        // Clear all filters
+        clearBtn?.addEventListener('click', () => {
+            if (searchInput)  searchInput.value  = '';
+            if (statusSelect) statusSelect.value = '';
+            if (typeSelect)   typeSelect.value   = '';
+            applyFilters();
+        });
+
+        // ===== MODALS =====
         function openModal(el) { el.classList.remove('hidden'); el.classList.add('flex'); }
         function closeModal(el) { el.classList.remove('flex'); el.classList.add('hidden'); }
+
+        const claimModal = document.getElementById('claimModal');
+        const openBtn    = document.getElementById('openClaimModal');
+        const closeBtn   = document.getElementById('closeClaimModal');
+        const cancelBtn  = document.getElementById('cancelClaimModal');
 
         openBtn?.addEventListener('click', () => openModal(claimModal));
         closeBtn?.addEventListener('click', () => closeModal(claimModal));
@@ -364,18 +446,14 @@
         claimModal?.addEventListener('click', e => { if (e.target === claimModal) closeModal(claimModal); });
 
         @if($isHR)
-        // --- Approve Modal ---
         const approveModal    = document.getElementById('approveModal');
         const approveForm     = document.getElementById('approveForm');
         const approveSubtitle = document.getElementById('approveSubtitle');
 
         document.querySelectorAll('.btn-approve').forEach(btn => {
             btn.addEventListener('click', function () {
-                const id       = this.dataset.id;
-                const employee = this.dataset.employee;
-                const amount   = this.dataset.amount;
-                approveSubtitle.textContent = `${employee} — ${amount}`;
-                approveForm.action = `/payroll/previous-claims/${id}/approve`;
+                approveSubtitle.textContent = `${this.dataset.employee} — ${this.dataset.amount}`;
+                approveForm.action = `/payroll/previous-claims/${this.dataset.id}/approve`;
                 openModal(approveModal);
             });
         });
@@ -383,17 +461,14 @@
         document.getElementById('cancelApproveModal')?.addEventListener('click', () => closeModal(approveModal));
         approveModal?.addEventListener('click', e => { if (e.target === approveModal) closeModal(approveModal); });
 
-        // --- Decline Modal ---
         const declineModal    = document.getElementById('declineModal');
         const declineForm     = document.getElementById('declineForm');
         const declineSubtitle = document.getElementById('declineSubtitle');
 
         document.querySelectorAll('.btn-decline').forEach(btn => {
             btn.addEventListener('click', function () {
-                const id       = this.dataset.id;
-                const employee = this.dataset.employee;
-                declineSubtitle.textContent = `${employee}`;
-                declineForm.action = `/payroll/previous-claims/${id}/decline`;
+                declineSubtitle.textContent = this.dataset.employee;
+                declineForm.action = `/payroll/previous-claims/${this.dataset.id}/decline`;
                 openModal(declineModal);
             });
         });

@@ -8,6 +8,7 @@ use App\Models\PayRun;
 use App\Models\Payslip;
 use App\Models\PayslipLineItem;
 use App\Models\GovernmentContribution;
+use App\Models\PreviousClaim;
 use App\Models\SalaryRecord;
 use App\Models\PayrollSetting;
 use Carbon\Carbon;
@@ -521,12 +522,47 @@ class PayrollService
                 ]);
             }
 
-            // Bonuses
+            // Bonuses (manually passed in options)
             $bonuses = $options['bonuses'] ?? [];
             $bonusTotal = $this->applyBonuses($payslip, $bonuses);
 
+            // ── Previous Claims assigned to this pay run ──────────────────────
+            // 1. Claims explicitly assigned to this specific pay run
+            // 2. Approved claims with no pay run yet ("next pay run") — include
+            //    them and stamp them with this pay_run_id so they're not double-counted.
+            $previousClaimsTotal = 0.0;
+
+            $previousClaims = PreviousClaim::where('employee_id', $employee->id)
+                ->where('status', 2) // Approved
+                ->where(function ($q) use ($payRun) {
+                    $q->where('pay_run_id', $payRun->id)       // explicitly assigned
+                      ->orWhereNull('pay_run_id');             // "next pay run"
+                })
+                ->get();
+
+            foreach ($previousClaims as $claim) {
+                $claimAmount = (float) $claim->amount;
+                PayslipLineItem::create([
+                    'payslip_id'     => $payslip->id,
+                    'component_type' => 1, // Earning
+                    'description'    => 'Previous Claim: ' . $claim->claim_type
+                        . ' (' . $claim->claim_date->format('M d, Y') . ')',
+                    'amount'         => $claimAmount,
+                    'is_taxable'     => true,
+                ]);
+                $previousClaimsTotal += $claimAmount;
+
+                // Stamp "next pay run" claims so they don't appear in future runs
+                if (is_null($claim->pay_run_id)) {
+                    $claim->pay_run_id = $payRun->id;
+                    $claim->save();
+                }
+            }
+            $previousClaimsTotal = round($previousClaimsTotal, 2);
+            // ─────────────────────────────────────────────────────────────────
+
             // Calculate taxable amount
-            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal, 2);
+            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal, 2);
             $taxable = $totalGross;
 
             // Tax — using employee's assigned brackets

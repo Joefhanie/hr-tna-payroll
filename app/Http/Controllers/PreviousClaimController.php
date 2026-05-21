@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\PayRun;
+use App\Models\Payslip;
 use App\Models\PreviousClaim;
+use App\Services\PayrollService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -149,8 +151,29 @@ class PreviousClaimController extends Controller
             'pay_run_id'  => $validated['pay_run_id'] ?? null,
         ]);
 
+        // If assigned to a pay run, regenerate the employee's payslip so the
+        // claim amount is immediately included in the payslip breakdown.
+        if ($validated['pay_run_id']) {
+            $payRun   = PayRun::find($validated['pay_run_id']);
+            $employee = $previousClaim->employee;
+
+            if ($payRun && $employee && in_array($payRun->status, [1, 2])) {
+                // Delete the stale draft payslip so generatePayslip() can recreate it
+                $existing = Payslip::where('pay_run_id', $payRun->id)
+                    ->where('employee_id', $employee->id)
+                    ->first();
+
+                if ($existing) {
+                    $existing->lineItems()->delete();
+                    $existing->delete();
+                }
+
+                app(PayrollService::class)->generatePayslip($payRun, $employee);
+            }
+        }
+
         return redirect()->route('payroll.previous-claims.index')
-            ->with('success', 'Claim approved. It will be included in the selected pay run.');
+            ->with('success', 'Claim approved and payslip updated with the claim amount.');
     }
 
     /**
