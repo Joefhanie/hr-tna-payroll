@@ -87,6 +87,7 @@
                 ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
+                    ['route' => 'salary.government-premiums', 'path' => '/salaries/government-premiums', 'label' => 'Goverment Premiums'],
                 ]],
                 ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'payroll.index',                 'path' => '/payroll',                   'label' => 'Payroll Run'],
