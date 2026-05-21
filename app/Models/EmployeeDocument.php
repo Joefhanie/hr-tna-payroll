@@ -12,14 +12,21 @@ class EmployeeDocument extends Model
 
     protected $fillable = [
         'employee_id',
+        'document_type',
         'doc_type',
         'file_name',
+        'file_path',
         'file_url',
+        'file_extension',
+        'file_size',
         'file_size_kb',
+        'description',
         'issued_date',
         'expiry_date',
         'uploaded_by',
         'uploaded_at',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [

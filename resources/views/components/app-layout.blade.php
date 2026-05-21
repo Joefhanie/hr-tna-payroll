@@ -1,3 +1,7 @@
+@props([
+    'showGlobalAlerts' => true,
+])
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,7 +25,7 @@
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
                     ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access'],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view'],
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus'],
                 ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
@@ -214,19 +218,19 @@
 
             <div class="p-4 sm:p-5 lg:p-6">
                 <div class="space-y-5">
-                    @if (session('success'))
+                    @if ($showGlobalAlerts && session('success'))
                         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                             {{ session('success') }}
                         </div>
                     @endif
 
-                    @if (session('error'))
+                    @if ($showGlobalAlerts && session('error'))
                         <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                             {{ session('error') }}
                         </div>
                     @endif
 
-                    @if ($errors->any())
+                    @if ($showGlobalAlerts && $errors->any())
                         <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             <p class="font-medium">Please review the following:</p>
                             <ul class="mt-2 list-disc pl-5">

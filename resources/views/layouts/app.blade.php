@@ -46,7 +46,7 @@
         ['url' => route('employees.index'),           'label' => 'Employee List'],
         ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access'],
       ]],
-      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules', 'permission' => 'employees.view'],
+      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules'],
       ['label' => 'Timekeeping', 'group' => 'Modules', 'permission' => 'timekeeping.view', 'children' => [
         ['url' => route('timekeeping.index'),          'label' => 'Attendance'],
         ['url' => route('timekeeping.shift-schedule'), 'label' => 'Shift Schedule'],

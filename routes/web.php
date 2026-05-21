@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\SelfServiceController;
@@ -46,7 +47,11 @@ Route::middleware('auth')->group(function () {
     });
 
     // Onboarding, Leave, Benefits, Reports
-    Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:employees.view');
+    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
+    Route::post('/onboarding/{employee}/start', [OnboardingController::class, 'start'])->name('onboarding.start');
+    Route::post('/onboarding/{employee}/tasks', [OnboardingController::class, 'storeTask'])->name('onboarding.tasks.store');
+    Route::post('/onboarding/tasks/{task}/submit', [OnboardingController::class, 'submitEmployeeTask'])->name('onboarding.tasks.submit');
+    Route::post('/onboarding/tasks/{task}/complete', [OnboardingController::class, 'completeTask'])->name('onboarding.tasks.complete');
     Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view');
     Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view');
     Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view');

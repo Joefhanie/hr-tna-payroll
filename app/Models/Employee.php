@@ -123,6 +123,11 @@ class Employee extends Model
         return $this->hasOne(User::class);
     }
 
+    public function onboardingAssignment(): HasOne
+    {
+        return $this->hasOne(OnboardingAssignment::class);
+    }
+
     /**
      * Get the employee's full name.
      */
