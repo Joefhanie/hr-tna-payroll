@@ -65,6 +65,7 @@ class User extends Authenticatable
                 'leaves.create',
             ],
             3 => [ // OIC
+                'onboarding.view',
                 'timekeeping.view',
                 'timekeeping.create',
                 'timekeeping.edit',

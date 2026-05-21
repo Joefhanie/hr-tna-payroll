@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
+use App\Services\OnboardingAssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,10 @@ use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
+    public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
+    {
+    }
+
     public function create(): View
     {
         return view('auth.register', $this->registrationViewData('credentials', [
@@ -169,6 +174,8 @@ class RegisterController extends Controller
             $user->update([
                 'employee_id' => $employee->id,
             ]);
+
+            $this->onboardingAssignmentService->ensureEmployeeIsOnboarded($employee, $user->id);
 
             return $user;
         });

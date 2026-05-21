@@ -5,12 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Department;
 use App\Models\Position;
+use App\Models\User;
+use App\Services\OnboardingAssignmentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
+    public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
+    {
+    }
+
     /**
      * Display a listing of employees.
      */
@@ -70,7 +77,24 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', 'exists:employees,id'],
         ]);
 
-        Employee::create($validated);
+        $employee = DB::transaction(function () use ($request, $validated) {
+            $employee = Employee::create($validated);
+            $pendingUserId = $request->session()->pull('pending_employee_user_id');
+
+            if ($pendingUserId) {
+                $user = User::find($pendingUserId);
+
+                if ($user) {
+                    $user->update([
+                        'employee_id' => $employee->id,
+                    ]);
+                }
+            }
+
+            $this->onboardingAssignmentService->ensureEmployeeIsOnboarded($employee, auth()->id());
+
+            return $employee;
+        });
 
         return redirect()->route('employees.index')
             ->with('success', 'Employee created successfully.');

@@ -177,34 +177,40 @@
             @endif
         </div>
     @else
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div class="flex flex-col gap-3 lg:col-span-1">
-                @forelse ($employees as $emp)
-                    <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-[#1a56db] bg-blue-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
-                        <div class="flex items-center justify-between gap-3">
-                            <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
-                            <span class="rounded-full px-2.5 py-0.5 text-[0.7rem] font-bold {{ $statusBadge($emp['status']) }}">{{ $emp['status'] }}</span>
-                        </div>
-                        <div class="mt-1 flex items-center gap-2">
-                            <p class="text-[0.8rem] text-slate-500">{{ $emp['type'] }}</p>
-                            @if ($emp['is_priority_hire'])
-                                <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-amber-700">Priority</span>
-                            @endif
-                        </div>
-                        <p class="mt-1 text-[0.75rem] text-slate-400">Hire date: {{ $emp['hire_date'] }}</p>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+            <div class="lg:col-span-1">
+                <div class="flex h-[58rem] min-h-0 flex-col overflow-hidden rounded-[0.8rem] border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:h-[calc(100vh-13rem)]">
+                    <div class="min-h-0 flex-1 overflow-y-scroll pr-1">
+                        <div class="flex flex-col gap-3">
+                        @forelse ($employees as $emp)
+                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-[#1a56db] bg-blue-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
+                                <div class="flex items-center justify-between gap-3">
+                                    <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
+                                    <span class="rounded-full px-2.5 py-0.5 text-[0.7rem] font-bold {{ $statusBadge($emp['status']) }}">{{ $emp['status'] }}</span>
+                                </div>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <p class="text-[0.8rem] text-slate-500">{{ $emp['type'] }}</p>
+                                    @if ($emp['is_priority_hire'])
+                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-amber-700">Priority</span>
+                                    @endif
+                                </div>
+                                <p class="mt-1 text-[0.75rem] text-slate-400">Hire date: {{ $emp['hire_date'] }}</p>
 
-                        <div class="mt-4">
-                            <div class="h-[0.35rem] w-full overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-[#1a56db]" style="width: {{ $emp['progress'] }}%"></div>
+                                <div class="mt-4">
+                                    <div class="h-[0.35rem] w-full overflow-hidden rounded-full bg-slate-100">
+                                        <div class="h-full rounded-full bg-[#1a56db]" style="width: {{ $emp['progress'] }}%"></div>
+                                    </div>
+                                    <p class="mt-2 text-[0.75rem] text-slate-500">{{ $emp['progress'] }}% complete</p>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="rounded-[0.8rem] border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                                No employees with hire dates are available for onboarding.
                             </div>
-                            <p class="mt-2 text-[0.75rem] text-slate-500">{{ $emp['progress'] }}% complete</p>
+                        @endforelse
                         </div>
-                    </a>
-                @empty
-                    <div class="rounded-[0.8rem] border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                        No employees with hire dates are available for onboarding.
                     </div>
-                @endforelse
+                </div>
             </div>
 
             <div class="space-y-4 lg:col-span-2">
