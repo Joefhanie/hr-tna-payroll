@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     <x-slot:title>Employee Profile</x-slot:title>
     <x-slot:header>Employee Profile</x-slot:header>
 
@@ -16,7 +16,36 @@
             'Excused' => 'badge-gray',
             default => 'badge-gray',
         };
+
+        $requestModalToOpen = null;
+        $leaveRequestTarget = $canSubmitRequests ? 'leaveRequestModal' : '';
+        $profileUpdateTarget = $canSubmitRequests ? 'profileUpdateModal' : '';
+        $documentUploadTarget = $canSubmitRequests ? 'documentUploadModal' : '';
+
+        if ($canSubmitRequests ?? false) {
+            if (old('type') !== null || old('start_date') !== null || old('end_date') !== null || old('reason') !== null) {
+                $requestModalToOpen = 'leaveRequestModal';
+            } elseif (
+                old('first_name') !== null || old('last_name') !== null || old('middle_name') !== null ||
+                old('email') !== null || old('phone') !== null || old('address_line1') !== null ||
+                old('address_line2') !== null || old('city') !== null || old('province') !== null ||
+                old('postal_code') !== null || old('country') !== null || old('notes') !== null
+            ) {
+                $requestModalToOpen = 'profileUpdateModal';
+            } elseif (old('document_type') !== null || old('expiry_date') !== null || old('description') !== null) {
+                $requestModalToOpen = 'documentUploadModal';
+            }
+        }
     @endphp
+
+    <div class="mb-4 flex items-center justify-between">
+        <a href="{{ route('self-service') }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Self-Service
+        </a>
+    </div>
 
     <div class="mb-4 rounded-lg bg-white p-4 shadow-sm">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -28,8 +57,8 @@
                     <h1 class="text-lg font-semibold text-slate-900">{{ $employee->full_name_with_middle_name }}</h1>
                     <p class="text-xs text-slate-600">
                         {{ $employee->position?->title ?? 'No position assigned' }}
-                        · {{ $employee->department?->name ?? 'No department assigned' }}
-                        · {{ $employee->employee_code ?? 'No employee code' }}
+                        | {{ $employee->department?->name ?? 'No department assigned' }}
+                        | {{ $employee->employee_code ?? 'No employee code' }}
                     </p>
                 </div>
             </div>
@@ -41,29 +70,35 @@
     </div>
 
     <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <a href="#leave-requests" class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-3 5h6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $leaveRequestTarget }}">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-3 5h6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Leave Requests</p>
+                    <p class="text-xs text-slate-500">{{ $leaveRequests->count() }} record(s)</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-medium text-slate-900">Leave Requests</p>
-                <p class="text-xs text-slate-500">{{ $leaveRequests->count() }} record(s)</p>
-            </div>
-        </a>
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{{ $canSubmitRequests ? 'Submit' : 'View' }}</span>
+        </button>
 
-        <a href="#profile-update-requests" class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2m-1 0v14m7-7H5" />
-                </svg>
+        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $profileUpdateTarget }}">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2m-1 0v14m7-7H5" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Profile Updates</p>
+                    <p class="text-xs text-slate-500">{{ $profileUpdateRequests->count() }} request(s)</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-medium text-slate-900">Profile Updates</p>
-                <p class="text-xs text-slate-500">{{ $profileUpdateRequests->count() }} request(s)</p>
-            </div>
-        </a>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $canSubmitRequests ? 'Request' : 'View' }}</span>
+        </button>
 
         <a href="#payslips" class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
@@ -77,17 +112,20 @@
             </div>
         </a>
 
-        <a href="#documents" class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $documentUploadTarget }}">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Documents</p>
+                    <p class="text-xs text-slate-500">{{ $documents->count() }} file(s)</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-medium text-slate-900">Documents</p>
-                <p class="text-xs text-slate-500">{{ $documents->count() }} file(s)</p>
-            </div>
-        </a>
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{{ $canSubmitRequests ? 'Upload' : 'View' }}</span>
+        </button>
     </div>
 
     <div class="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -147,9 +185,15 @@
     </div>
 
     @if ($canSubmitRequests)
-        <div class="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div class="rounded-lg bg-white p-4 shadow-sm">
-                <h2 class="mb-4 text-base font-semibold text-slate-900">Submit Leave Request</h2>
+        <div id="leaveRequestModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="leaveRequestModal">
+            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Submit Leave Request</h2>
+                        <p class="text-sm text-slate-500">Create a new leave request from here.</p>
+                    </div>
+                    <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="leaveRequestModal">X</button>
+                </div>
                 <form method="POST" action="{{ route('self-service.leave-requests.store', $employee) }}" class="space-y-3">
                     @csrf
                     <div>
@@ -161,7 +205,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Start Date</label>
                             <input type="date" name="start_date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value="{{ old('start_date') }}">
@@ -173,42 +217,64 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Reason</label>
-                        <textarea name="reason" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional note">{{ old('reason') }}</textarea>
+                        <textarea name="reason" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional note">{{ old('reason') }}</textarea>
                     </div>
-                    <button type="submit" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">Submit Leave</button>
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">Submit Leave</button>
+                    </div>
                 </form>
             </div>
+        </div>
 
-            <div class="rounded-lg bg-white p-4 shadow-sm">
-                <h2 class="mb-4 text-base font-semibold text-slate-900">Request Profile Update</h2>
+        <div id="profileUpdateModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="profileUpdateModal">
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Request Profile Update</h2>
+                        <p class="text-sm text-slate-500">Submit the details you want HR to review and update.</p>
+                    </div>
+                    <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="profileUpdateModal">X</button>
+                </div>
                 <form method="POST" action="{{ route('self-service.profile-update-requests.store', $employee) }}" class="space-y-3">
                     @csrf
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <input type="text" name="first_name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="First name" value="{{ old('first_name') }}">
                         <input type="text" name="last_name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Last name" value="{{ old('last_name') }}">
                     </div>
                     <input type="text" name="middle_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Middle name" value="{{ old('middle_name') }}">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <input type="email" name="email" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Email" value="{{ old('email') }}">
                         <input type="text" name="phone" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Phone" value="{{ old('phone') }}">
                     </div>
                     <input type="text" name="address_line1" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Address line 1" value="{{ old('address_line1') }}">
                     <input type="text" name="address_line2" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Address line 2" value="{{ old('address_line2') }}">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <input type="text" name="city" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="City" value="{{ old('city') }}">
                         <input type="text" name="province" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Province" value="{{ old('province') }}">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <input type="text" name="postal_code" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Postal code" value="{{ old('postal_code') }}">
                         <input type="text" name="country" class="rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Country" value="{{ old('country') }}">
                     </div>
-                    <textarea name="notes" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Why is this update needed?">{{ old('notes') }}</textarea>
-                    <button type="submit" class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Submit Profile Update</button>
+                    <textarea name="notes" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Why is this update needed?">{{ old('notes') }}</textarea>
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="profileUpdateModal">Cancel</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Submit Profile Update</button>
+                    </div>
                 </form>
             </div>
+        </div>
 
-            <div class="rounded-lg bg-white p-4 shadow-sm">
-                <h2 class="mb-4 text-base font-semibold text-slate-900">Upload Document</h2>
+        <div id="documentUploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="documentUploadModal">
+            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Upload Document</h2>
+                        <p class="text-sm text-slate-500">Add a new document for HR review and recordkeeping.</p>
+                    </div>
+                    <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="documentUploadModal">X</button>
+                </div>
                 <form method="POST" action="{{ route('self-service.documents.store', $employee) }}" enctype="multipart/form-data" class="space-y-3">
                     @csrf
                     <div>
@@ -225,9 +291,12 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Description</label>
-                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional description">{{ old('description') }}</textarea>
+                        <textarea name="description" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional description">{{ old('description') }}</textarea>
                     </div>
-                    <button type="submit" class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700">Upload Document</button>
+                    <div class="flex items-center justify-end gap-3">
+                        <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="documentUploadModal">Cancel</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700">Upload Document</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -312,6 +381,17 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($payslips as $payslip)
+                        @php
+                            $payslipBreakdown = [
+                                'employee_name' => $employee->full_name_with_middle_name,
+                                'base_salary' => $payslip['base_salary_value'],
+                                'frequency' => $payslip['frequency_label'],
+                                'gross' => $payslip['gross_pay_value'],
+                                'deductions' => $payslip['total_deductions_value'],
+                                'net' => $payslip['net_pay_value'],
+                                'line_items' => $payslip['line_items'],
+                            ];
+                        @endphp
                         <tr>
                             <td class="px-3 py-2 text-slate-900">{{ $payslip['period'] }}</td>
                             <td class="px-3 py-2 text-slate-600">{{ $payslip['pay_date'] }}</td>
@@ -322,7 +402,8 @@
                             <td class="px-3 py-2 text-center">
                                 <button type="button"
                                     class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                                    onclick='viewPayslipBreakdown(@json($employee->full_name_with_middle_name), {{ $payslip["base_salary_value"] }}, @json($payslip["frequency_label"]), {{ $payslip["gross_pay_value"] }}, {{ $payslip["total_deductions_value"] }}, {{ $payslip["net_pay_value"] }}, @json($payslip["line_items"]))'>
+                                    data-payslip='@json($payslipBreakdown)'
+                                    onclick="viewPayslipBreakdown(this)">
                                     View
                                 </button>
                             </td>
@@ -397,7 +478,7 @@
                         <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-sm font-medium text-slate-900">{{ $attendance['date'] }}</p>
-                                <p class="text-xs text-slate-500">IN {{ $attendance['check_in'] }} · OUT {{ $attendance['check_out'] }}</p>
+                                <p class="text-xs text-slate-500">IN {{ $attendance['check_in'] }} | OUT {{ $attendance['check_out'] }}</p>
                             </div>
                             <span class="badge {{ $badge($attendance['status']) }}">{{ $attendance['status'] }}</span>
                         </div>
@@ -422,7 +503,7 @@
                             </svg>
                             <div>
                                 <p class="text-sm font-medium text-slate-900">{{ $document['name'] }}</p>
-                                <p class="text-xs text-slate-500">{{ $document['type'] }} · {{ $document['date'] ?? 'N/A' }}{{ $document['file_size'] ? ' · ' . $document['file_size'] : '' }}</p>
+                                <p class="text-xs text-slate-500">{{ $document['type'] }} | {{ $document['date'] ?? 'N/A' }}{{ $document['file_size'] ? ' | ' . $document['file_size'] : '' }}</p>
                             </div>
                         </div>
                         @if ($document['file_path'])
@@ -439,6 +520,68 @@
     </div>
 
     <script>
+        function openRequestModal(modalId) {
+            const modal = document.getElementById(modalId);
+
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeRequestModal(modalId) {
+            const modal = document.getElementById(modalId);
+
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function closeRequestModalOnBackdrop(event, modalId) {
+            if (event.target.id !== modalId) {
+                return;
+            }
+
+            closeRequestModal(modalId);
+        }
+
+        document.querySelectorAll('[data-request-modal]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const modalId = button.dataset.requestModal;
+
+                if (!modalId) {
+                    return;
+                }
+
+                openRequestModal(modalId);
+            });
+        });
+
+        document.querySelectorAll('[data-close-modal]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const modalId = button.dataset.closeModal;
+
+                if (!modalId) {
+                    return;
+                }
+
+                closeRequestModal(modalId);
+            });
+        });
+
+        document.querySelectorAll('[data-modal-backdrop]').forEach((modal) => {
+            modal.addEventListener('click', (event) => {
+                closeRequestModalOnBackdrop(event, modal.dataset.modalBackdrop);
+            });
+        });
+
         function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
@@ -557,15 +700,16 @@
             return html;
         }
 
-        function viewPayslipBreakdown(employeeName, baseSalary, frequency, gross, deductions, net, lineItems) {
-            const lineItemsData = Array.isArray(lineItems) ? lineItems : [];
+        function viewPayslipBreakdown(button) {
+            const payload = JSON.parse(button.dataset.payslip || '{}');
+            const lineItemsData = Array.isArray(payload.line_items) ? payload.line_items : [];
 
-            document.getElementById('psModalSubtitle').textContent = employeeName;
-            document.getElementById('psBaseSalary').textContent = formatCurrency(baseSalary);
-            document.getElementById('psFrequency').textContent = frequency || 'Unknown';
-            document.getElementById('psGrossPay').textContent = formatCurrency(gross);
-            document.getElementById('psTotalDeductions').textContent = formatCurrency(deductions, true);
-            document.getElementById('psNetPay').textContent = formatCurrency(net);
+            document.getElementById('psModalSubtitle').textContent = payload.employee_name || 'Unknown employee';
+            document.getElementById('psBaseSalary').textContent = formatCurrency(payload.base_salary || 0);
+            document.getElementById('psFrequency').textContent = payload.frequency || 'Unknown';
+            document.getElementById('psGrossPay').textContent = formatCurrency(payload.gross || 0);
+            document.getElementById('psTotalDeductions').textContent = formatCurrency(payload.deductions || 0, true);
+            document.getElementById('psNetPay').textContent = formatCurrency(payload.net || 0);
 
             const earningItems = lineItemsData.filter((item) => item.component_type === 1);
             const deductionItems = lineItemsData.filter((item) => item.component_type !== 1);
@@ -581,5 +725,23 @@
             document.getElementById('payslipModal').classList.remove('flex');
             document.getElementById('payslipModal').classList.add('hidden');
         }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            closePayslipModal();
+            closeRequestModal('leaveRequestModal');
+            closeRequestModal('profileUpdateModal');
+            closeRequestModal('documentUploadModal');
+        });
+
+        const initialRequestModal = @json($requestModalToOpen);
+
+        if (initialRequestModal) {
+            openRequestModal(initialRequestModal);
+        }
     </script>
 </x-app-layout>
+
