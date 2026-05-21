@@ -83,12 +83,32 @@ class TimekeepingController extends Controller
                             }
                         }
                         
-                        if ($hasNotStarted) {
+                        $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
+                            ->where('employee_id', $employee->id)
+                            ->where('status', 2) // Approved
+                            ->where('start_date', '<=', $dateStr)
+                            ->where('end_date', '>=', $dateStr)
+                            ->exists();
+
+                        if ($hasApprovedLeave) {
                             $virtual = new Attendance([
                                 'user_id' => $user->id,
                                 'shift_id' => $dayShift->id,
                                 'attendance_date' => $cursor->copy(),
-                                'status' => 5,
+                                'status' => 4, // On Leave
+                                'check_in' => null,
+                                'check_out' => null,
+                                'notes' => 'Auto-marked: Approved Leave'
+                            ]);
+                            $virtual->setRelation('user', $user);
+                            $virtual->setRelation('shift', $dayShift);
+                            $virtualRecords[] = $virtual;
+                        } elseif ($hasNotStarted) {
+                            $virtual = new Attendance([
+                                'user_id' => $user->id,
+                                'shift_id' => $dayShift->id,
+                                'attendance_date' => $cursor->copy(),
+                                'status' => 5, // Shift Not Started
                                 'check_in' => null,
                                 'check_out' => null,
                                 'notes' => 'Shift has not started yet.'
@@ -113,6 +133,58 @@ class TimekeepingController extends Controller
             $selectedDateCarbon->copy()->startOfMonth()->toDateString(), 
             $selectedDateCarbon->copy()->endOfMonth()->toDateString()
         );
+
+        // Enforce approved leave priority over any status in view
+        $allApprovedLeaves = \Illuminate\Support\Facades\DB::table('leave_requests')
+            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+            ->where('leave_requests.status', 2) // Approved
+            ->select('leave_requests.*', 'leave_types.is_paid')
+            ->get();
+
+        $leaveLookup = [];
+        $paidLeaveLookup = [];
+        foreach ($allApprovedLeaves as $leave) {
+            $start = Carbon::parse($leave->start_date);
+            $end = Carbon::parse($leave->end_date);
+            $c = $start->copy();
+            while ($c->lte($end)) {
+                $dateKey = $c->toDateString();
+                $leaveLookup[$leave->employee_id][$dateKey] = true;
+                if ($leave->is_paid) {
+                    $paidLeaveLookup[$leave->employee_id][$dateKey] = true;
+                }
+                $c->addDay();
+            }
+        }
+
+        $enforceLeavePriority = function ($records) use ($leaveLookup, $paidLeaveLookup) {
+            foreach ($records as $att) {
+                $employee = $att->user?->employee;
+                if ($employee) {
+                    $dateStr = $att->attendance_date->toDateString();
+                    $isPaidLeave = isset($paidLeaveLookup[$employee->id][$dateStr]);
+                    $isAnyLeave = isset($leaveLookup[$employee->id][$dateStr]);
+                    
+                    $shouldOverride = false;
+                    // If no check-in/out, always override with leave
+                    if (is_null($att->check_in) && is_null($att->check_out) && $isAnyLeave) {
+                        $shouldOverride = true;
+                    }
+                    // If they timed in, but it's a paid leave, override with paid leave
+                    elseif ($isPaidLeave) {
+                        $shouldOverride = true;
+                    }
+
+                    if ($shouldOverride) {
+                        $att->status = 4; // On Leave
+                        $att->notes = $isPaidLeave ? 'Approved Paid Leave (Priority Override)' : 'Approved Leave (Priority Override)';
+                    }
+                }
+            }
+        };
+
+        $enforceLeavePriority($todayAttendance);
+        $enforceLeavePriority($calendarDataRecords);
 
         $calendarData = $calendarDataRecords->groupBy(function ($attendance) {
             return $attendance->attendance_date->toDateString();

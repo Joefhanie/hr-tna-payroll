@@ -82,20 +82,37 @@ class AppServiceProvider extends ServiceProvider
                                     
                                     // Has the shift started yet?
                                     if (now('Asia/Manila')->gt($shiftStart)) {
-                                        // Should be marked absent/excused
+                                        // Should be marked absent/excused/on leave
                                         $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
                                             ->where('employee_id', $employee->id)
                                             ->where('status', 2) // Approved
                                             ->where('start_date', '<=', $dateStr)
                                             ->where('end_date', '>=', $dateStr)
                                             ->exists();
+
+                                        $hasApprovedPaidLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
+                                            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+                                            ->where('leave_requests.employee_id', $employee->id)
+                                            ->where('leave_requests.status', 2) // Approved
+                                            ->where('leave_types.is_paid', 1) // Paid
+                                            ->where('leave_requests.start_date', '<=', $dateStr)
+                                            ->where('leave_requests.end_date', '>=', $dateStr)
+                                            ->exists();
                                             
                                         $expectedStatus = $hasApprovedLeave ? 4 : 3; // 4 = On Leave, 3 = Absent
-                                        $expectedNotes = $hasApprovedLeave ? 'Auto-marked: Approved Leave' : 'Auto-marked absent: no time-in by shift start.';
+                                        $expectedNotes = $hasApprovedLeave 
+                                            ? ($hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave')
+                                            : 'Auto-marked absent: no time-in by shift start.';
                                         
                                         if ($existingRecord) {
-                                            // If it's an auto-generated record (no check-in/out), sync it
-                                            if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out) && in_array($existingRecord->status, [3, 4])) {
+                                            $shouldOverride = false;
+                                            if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
+                                                $shouldOverride = true;
+                                            } elseif ($hasApprovedPaidLeave) {
+                                                $shouldOverride = true;
+                                            }
+
+                                            if ($shouldOverride) {
                                                 if ($existingRecord->shift_id != $dayShift->id || $existingRecord->status != $expectedStatus) {
                                                     $existingRecord->update([
                                                         'shift_id' => $dayShift->id,
@@ -105,7 +122,7 @@ class AppServiceProvider extends ServiceProvider
                                                 }
                                             }
                                         } else {
-                                            // Create new auto-absent record
+                                            // Create new auto-absent/leave record
                                             \App\Models\Attendance::create([
                                                 'user_id' => $user->id,
                                                 'shift_id' => $dayShift->id,
@@ -115,10 +132,53 @@ class AppServiceProvider extends ServiceProvider
                                             ]);
                                         }
                                     } else {
-                                        // Shift has not started yet (e.g. shift was moved to future or rescheduled)
-                                        // Delete any existing auto-generated record
-                                        if ($existingRecord && is_null($existingRecord->check_in) && is_null($existingRecord->check_out) && in_array($existingRecord->status, [3, 4])) {
-                                            $existingRecord->delete();
+                                        // Shift has not started yet.
+                                        // But if they have an approved leave, they should be marked "On Leave" now!
+                                        $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
+                                            ->where('employee_id', $employee->id)
+                                            ->where('status', 2) // Approved
+                                            ->where('start_date', '<=', $dateStr)
+                                            ->where('end_date', '>=', $dateStr)
+                                            ->exists();
+
+                                        $hasApprovedPaidLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
+                                            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+                                            ->where('leave_requests.employee_id', $employee->id)
+                                            ->where('leave_requests.status', 2) // Approved
+                                            ->where('leave_types.is_paid', 1) // Paid
+                                            ->where('leave_requests.start_date', '<=', $dateStr)
+                                            ->where('leave_requests.end_date', '>=', $dateStr)
+                                            ->exists();
+
+                                        if ($hasApprovedLeave) {
+                                            if ($existingRecord) {
+                                                $shouldOverride = false;
+                                                if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
+                                                    $shouldOverride = true;
+                                                } elseif ($hasApprovedPaidLeave) {
+                                                    $shouldOverride = true;
+                                                }
+
+                                                if ($shouldOverride && $existingRecord->status != 4) {
+                                                    $existingRecord->update([
+                                                        'status' => 4,
+                                                        'notes' => $hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave (Overrode Check-in)' : 'Auto-marked: Approved Leave (Prioritized)',
+                                                    ]);
+                                                }
+                                            } else {
+                                                \App\Models\Attendance::create([
+                                                    'user_id' => $user->id,
+                                                    'shift_id' => $dayShift->id,
+                                                    'attendance_date' => $dateStr,
+                                                    'status' => 4, // On Leave
+                                                    'notes' => $hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave (Prioritized)',
+                                                ]);
+                                            }
+                                        } else {
+                                            // Delete any existing auto-generated record
+                                            if ($existingRecord && is_null($existingRecord->check_in) && is_null($existingRecord->check_out) && in_array($existingRecord->status, [3, 4])) {
+                                                $existingRecord->delete();
+                                            }
                                         }
                                     }
                                 } else {

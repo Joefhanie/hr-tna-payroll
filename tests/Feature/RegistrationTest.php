@@ -18,29 +18,31 @@ class RegistrationTest extends TestCase
 
     public function test_users_can_register_with_a_hashed_password(): void
     {
-        $credentialsResponse = $this->post('/register', [
+        $personalResponse = $this->post('/register', [
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'gender' => 'Female',
+            'birth_date' => '1995-05-15',
+            'nationality' => 'Filipino',
+            'marital_status' => 'Single',
+        ]);
+
+        $personalResponse->assertRedirect('/register/profile');
+
+        $contactResponse = $this->post('/register/profile', [
             'username' => 'jane.doe',
             'email' => 'jane@example.com',
             'password' => 'secret123',
             'password_confirmation' => 'secret123',
-            'role' => 4,
-        ]);
-
-        $credentialsResponse->assertRedirect('/register/profile');
-
-        $profileResponse = $this->post('/register/profile', [
-            'first_name' => 'Jane',
-            'last_name' => 'Doe',
             'phone' => '09123456789',
             'city' => 'Pasig',
             'country' => 'Philippines',
         ]);
 
-        $profileResponse->assertRedirect('/register/employment');
+        $contactResponse->assertRedirect('/register/employment');
 
         $employmentResponse = $this->post('/register/employment', [
             'employment_type' => 1,
-            'status' => 1,
             'hire_date' => now()->toDateString(),
         ]);
 
@@ -52,6 +54,12 @@ class RegistrationTest extends TestCase
         $this->assertTrue(Hash::check('secret123', $user->password));
         $this->assertNotSame('secret123', $user->password);
         $this->assertSame('jane.doe', $user->username);
+        $this->assertNotNull($user->employee_id);
+        
+        $employee = \App\Models\Employee::find($user->employee_id);
+        $this->assertNotNull($employee);
+        $this->assertSame(2, $employee->status);
+        
         $this->assertAuthenticatedAs($user);
     }
 }

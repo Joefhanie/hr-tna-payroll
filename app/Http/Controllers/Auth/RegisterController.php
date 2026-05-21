@@ -17,9 +17,9 @@ class RegisterController extends Controller
 {
     public function create(): View
     {
-        return view('auth.register', $this->registrationViewData('credentials', [
-            'title' => 'Create a secure staff account.',
-            'description' => 'Start with login credentials, then continue to the employee profile pages.',
+        return view('auth.register', $this->registrationViewData('personal', [
+            'title' => 'Personal Information',
+            'description' => 'Basic identity details of the employee',
             'formAction' => route('register.store'),
         ]));
     }
@@ -27,34 +27,29 @@ class RegisterController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['nullable', 'in:1,2,3,4'],
-            'remember' => ['nullable', 'boolean'],
+            'first_name' => ['required', 'string', 'max:80'],
+            'last_name' => ['required', 'string', 'max:80'],
+            'middle_name' => ['nullable', 'string', 'max:80'],
+            'birth_date' => ['nullable', 'date'],
+            'gender' => ['nullable', 'in:Male,Female,Non-binary,Prefer not to say'],
+            'nationality' => ['nullable', 'string', 'max:80'],
+            'marital_status' => ['nullable', 'in:Single,Married,Widowed,Divorced,Separated'],
         ]);
 
-        $request->session()->put('registration.account', [
-            'name' => $validated['username'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'role' => $validated['role'] ?? 4,
-            'remember' => (bool) $request->input('remember'),
-        ]);
+        $request->session()->put('registration.profile', $validated);
 
         return redirect()->route('register.profile');
     }
 
     public function profile(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('registration.account')) {
+        if (! $request->session()->has('registration.profile')) {
             return redirect()->route('register');
         }
 
-        return view('auth.register', $this->registrationViewData('profile', [
-            'title' => 'Complete the employee profile.',
-            'description' => 'Add the personal and contact details that would normally appear on the employee form.',
+        return view('auth.register', $this->registrationViewData('contact', [
+            'title' => 'Contact Information',
+            'description' => 'Credentials and contact details of the employee.',
             'formAction' => route('register.profile.store'),
         ]));
     }
@@ -62,14 +57,11 @@ class RegisterController extends Controller
     public function storeProfile(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:80'],
-            'last_name' => ['required', 'string', 'max:80'],
-            'middle_name' => ['nullable', 'string', 'max:80'],
+            'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'remember' => ['nullable', 'boolean'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'birth_date' => ['nullable', 'date'],
-            'gender' => ['nullable', 'in:Male,Female,Non-binary,Prefer not to say'],
-            'nationality' => ['nullable', 'string', 'max:80'],
-            'marital_status' => ['nullable', 'in:Single,Married,Widowed,Divorced,Separated'],
             'address_line1' => ['nullable', 'string', 'max:200'],
             'address_line2' => ['nullable', 'string', 'max:200'],
             'city' => ['nullable', 'string', 'max:100'],
@@ -78,23 +70,37 @@ class RegisterController extends Controller
             'country' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $request->session()->put('registration.profile', $validated);
+        $request->session()->put('registration.account', [
+            'name' => $validated['username'],
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => 4,
+            'remember' => (bool) $request->input('remember'),
+        ]);
+
+        $profileData = $request->session()->get('registration.profile', []);
+        $contactFields = ['phone', 'address_line1', 'address_line2', 'city', 'province', 'postal_code', 'country'];
+        foreach ($contactFields as $field) {
+            $profileData[$field] = $validated[$field] ?? null;
+        }
+        $request->session()->put('registration.profile', $profileData);
 
         return redirect()->route('register.employment');
     }
 
     public function employment(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('registration.account')) {
+        if (! $request->session()->has('registration.profile')) {
             return redirect()->route('register');
         }
 
-        if (! $request->session()->has('registration.profile')) {
+        if (! $request->session()->has('registration.account')) {
             return redirect()->route('register.profile');
         }
 
         return view('auth.register', $this->registrationViewData('employment', [
-            'title' => 'Finish the employment details.',
+            'title' => 'Employment Details',
             'description' => 'Select the role, department, and onboarding details before creating the account.',
             'formAction' => route('register.employment.store'),
         ]));
@@ -104,9 +110,7 @@ class RegisterController extends Controller
     {
         $validated = $request->validate([
             'employment_type' => ['required', 'in:1,2,3,4'],
-            'status' => ['required', 'in:1,2,3,4,5'],
             'hire_date' => ['required', 'date'],
-            'regularization_date' => ['nullable', 'date'],
             'position_id' => ['nullable', 'exists:positions,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'manager_id' => ['nullable', 'exists:employees,id'],
@@ -150,9 +154,9 @@ class RegisterController extends Controller
                 'postal_code' => $profile['postal_code'] ?? null,
                 'country' => $profile['country'] ?? null,
                 'employment_type' => $validated['employment_type'],
-                'status' => $validated['status'],
+                'status' => 2, // Default to probationary
                 'hire_date' => $validated['hire_date'],
-                'regularization_date' => $validated['regularization_date'] ?? null,
+                'regularization_date' => null,
                 'position_id' => $validated['position_id'] ?? null,
                 'department_id' => $validated['department_id'] ?? null,
                 'manager_id' => $validated['manager_id'] ?? null,

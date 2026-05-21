@@ -42,6 +42,13 @@ class DatabaseSeeder extends Seeder
         DB::table('leave_requests')->truncate();
         DB::table('leave_balances')->truncate();
         DB::table('leave_types')->truncate();
+        DB::table('pay_runs')->truncate();
+        DB::table('payslips')->truncate();
+        DB::table('payslip_line_items')->truncate();
+        DB::table('government_contributions')->truncate();
+        DB::table('attendance')->truncate();
+        DB::table('time_logs')->truncate();
+        DB::table('break_logs')->truncate();
 
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 

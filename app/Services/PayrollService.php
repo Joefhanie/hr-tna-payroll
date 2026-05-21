@@ -310,6 +310,19 @@ class PayrollService
             });
 
             if ($attendance) {
+                if ($approvedLeave) {
+                    if ((int) $approvedLeave->is_paid === 1) {
+                        // Paid leave: no deduction, skip late and undertime calculation for this day
+                        $cursor->addDay();
+                        continue;
+                    } else {
+                        // Unpaid leave: counts as absent (1 full day deduction), skip late and undertime
+                        $summary['absent_days']++;
+                        $cursor->addDay();
+                        continue;
+                    }
+                }
+
                 if ($dayShift) {
                     $shiftStart = $dayShift->getShiftStartDateTime($attendanceDate);
                     $shiftEnd = $dayShift->getShiftEndDateTime($attendanceDate);
