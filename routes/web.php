@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:leaves.edit')->group(function () {
         Route::post('/leave/{leave}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
         Route::post('/leave/{leave}/decline', [LeaveController::class, 'decline'])->name('leave.decline');
+        Route::post('/leave/{leave}/cancel', [LeaveController::class, 'cancel'])->name('leave.cancel');
     });
 
     // Organization Management (Settings)

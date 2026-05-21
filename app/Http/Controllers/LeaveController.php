@@ -194,6 +194,15 @@ class LeaveController extends Controller
         // Update leave balance
         $this->updateBalance($leave, 'use');
 
+        // Automatically update employee status to 3 (On Leave) if leave covers today
+        $today = now()->startOfDay();
+        $start = Carbon::parse($leave->start_date)->startOfDay();
+        $end   = Carbon::parse($leave->end_date)->startOfDay();
+
+        if ($today->between($start, $end)) {
+            $leave->employee()->update(['status' => 3]);
+        }
+
         return redirect()->route('leave.index')
             ->with('success', 'Leave request approved.');
     }
@@ -209,8 +218,9 @@ class LeaveController extends Controller
         $startOfMonth = $selectedDateCarbon->copy()->startOfMonth()->toDateString();
         $endOfMonth   = $selectedDateCarbon->copy()->endOfMonth()->toDateString();
 
-        // All leave requests that overlap with this month
+        // All leave requests that overlap with this month (excluding Cancelled status)
         $leaveRequests = Leave::with('employee')
+            ->where('status', '!=', 4)
             ->where(function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
                   ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth])
@@ -273,13 +283,61 @@ class LeaveController extends Controller
             'rejection_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $oldStatus = (int) $leave->status;
+
         $leave->update([
             'status'         => 3,
             'rejection_note' => $validated['rejection_note'] ?? null,
         ]);
 
+        // If it was approved, restore balance and revert employee status if it covered today
+        if ($oldStatus === 2) {
+            $this->updateBalance($leave, 'restore');
+
+            $today = now()->startOfDay();
+            $start = Carbon::parse($leave->start_date)->startOfDay();
+            $end   = Carbon::parse($leave->end_date)->startOfDay();
+
+            if ($today->between($start, $end)) {
+                $leave->employee()->update(['status' => 1]); // Revert to Active
+            }
+        }
+
         return redirect()->route('leave.index')
             ->with('success', 'Leave request declined.');
+    }
+
+    /**
+     * Cancel an approved or pending leave request.
+     */
+    public function cancel(Request $request, Leave $leave): RedirectResponse
+    {
+        $validated = $request->validate([
+            'cancellation_reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $oldStatus = (int) $leave->status;
+
+        $leave->update([
+            'status'         => 4, // Cancelled
+            'rejection_note' => $validated['cancellation_reason'],
+        ]);
+
+        // If the leave was previously approved, restore balance and revert employee status if it covered today
+        if ($oldStatus === 2) {
+            $this->updateBalance($leave, 'restore');
+
+            $today = now()->startOfDay();
+            $start = Carbon::parse($leave->start_date)->startOfDay();
+            $end   = Carbon::parse($leave->end_date)->startOfDay();
+
+            if ($today->between($start, $end)) {
+                $leave->employee()->update(['status' => 1]); // Revert to Active
+            }
+        }
+
+        return redirect()->route('leave.index')
+            ->with('success', 'Leave request cancelled successfully.');
     }
 
     /**
@@ -315,6 +373,7 @@ class LeaveController extends Controller
         return match ($status) {
             2       => 'Approved',
             3       => 'Rejected',
+            4       => 'Cancelled',
             default => 'Pending',
         };
     }
