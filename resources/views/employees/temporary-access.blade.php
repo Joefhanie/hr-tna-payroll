@@ -76,6 +76,10 @@
                                 ? $user->temporaryAssignments->where('is_active', true)->sortByDesc('to_date')->first()
                                 : null;
 
+                            $latestTemporaryAssignment = $user
+                                ? $user->temporaryAssignments->sortByDesc('id')->first()
+                                : null;
+
                             $now = now();
                             $isCurrentTemporary = $temporaryAssignment
                                 && $temporaryAssignment->is_active
@@ -91,16 +95,18 @@
                             if ($isCurrentTemporary) {
                                 $statusLabel = 'Active';
                                 $statusColor = 'badge-green';
-                                $tempRoleLabel = $roleLabels[$temporaryAssignment->temporary_role] ?? 'Role';
-                                $tempRoleColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
                             } elseif ($isScheduled) {
                                 $statusLabel = 'Scheduled';
                                 $statusColor = 'badge-blue';
-                                $tempRoleLabel = $roleLabels[$temporaryAssignment->temporary_role] ?? 'Role';
-                                $tempRoleColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
                             } else {
                                 $statusLabel = 'None';
                                 $statusColor = 'badge-gray';
+                            }
+
+                            if ($latestTemporaryAssignment) {
+                                $tempRoleLabel = $roleLabels[$latestTemporaryAssignment->temporary_role] ?? 'Role';
+                                $tempRoleColor = $roleColors[$latestTemporaryAssignment->temporary_role] ?? 'badge-gray';
+                            } else {
                                 $tempRoleLabel = '—';
                                 $tempRoleColor = '';
                             }
