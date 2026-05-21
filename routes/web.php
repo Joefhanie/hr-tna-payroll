@@ -81,7 +81,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:benefits.delete')->group(function () {
         Route::delete('/benefits/{plan}', [App\Http\Controllers\BenefitsController::class, 'destroy'])->name('benefits.destroy');
     });
-    Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
+    Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
+    Route::get('/reports/download/{type}', [App\Http\Controllers\ReportController::class, 'download'])->name('reports.download')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
 
     // Leave Management
     Route::middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete')->group(function () {
