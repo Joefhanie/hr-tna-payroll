@@ -17,15 +17,6 @@
         @endif
     </div>
 
-    @if ($errors->any())
-        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <ul class="space-y-1 text-sm text-red-700">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
     {{-- Tabs removed --}}
 
     <div class="mb-6 flex items-center gap-3">
