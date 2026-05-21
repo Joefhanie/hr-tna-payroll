@@ -65,8 +65,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/onboarding/tasks/{task}/submit', [OnboardingController::class, 'submitEmployeeTask'])->name('onboarding.tasks.submit');
     Route::post('/onboarding/tasks/{task}/complete', [OnboardingController::class, 'completeTask'])->name('onboarding.tasks.complete');
     Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view');
-    Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete');
-    Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
+    // Benefits Management
+    Route::middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete')->group(function () {
+        Route::get('/benefits', [App\Http\Controllers\BenefitsController::class, 'index'])->name('benefits');
+        Route::get('/benefits/{plan}', [App\Http\Controllers\BenefitsController::class, 'show'])->name('benefits.show');
+    });
+    Route::middleware('permission:benefits.create')->group(function () {
+        Route::post('/benefits', [App\Http\Controllers\BenefitsController::class, 'store'])->name('benefits.store');
+    });
+    Route::middleware('permission:benefits.edit')->group(function () {
+        Route::put('/benefits/{plan}', [App\Http\Controllers\BenefitsController::class, 'update'])->name('benefits.update');
+        Route::post('/benefits/{plan}/enroll', [App\Http\Controllers\BenefitsController::class, 'enroll'])->name('benefits.enroll');
+        Route::post('/benefits/{plan}/disenroll/{employee}', [App\Http\Controllers\BenefitsController::class, 'disenroll'])->name('benefits.disenroll');
+    });
+    Route::middleware('permission:benefits.delete')->group(function () {
+        Route::delete('/benefits/{plan}', [App\Http\Controllers\BenefitsController::class, 'destroy'])->name('benefits.destroy');
+    });
+    Route::get('/reports', [App\Http\Controllers\ReportController::class, 'index'])->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
+    Route::get('/reports/download/{type}', [App\Http\Controllers\ReportController::class, 'download'])->name('reports.download')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
 
     // Leave Management
     Route::middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete')->group(function () {
