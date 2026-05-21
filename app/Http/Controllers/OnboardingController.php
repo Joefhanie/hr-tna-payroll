@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\CompanyDocument;
 use App\Models\EmployeeDocument;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
@@ -14,11 +15,16 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OnboardingController extends Controller
 {
+    private bool $latestContractDocumentResolved = false;
+    private ?CompanyDocument $latestContractDocumentCache = null;
+
     public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
     {
     }
@@ -337,6 +343,14 @@ class OnboardingController extends Controller
             ->with('success', 'Onboarding task marked as done.');
     }
 
+    public function downloadCompanyDocument(CompanyDocument $companyDocument): StreamedResponse
+    {
+        abort_unless(strcasecmp($companyDocument->category, CompanyDocument::CATEGORY_CONTRACT) === 0, 404);
+        abort_unless(Storage::disk('public')->exists($companyDocument->file_path), 404);
+
+        return Storage::disk('public')->download($companyDocument->file_path, $companyDocument->file_name);
+    }
+
     private function buildEmployeeCard(Employee $employee, bool $includeAllTasks): array
     {
         $now = Carbon::now();
@@ -389,6 +403,10 @@ class OnboardingController extends Controller
             'task_owner_options' => $this->taskOwnerOptions(),
             'employee_action_options' => $this->employeeActionOptions(),
             'tasks' => $visibleTasks->map(function (OnboardingTask $task) {
+                $contractDocument = $this->shouldAttachContractDocument($task)
+                    ? $this->latestContractDocument()
+                    : null;
+
                 return [
                     'id' => $task->id,
                     'title' => $task->title,
@@ -404,6 +422,10 @@ class OnboardingController extends Controller
                     'submitted_at' => $task->submitted_at?->format('M d, Y h:i A'),
                     'completed_at' => $task->completed_at?->format('M d, Y h:i A'),
                     'completed' => $task->completed_at !== null,
+                    'company_contract_name' => $contractDocument?->file_name,
+                    'company_contract_download_url' => $contractDocument
+                        ? route('onboarding.company-documents.download', $contractDocument)
+                        : null,
                 ];
             })->values(),
         ];
@@ -635,12 +657,34 @@ class OnboardingController extends Controller
         return [
             ['value' => 'Government IDs', 'label' => 'Government IDs'],
             ['value' => 'Picture', 'label' => 'Picture'],
+            ['value' => OnboardingTask::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT, 'label' => OnboardingTask::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT],
             ['value' => 'Resume', 'label' => 'Resume'],
-            ['value' => 'Employment Contract', 'label' => 'Employment Contract'],
             ['value' => 'Medical Certificate', 'label' => 'Medical Certificate'],
             ['value' => 'NDA', 'label' => 'NDA'],
             ['value' => 'Tax Form', 'label' => 'Tax Form'],
         ];
+    }
+
+    private function latestContractDocument(): ?CompanyDocument
+    {
+        if ($this->latestContractDocumentResolved) {
+            return $this->latestContractDocumentCache;
+        }
+
+        $this->latestContractDocumentResolved = true;
+        $this->latestContractDocumentCache = CompanyDocument::query()
+            ->where('category', CompanyDocument::CATEGORY_CONTRACT)
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        return $this->latestContractDocumentCache;
+    }
+
+    private function shouldAttachContractDocument(OnboardingTask $task): bool
+    {
+        return ($task->action_type ?? OnboardingTask::ACTION_CHECKLIST) === OnboardingTask::ACTION_DOCUMENT_UPLOAD
+            && strcasecmp((string) $task->document_type, OnboardingTask::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT) === 0;
     }
 
     private function assignableRoles(): array

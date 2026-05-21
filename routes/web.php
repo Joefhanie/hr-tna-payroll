@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
 
     // Onboarding, Leave, Benefits, Reports
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
+    Route::get('/onboarding/company-documents/{companyDocument}/download', [OnboardingController::class, 'downloadCompanyDocument'])->name('onboarding.company-documents.download');
     Route::post('/onboarding/{employee}/start', [OnboardingController::class, 'start'])->name('onboarding.start');
     Route::post('/onboarding/{employee}/tasks', [OnboardingController::class, 'storeTask'])->name('onboarding.tasks.store');
     Route::put('/onboarding/tasks/{task}', [OnboardingController::class, 'updateTask'])->name('onboarding.tasks.update');
@@ -109,11 +110,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/organization/positions/{position}', [OrganizationController::class, 'showPosition'])->name('organization.positions.show');
         Route::get('/organization/users', [OrganizationController::class, 'users'])->name('organization.users.index');
         Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
+        Route::get('/organization/settings/company-documents/{companyDocument}/download', [OrganizationController::class, 'downloadCompanyDocument'])->name('organization.settings.company-documents.download');
     });
     Route::middleware('permission:settings.create')->group(function () {
         Route::post('/organization/departments', [OrganizationController::class, 'storeDepartment'])->name('organization.departments.store');
         Route::post('/organization/positions', [OrganizationController::class, 'storePosition'])->name('organization.positions.store');
         Route::post('/organization/users', [OrganizationController::class, 'storeUser'])->name('organization.users.store');
+        Route::post('/organization/settings/company-documents', [OrganizationController::class, 'storeCompanyDocument'])->name('organization.settings.company-documents.store');
     });
     Route::middleware('permission:settings.edit')->group(function () {
         Route::get('/organization/departments/{department}/edit', [OrganizationController::class, 'editDepartment'])->name('organization.departments.edit');
