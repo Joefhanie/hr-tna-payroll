@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\SelfServiceController;
@@ -50,11 +51,23 @@ Route::middleware('auth')->group(function () {
         Route::post('/timekeeping/shift-schedule/save', [TimekeepingController::class, 'saveShiftSchedule'])->name('timekeeping.shift-schedule.save');
     });
 
-    // Onboarding, Leave, Benefits, Reports
+    // Onboarding, Benefits, Reports
     Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:onboarding.view');
-    Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete');
     Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete');
     Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
+
+    // Leave Management
+    Route::middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete')->group(function () {
+        Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+        Route::get('/leave/calendar', [LeaveController::class, 'calendarView'])->name('leave.calendar');
+    });
+    Route::middleware('permission:leaves.create')->group(function () {
+        Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
+    });
+    Route::middleware('permission:leaves.edit')->group(function () {
+        Route::post('/leave/{leave}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
+        Route::post('/leave/{leave}/decline', [LeaveController::class, 'decline'])->name('leave.decline');
+    });
 
     // Organization Management (Settings)
     Route::middleware('permission:settings.view,settings.create,settings.edit,settings.delete')->group(function () {

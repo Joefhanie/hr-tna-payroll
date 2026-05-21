@@ -76,7 +76,10 @@
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
-                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete'],
+                ['label' => 'Leave', 'icon' => 'calendar-event', 'path' => '/leave', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete', 'children' => [
+                    ['route' => 'leave.index',    'path' => '/leave',          'label' => 'Requests'],
+                    ['route' => 'leave.calendar', 'path' => '/leave/calendar', 'label' => 'Calendar'],
+                ]],
                 ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
