@@ -48,13 +48,15 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Plan Name</label>
                         <input type="text" name="name" value="{{ old('name', $plan->name) }}" required
-                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                            @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Category / Type</label>
                         <select name="benefit_type" required
-                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                            @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">
                             <option value="Health" {{ old('benefit_type', $plan->benefit_type) === 'Health' ? 'selected' : '' }}>Health</option>
                             <option value="Insurance" {{ old('benefit_type', $plan->benefit_type) === 'Insurance' ? 'selected' : '' }}>Insurance</option>
                             <option value="Government" {{ old('benefit_type', $plan->benefit_type) === 'Government' ? 'selected' : '' }}>Government</option>
@@ -66,31 +68,36 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Provider</label>
                         <input type="text" name="provider" value="{{ old('provider', $plan->provider) }}"
-                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                            @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Employee Cost (PHP)</label>
                             <input type="number" step="0.01" name="employee_cost" value="{{ old('employee_cost', $plan->employee_cost) }}"
-                                class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                                @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                                class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Employer Cost (PHP)</label>
                             <input type="number" step="0.01" name="employer_cost" value="{{ old('employer_cost', $plan->employer_cost) }}"
-                                class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                                @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                                class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Coverage Details</label>
                         <textarea name="coverage_details" rows="3"
-                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">{{ old('coverage_details', $plan->coverage_details) }}</textarea>
+                            @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:bg-slate-50 disabled:text-slate-500">{{ old('coverage_details', $plan->coverage_details) }}</textarea>
                     </div>
 
                     <div class="flex items-center gap-2 py-1">
                         <input type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', $plan->is_active) ? 'checked' : '' }}
-                            class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]/30">
+                            @disabled(!auth()->user()->hasPermission('benefits.edit'))
+                            class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]/30 disabled:opacity-50">
                         <label for="is_active" class="text-xs font-semibold text-slate-700">Active and available for enrollment</label>
                     </div>
 
@@ -105,7 +112,7 @@
 
                 @if(auth()->user()->hasPermission('benefits.delete'))
                 <div class="mt-4 border-t border-slate-100 pt-4">
-                    <form method="POST" action="{{ route('benefits.destroy', $plan->id) }}" onsubmit="return confirm('Are you sure you want to delete this benefit plan? All enrollment data will be deleted.');">
+                    <form method="POST" action="{{ route('benefits.destroy', $plan->id) }}" data-confirm="Are you sure you want to delete <strong class='font-bold text-slate-900'>{{ $plan->name }}</strong>? All enrollment data will be deleted." data-confirm-title="Delete Benefit Plan">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="w-full rounded-[0.5rem] border border-red-200 bg-red-50 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100">
