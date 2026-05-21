@@ -262,38 +262,19 @@
                         <button class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50" type="button" aria-label="Notifications">
                             <i class="ti ti-bell text-xl"></i>
                         </button>
-                        <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">
-                            {{ $userInitials }}
-                        </div>
+                        <a href="{{ route('profile.show') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-blue-600 text-sm font-bold text-white shadow-sm transition hover:opacity-90 hover:scale-105" title="View Profile">
+                            @if ($user && $user->employee && $user->employee->profile_picture)
+                                <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
+                            @else
+                                {{ $userInitials }}
+                            @endif
+                        </a>
                     </div>
                 </div>
             </header>
 
             <div class="p-4 sm:p-5 lg:p-6">
                 <div class="space-y-5">
-                    @if (session('success'))
-                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
-                    @if (session('error'))
-                        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-                            {{ session('error') }}
-                        </div>
-                    @endif
-
-                    @if ($errors->any())
-                        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                            <p class="font-medium">Please review the following:</p>
-                            <ul class="mt-2 list-disc pl-5">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
                     {{ $slot }}
                 </div>
             </div>

@@ -29,6 +29,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     
+    // User Profile
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    
     Route::middleware('permission:self-service.view')->group(function () {
         Route::get('/self-service', [SelfServiceController::class, 'index'])->name('self-service');
         Route::get('/self-service/profile/{employee}', [SelfServiceController::class, 'profile'])->name('self-service.profile');
@@ -100,14 +104,14 @@ Route::middleware('auth')->group(function () {
     });
 
     // Employee Management
+    Route::middleware('permission:employees.create')->group(function () {
+        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+    });
     Route::middleware('permission:employees.view,employees.create,employees.edit,employees.delete')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
         Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
-    });
-    Route::middleware('permission:employees.create')->group(function () {
-        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
-        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
     });
     Route::middleware('permission:employees.edit')->group(function () {
         Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');

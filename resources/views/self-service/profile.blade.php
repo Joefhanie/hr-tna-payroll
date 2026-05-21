@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot:title>Employee Profile</x-slot:title>
     <x-slot:header>Employee Profile</x-slot:header>
 
