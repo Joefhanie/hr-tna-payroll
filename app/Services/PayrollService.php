@@ -18,7 +18,7 @@ class PayrollService
     /**
      * Get the active salary record for an employee on a given date.
      */
-    public function getSalaryRecordForDate(Employee $employee, Carbon $date = null): ?SalaryRecord
+    public function getSalaryRecordForDate(Employee $employee, ?Carbon $date = null): ?SalaryRecord
     {
         $date = $date ?? Carbon::now();
         return $employee->salaryRecords()
@@ -39,7 +39,7 @@ class PayrollService
 
         // pay_frequency uses integers: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
         $type = (int) ($record->pay_frequency ?? 3);
-        $base = $record->amount;
+        $base = (float) $record->amount;
 
         switch ($type) {
             case 1:
@@ -223,6 +223,22 @@ class PayrollService
             ->orderBy('attendance_date')
             ->get();
 
+        // Fetch all approved leave requests and their paid/unpaid status overlapping this period
+        $leaves = DB::table('leave_requests')
+            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+            ->where('leave_requests.employee_id', $employee->id)
+            ->where('leave_requests.status', 2) // Approved
+            ->where(function ($q) use ($periodStart, $periodEnd) {
+                $q->whereBetween('leave_requests.start_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                  ->orWhereBetween('leave_requests.end_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                  ->orWhere(function ($q2) use ($periodStart, $periodEnd) {
+                      $q2->where('leave_requests.start_date', '<=', $periodStart->toDateString())
+                         ->where('leave_requests.end_date', '>=', $periodEnd->toDateString());
+                  });
+            })
+            ->select('leave_requests.start_date', 'leave_requests.end_date', 'leave_types.is_paid')
+            ->get();
+
         if ($attendanceRecords->isEmpty()) {
             return $empty;
         }
@@ -270,74 +286,127 @@ class PayrollService
 
         $totalLateDeductionHours = 0.0;
 
-        foreach ($attendanceRecords as $attendance) {
-            $attendanceDate = Carbon::parse($attendance->attendance_date->toDateString());
-            
+        $cursor = $periodStart->copy();
+        while ($cursor->lte($periodEnd)) {
+            $attendanceDate = $cursor->copy();
+            $dateStr = $attendanceDate->toDateString();
+            $dayOfWeek = $attendanceDate->format('D');
+
+            // Find if there is an attendance record for this day
+            $attendance = $attendanceRecords->first(function ($a) use ($dateStr) {
+                $aDate = $a->attendance_date instanceof Carbon ? $a->attendance_date : Carbon::parse($a->attendance_date);
+                return $aDate->toDateString() === $dateStr;
+            });
+
             // Fetch shift dynamically per attendance date
-            $dayShift = $attendance->shift ?? $employee->getActiveShiftForDate($attendanceDate);
-            
-            if ($dayShift) {
-                $shiftStart = $dayShift->getShiftStartDateTime($attendanceDate);
-                $shiftEnd = $dayShift->getShiftEndDateTime($attendanceDate);
+            $dayShift = $attendance?->shift ?? $employee->getActiveShiftForDate($attendanceDate);
+
+            // Is the employee scheduled to work on this day?
+            $isScheduledWorkDay = $dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week);
+
+            // Check if this date has an approved leave request
+            $approvedLeave = $leaves->first(function ($leave) use ($dateStr) {
+                return $dateStr >= $leave->start_date && $dateStr <= $leave->end_date;
+            });
+
+            if ($attendance) {
+                if ($dayShift) {
+                    $shiftStart = $dayShift->getShiftStartDateTime($attendanceDate);
+                    $shiftEnd = $dayShift->getShiftEndDateTime($attendanceDate);
+                } else {
+                    $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
+                    $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
+                }
+
+                $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
+                $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
+
+                $checkIn = null;
+                if ($attendance->check_in) {
+                    $timeStr = $attendance->check_in instanceof Carbon ? $attendance->check_in->format('H:i:s') : Carbon::parse($attendance->check_in)->format('H:i:s');
+                    $checkIn = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+                }
+
+                $checkOut = null;
+                if ($attendance->check_out) {
+                    $timeStr = $attendance->check_out instanceof Carbon ? $attendance->check_out->format('H:i:s') : Carbon::parse($attendance->check_out)->format('H:i:s');
+                    $checkOut = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+                }
+
+                if ($checkIn && $checkOut && $checkOut->lt($checkIn) && $dayShift?->crosses_midnight) {
+                    $checkOut->addDay();
+                }
+
+                $isAbsent = (int) $attendance->status === 3 || (!$checkIn && !$checkOut);
+
+                if ($isAbsent) {
+                    if ($approvedLeave) {
+                        if ((int) $approvedLeave->is_paid === 1) {
+                            // It is a paid leave, so no absence deduction is applied
+                            $cursor->addDay();
+                            continue;
+                        } else {
+                            // It is an unpaid leave, so absence deduction is applied
+                            $summary['absent_days']++;
+                            $cursor->addDay();
+                            continue;
+                        }
+                    }
+
+                    if ($isScheduledWorkDay) {
+                        $summary['absent_days']++;
+                    }
+                    $cursor->addDay();
+                    continue;
+                }
+
+                if ($checkIn && $checkIn->gt($shiftStart)) {
+                    $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
+                    $summary['late_minutes'] += $dayLateMinutes;
+
+                    // Apply late policy thresholds from LateDeductionService
+                    $lateDeductionService = app(\App\Services\LateDeductionService::class);
+                    $deduction = $lateDeductionService->getDeductionForLateMinutes($dayLateMinutes);
+                    $totalLateDeductionHours += (float) ($deduction['deduction_hours'] ?? 0.0);
+                }
+
+                if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
+                    if ($checkOut->lt($shiftEnd)) {
+                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
+                    }
+
+                    if ($checkOut->gt($shiftEnd)) {
+                        $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+                    }
+
+                    if ($checkOut->gt($premiumStart)) {
+                        $nightStart = $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
+                        $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
+
+                        if ($nightEnd->gt($nightStart)) {
+                            $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                        }
+                    }
+                }
             } else {
-                $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
-                $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
-            }
-
-            $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
-            $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
-
-            $checkIn = null;
-            if ($attendance->check_in) {
-                $timeStr = $attendance->check_in instanceof Carbon ? $attendance->check_in->format('H:i:s') : Carbon::parse($attendance->check_in)->format('H:i:s');
-                $checkIn = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
-            }
-
-            $checkOut = null;
-            if ($attendance->check_out) {
-                $timeStr = $attendance->check_out instanceof Carbon ? $attendance->check_out->format('H:i:s') : Carbon::parse($attendance->check_out)->format('H:i:s');
-                $checkOut = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
-            }
-
-            if ($checkIn && $checkOut && $checkOut->lt($checkIn) && $dayShift?->crosses_midnight) {
-                $checkOut->addDay();
-            }
-
-            $isAbsent = (int) $attendance->status === 3 || (!$checkIn && !$checkOut);
-
-            if ($isAbsent) {
-                $summary['absent_days']++;
-                continue;
-            }
-
-            if ($checkIn && $checkIn->gt($shiftStart)) {
-                $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
-                $summary['late_minutes'] += $dayLateMinutes;
-
-                // Apply late policy thresholds from LateDeductionService
-                $lateDeductionService = app(\App\Services\LateDeductionService::class);
-                $deduction = $lateDeductionService->getDeductionForLateMinutes($dayLateMinutes);
-                $totalLateDeductionHours += (float) ($deduction['deduction_hours'] ?? 0.0);
-            }
-
-            if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
-                if ($checkOut->lt($shiftEnd)) {
-                    $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
-                }
-
-                if ($checkOut->gt($shiftEnd)) {
-                    $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
-                }
-
-                if ($checkOut->gt($premiumStart)) {
-                    $nightStart = $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
-                    $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
-
-                    if ($nightEnd->gt($nightStart)) {
-                        $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                // If there's no attendance record for this day:
+                // Only count as absent if it's a scheduled work day and not an approved paid leave
+                if ($isScheduledWorkDay) {
+                    if ($approvedLeave) {
+                        if ((int) $approvedLeave->is_paid === 1) {
+                            // Paid leave: no deduction
+                        } else {
+                            // Unpaid leave: deduction applies
+                            $summary['absent_days']++;
+                        }
+                    } else {
+                        // Unscheduled absence: deduction applies
+                        $summary['absent_days']++;
                     }
                 }
             }
+
+            $cursor->addDay();
         }
 
         $lateDeduction = round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
@@ -555,7 +624,7 @@ class PayrollService
     /**
      * Generate draft payslips for all active employees to allow previewing.
      */
-    public function generateDraftPayRun(PayRun $payRun, array $employeeIds = null): void
+    public function generateDraftPayRun(PayRun $payRun, ?array $employeeIds = null): void
     {
         $query = Employee::whereNull('termination_date');
         if ($employeeIds) {
@@ -564,6 +633,7 @@ class PayrollService
         $employees = $query->get();
 
         foreach ($employees as $employee) {
+            assert($employee instanceof Employee);
             // Prevent duplicate payslips if regenerated
             if (!Payslip::where('pay_run_id', $payRun->id)->where('employee_id', $employee->id)->exists()) {
                 $this->generatePayslip($payRun, $employee);

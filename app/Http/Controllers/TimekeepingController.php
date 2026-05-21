@@ -16,6 +16,11 @@ class TimekeepingController extends Controller
     public function index(Request $request)
     {
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
+        $selectedDateCarbon = Carbon::parse($selectedDate);
+
+        $employees = Schema::hasTable('employees')
+            ? Employee::with(['user', 'currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            : collect();
 
         $todayAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
@@ -23,6 +28,95 @@ class TimekeepingController extends Controller
                 ->orderBy('check_in')
                 ->get()
             : collect();
+
+        $calendarDataRecords = Schema::hasTable('attendance')
+            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
+                ->whereBetween('attendance_date', [
+                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
+                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
+                ])
+                ->orderBy('check_in')
+                ->get()
+            : collect();
+
+        // Helper function to insert virtual "Shift Not Started" records
+        $addVirtualShiftNotStarted = function ($attendanceCollection, $employees, $startDate, $endDate = null) {
+            $endDate = $endDate ?: $startDate;
+            $start = Carbon::parse($startDate);
+            $end = Carbon::parse($endDate);
+            
+            $existingMap = [];
+            foreach ($attendanceCollection as $att) {
+                $dateStr = $att->attendance_date->toDateString();
+                $existingMap[$dateStr][$att->user_id] = true;
+            }
+            
+            $virtualRecords = [];
+            $nowManila = now('Asia/Manila');
+            
+            $cursor = $start->copy();
+            while ($cursor->lte($end)) {
+                $dateStr = $cursor->toDateString();
+                $dayOfWeek = $cursor->format('D');
+                
+                foreach ($employees as $employee) {
+                    $user = $employee->user;
+                    if (!$user) continue;
+                    
+                    if (isset($existingMap[$dateStr][$user->id])) {
+                        continue;
+                    }
+                    
+                    $dayShift = $employee->getActiveShiftForDate($cursor);
+                    
+                    if ($dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week)) {
+                        $isFutureDate = $cursor->gt(now('Asia/Manila')->startOfDay());
+                        $isToday = $cursor->isToday();
+                        
+                        $hasNotStarted = false;
+                        if ($isFutureDate) {
+                            $hasNotStarted = true;
+                        } elseif ($isToday) {
+                            $shiftStart = Carbon::parse($dateStr . ' ' . $dayShift->start_time, 'Asia/Manila');
+                            if ($nowManila->lte($shiftStart)) {
+                                $hasNotStarted = true;
+                            }
+                        }
+                        
+                        if ($hasNotStarted) {
+                            $virtual = new Attendance([
+                                'user_id' => $user->id,
+                                'shift_id' => $dayShift->id,
+                                'attendance_date' => $cursor->copy(),
+                                'status' => 5,
+                                'check_in' => null,
+                                'check_out' => null,
+                                'notes' => 'Shift has not started yet.'
+                            ]);
+                            $virtual->setRelation('user', $user);
+                            $virtual->setRelation('shift', $dayShift);
+                            $virtualRecords[] = $virtual;
+                        }
+                    }
+                }
+                $cursor->addDay();
+            }
+            
+            return $attendanceCollection->concat($virtualRecords);
+        };
+
+        // Add virtual records to today's list and the calendar data
+        $todayAttendance = $addVirtualShiftNotStarted($todayAttendance, $employees, $selectedDate);
+        $calendarDataRecords = $addVirtualShiftNotStarted(
+            $calendarDataRecords, 
+            $employees, 
+            $selectedDateCarbon->copy()->startOfMonth()->toDateString(), 
+            $selectedDateCarbon->copy()->endOfMonth()->toDateString()
+        );
+
+        $calendarData = $calendarDataRecords->groupBy(function ($attendance) {
+            return $attendance->attendance_date->toDateString();
+        });
 
         $recentAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
@@ -40,10 +134,12 @@ class TimekeepingController extends Controller
             2 => 'Late',
             3 => 'Absent',
             4 => 'Excused',
+            5 => 'Shift Not Started',
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
             'excused' => 'Excused',
+            'not_started' => 'Shift Not Started',
         ];
 
         $normalizeStatus = function ($status) {
@@ -79,24 +175,7 @@ class TimekeepingController extends Controller
                 ->all()
             : [];
 
-        $employees = Schema::hasTable('employees')
-            ? Employee::with(['currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
-            : collect();
-
         $selectedDateCarbon = Carbon::parse($selectedDate);
-
-        $calendarData = Schema::hasTable('attendance')
-            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->whereBetween('attendance_date', [
-                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
-                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
-                ])
-                ->orderBy('check_in')
-                ->get()
-                ->groupBy(function ($attendance) {
-                    return $attendance->attendance_date->toDateString();
-                })
-            : collect();
 
         return view('timekeeping.index', [
             'todayAttendance' => $todayAttendance,

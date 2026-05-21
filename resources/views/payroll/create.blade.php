@@ -49,7 +49,7 @@
                             <h2 class="text-lg font-semibold text-slate-900">Select Employees</h2>
                             <p class="mt-1 text-sm text-slate-600">Choose who should be included in this pay run.</p>
                         </div>
-                        <button type="button" onclick="document.querySelectorAll('.employee-checkbox').forEach(cb => cb.checked = true)" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Select All</button>
+                        <button type="button" id="toggleSelectAllBtn" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Select All</button>
                     </div>
 
                     <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -94,4 +94,41 @@
             </div>
         </div>
     </form>
+
+    <x-slot:scripts>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const btn = document.getElementById('toggleSelectAllBtn');
+                const checkboxes = document.querySelectorAll('.employee-checkbox');
+
+                function updateButtonLabel() {
+                    if (checkboxes.length === 0) return;
+                    
+                    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                    if (checkedCount === checkboxes.length) {
+                        btn.textContent = 'Unselect All';
+                    } else {
+                        btn.textContent = 'Select All';
+                    }
+                }
+
+                btn?.addEventListener('click', function () {
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    
+                    checkboxes.forEach(cb => {
+                        cb.checked = !allChecked;
+                    });
+                    
+                    updateButtonLabel();
+                });
+
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', updateButtonLabel);
+                });
+
+                // Initialize state
+                updateButtonLabel();
+            });
+        </script>
+    </x-slot:scripts>
 </x-app-layout>
