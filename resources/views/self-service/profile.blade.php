@@ -23,7 +23,7 @@
         $documentUploadTarget = $canSubmitRequests ? 'documentUploadModal' : '';
 
         if ($canSubmitRequests ?? false) {
-            if (old('type') !== null || old('start_date') !== null || old('end_date') !== null || old('reason') !== null) {
+            if (old('leave_type_id') !== null || old('start_date') !== null || old('end_date') !== null || old('reason') !== null) {
                 $requestModalToOpen = 'leaveRequestModal';
             } elseif (
                 old('first_name') !== null || old('last_name') !== null || old('middle_name') !== null ||
@@ -186,42 +186,53 @@
 
     @if ($canSubmitRequests)
         <div id="leaveRequestModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="leaveRequestModal">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-                <div class="mb-4 flex items-center justify-between">
+            <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">Submit Leave Request</h2>
-                        <p class="text-sm text-slate-500">Create a new leave request from here.</p>
+                        <h2 class="text-base font-semibold text-slate-900">Request Leave</h2>
+                        <p class="mt-0.5 text-xs text-slate-500">Fill in the leave details below.</p>
                     </div>
-                    <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="leaveRequestModal">X</button>
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
                 </div>
-                <form method="POST" action="{{ route('self-service.leave-requests.store', $employee) }}" class="space-y-3">
+
+                <form method="POST" action="{{ route('self-service.leave-requests.store', $employee) }}" class="px-6 py-5 space-y-4">
                     @csrf
                     <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Type</label>
-                        <select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            <option value="">Select leave type</option>
-                            @foreach ($leaveTypeOptions as $leaveTypeName)
-                                <option value="{{ $leaveTypeName }}" @selected(old('type') === $leaveTypeName)>{{ $leaveTypeName }}</option>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Leave Type</label>
+                        <select name="leave_type_id" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                            <option value="">- Select Type -</option>
+                            @foreach ($leaveTypeChoices as $leaveType)
+                                <option value="{{ $leaveType['id'] }}" @selected((string) old('leave_type_id') === (string) $leaveType['id'])>{{ $leaveType['name'] }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Start Date</label>
-                            <input type="date" name="start_date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value="{{ old('start_date') }}">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">From</label>
+                            <input type="date" id="self_service_leave_start_date" name="start_date" min="{{ now()->toDateString() }}" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('start_date') }}">
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">End Date</label>
-                            <input type="date" name="end_date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value="{{ old('end_date') }}">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">To</label>
+                            <input type="date" id="self_service_leave_end_date" name="end_date" min="{{ now()->toDateString() }}" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('end_date') }}">
                         </div>
                     </div>
+
+                    <div id="self_service_leave_days_preview" class="{{ old('start_date') && old('end_date') ? '' : 'hidden' }} rounded-lg border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700">
+                        <i class="ti ti-calendar-stats mr-1"></i>
+                        <span id="self_service_leave_days_preview_text"></span>
+                    </div>
+
                     <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Reason</label>
-                        <textarea name="reason" rows="4" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional note">{{ old('reason') }}</textarea>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Reason <span class="font-normal text-slate-400">(optional)</span></label>
+                        <textarea name="reason" rows="3" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" placeholder="Briefly describe the reason...">{{ old('reason') }}</textarea>
                     </div>
-                    <div class="flex items-center justify-end gap-3">
-                        <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
-                        <button type="submit" class="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">Submit Leave</button>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
+                        <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">Submit Request</button>
                     </div>
                 </form>
             </div>
@@ -588,6 +599,45 @@
             });
         });
 
+        const leaveStartInput = document.getElementById('self_service_leave_start_date');
+        const leaveEndInput = document.getElementById('self_service_leave_end_date');
+        const leaveDaysPreview = document.getElementById('self_service_leave_days_preview');
+        const leaveDaysPreviewText = document.getElementById('self_service_leave_days_preview_text');
+
+        function updateSelfServiceLeaveDays() {
+            const start = leaveStartInput?.value;
+            const end = leaveEndInput?.value;
+
+            if (start && end && end >= start) {
+                const diff = Math.round((new Date(end) - new Date(start)) / 86400000) + 1;
+                leaveDaysPreviewText.textContent = diff + ' day' + (diff !== 1 ? 's' : '') + ' requested';
+                leaveDaysPreview?.classList.remove('hidden');
+
+                if (leaveEndInput) {
+                    leaveEndInput.min = start;
+                }
+
+                return;
+            }
+
+            leaveDaysPreview?.classList.add('hidden');
+        }
+
+        leaveStartInput?.addEventListener('change', function () {
+            if (leaveEndInput && leaveEndInput.value && leaveEndInput.value < this.value) {
+                leaveEndInput.value = this.value;
+            }
+
+            if (leaveEndInput) {
+                leaveEndInput.min = this.value;
+            }
+
+            updateSelfServiceLeaveDays();
+        });
+
+        leaveEndInput?.addEventListener('change', updateSelfServiceLeaveDays);
+        updateSelfServiceLeaveDays();
+
         function escapeHtml(value) {
             return String(value)
                 .replace(/&/g, '&amp;')
@@ -750,4 +800,3 @@
         }
     </script>
 </x-app-layout>
-

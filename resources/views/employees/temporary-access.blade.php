@@ -321,35 +321,36 @@
                     </div>
                 </div>
 
-                {{-- Role Selection --}}
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Temporary Role <span class="text-red-500">*</span></label>
-                    <input type="text" readonly value="Supervisor"
-                           class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 cursor-not-allowed outline-none font-medium">
-                    <input type="hidden" name="role" value="2">
-                </div>
+                {{-- Role Selection (Hidden) --}}
+                <input type="hidden" name="role" value="2">
 
                 {{-- Date/Time Validity --}}
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-slate-700">Timeframe Validity <span class="text-red-500">*</span></label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-sm font-medium text-slate-700">Timeframe Validity <span class="text-red-500">*</span></label>
+                        <label class="inline-flex items-center text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                            <input id="sameDayToggle" type="checkbox" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5 mr-1.5 transition">
+                            Same Day Access
+                        </label>
+                    </div>
                     @can('assign-temporary-role-with-time')
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3" id="dateGrid">
                             <div>
                                 <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date & time)</label>
                                 <input id="fromDate" name="from_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700">
                             </div>
-                            <div>
+                            <div id="toDateContainer">
                                 <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date & time)</label>
                                 <input id="toDate" name="to_date" type="datetime-local" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700">
                             </div>
                         </div>
                     @else
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-3" id="dateGrid">
                             <div>
                                 <label for="fromDate" class="block text-xs text-slate-500 mb-1">From (date)</label>
                                 <input id="fromDate" name="from_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700">
                             </div>
-                            <div>
+                            <div id="toDateContainer">
                                 <label for="toDate" class="block text-xs text-slate-500 mb-1">To (date)</label>
                                 <input id="toDate" name="to_date" type="date" required class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700">
                             </div>
@@ -386,6 +387,56 @@
             showRoleModal();
         });
 
+        function getFormattedToday(isDateTime) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            
+            if (isDateTime) {
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            } else {
+                return `${year}-${month}-${day}`;
+            }
+        }
+
+        function updateDateValidityLayout() {
+            const sameDayToggle = document.getElementById('sameDayToggle');
+            const toDateContainer = document.getElementById('toDateContainer');
+            const dateGrid = document.getElementById('dateGrid');
+            const fromInput = document.getElementById('fromDate');
+            const toInput = document.getElementById('toDate');
+
+            if (sameDayToggle.checked) {
+                if (toDateContainer) toDateContainer.classList.add('hidden');
+                if (dateGrid) dateGrid.classList.remove('grid-cols-2');
+                if (fromInput && toInput) {
+                    toInput.value = fromInput.value;
+                }
+            } else {
+                if (toDateContainer) toDateContainer.classList.remove('hidden');
+                if (dateGrid) dateGrid.classList.add('grid-cols-2');
+            }
+
+            // Sync min attribute of toInput with fromInput value to prevent choosing end dates before start dates
+            if (fromInput && toInput) {
+                toInput.min = fromInput.value;
+            }
+        }
+
+        // Add event listeners for same day toggle
+        document.getElementById('sameDayToggle').addEventListener('change', updateDateValidityLayout);
+        document.getElementById('fromDate').addEventListener('input', function () {
+            const sameDayToggle = document.getElementById('sameDayToggle');
+            const toInput = document.getElementById('toDate');
+            if (sameDayToggle.checked) {
+                toInput.value = this.value;
+            }
+            toInput.min = this.value;
+        });
+
         /* ── Open Per-Row Button ── */
         function openRoleModal(id, name, fromDate, toDate) {
             resetRoleModal();
@@ -399,14 +450,34 @@
             document.getElementById('roleEmpId').value = id;
             document.getElementById('grantRoleForm').action = `/employees/${id}/grant-role`;
 
+            const fromInput = document.getElementById('fromDate');
+            const toInput = document.getElementById('toDate');
+
             if (fromDate) {
-                const fromInput = document.getElementById('fromDate');
                 fromInput.value = fromInput.type === 'date' ? fromDate.substring(0, 10) : fromDate;
             }
             if (toDate) {
-                const toInput = document.getElementById('toDate');
                 toInput.value = toInput.type === 'date' ? toDate.substring(0, 10) : toDate;
             }
+
+            const sameDayToggle = document.getElementById('sameDayToggle');
+            if (fromInput.value && toInput.value && fromInput.value !== toInput.value) {
+                sameDayToggle.checked = false;
+            } else {
+                sameDayToggle.checked = true;
+            }
+
+            // For editing, set min to today's date only if existing fromDate is in the future.
+            // If the existing fromDate is in the past, set min to the existing fromDate to avoid browser validation error.
+            const isDateTime = fromInput.type === 'datetime-local';
+            const todayStr = getFormattedToday(isDateTime);
+            if (fromInput.value && fromInput.value < todayStr) {
+                fromInput.min = fromInput.value;
+            } else {
+                fromInput.min = todayStr;
+            }
+
+            updateDateValidityLayout();
             showRoleModal();
         }
 
@@ -427,10 +498,25 @@
             document.getElementById('roleEmpSearch').value  = '';
             document.getElementById('roleEmpId').value      = '';
 
-            document.getElementById('fromDate').value       = '';
-            document.getElementById('toDate').value         = '';
+            const fromInput = document.getElementById('fromDate');
+            const toInput = document.getElementById('toDate');
+            
+            const isDateTime = fromInput.type === 'datetime-local';
+            const todayStr = getFormattedToday(isDateTime);
+            
+            fromInput.value = todayStr;
+            toInput.value = todayStr;
+            
+            // Limit date pickers to disable past dates by default
+            fromInput.min = todayStr;
+            toInput.min = todayStr;
+            
             document.getElementById('grantRoleForm').action = '';
             document.getElementById('roleEmpSuggestions').classList.add('hidden');
+
+            const sameDayToggle = document.getElementById('sameDayToggle');
+            sameDayToggle.checked = true;
+            updateDateValidityLayout();
         }
 
         /* ── Autocomplete Search Logic ── */
