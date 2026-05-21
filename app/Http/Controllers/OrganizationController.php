@@ -7,6 +7,7 @@ use App\Models\CompanySetting;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
+use App\Services\OnboardingAssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -15,6 +16,10 @@ use Illuminate\View\View;
 
 class OrganizationController extends Controller
 {
+    public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
+    {
+    }
+
     public function departments(): View
     {
         $departments = Department::with(['parentDepartment', 'employees', 'positions'])
@@ -98,6 +103,14 @@ class OrganizationController extends Controller
             'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
         ]);
 
+        if (! empty($validated['employee_id'])) {
+            $employee = Employee::find($validated['employee_id']);
+
+            if ($employee) {
+                $this->onboardingAssignmentService->ensureEmployeeIsOnboarded($employee, auth()->id());
+            }
+        }
+
         if (! $associateEmployee) {
             $request->session()->put('pending_employee_user_id', $user->id);
 
@@ -147,6 +160,14 @@ class OrganizationController extends Controller
         }
 
         $user->save();
+
+        if (! empty($validated['employee_id'])) {
+            $employee = Employee::find($validated['employee_id']);
+
+            if ($employee) {
+                $this->onboardingAssignmentService->ensureEmployeeIsOnboarded($employee, auth()->id());
+            }
+        }
 
         if (! $associateEmployee) {
             $request->session()->put('pending_employee_user_id', $user->id);

@@ -6,7 +6,7 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
-use App\Models\OnboardingTaskTemplate;
+use App\Services\OnboardingAssignmentService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +19,10 @@ use Illuminate\Validation\ValidationException;
 
 class OnboardingController extends Controller
 {
+    public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $user = Auth::user();
@@ -67,9 +71,6 @@ class OnboardingController extends Controller
                 'onboardingAssignment.tasks',
             ])
             ->whereNotNull('hire_date')
-            ->whereHas('user', function ($query) {
-                $query->where('role', 1);
-            })
             ->whereNotIn('status', [4, 5])
             ->orderByRaw(
                 'CASE WHEN YEAR(hire_date) = ? AND MONTH(hire_date) = ? THEN 0 ELSE 1 END',
@@ -79,6 +80,11 @@ class OnboardingController extends Controller
             ->orderBy('first_name')
             ->get()
             ->map(fn (Employee $employee) => $this->buildEmployeeCard($employee, true))
+            ->sortBy([
+                fn (array $employee) => $employee['is_priority_hire'] ? 0 : 1,
+                fn (array $employee) => -1 * ($employee['hire_date_sort'] ?? 0),
+                fn (array $employee) => strtolower($employee['name']),
+            ])
             ->values();
 
         $selectedEmployee = $employees->firstWhere('id', $selectedEmployeeId) ?? $employees->first();
@@ -104,44 +110,7 @@ class OnboardingController extends Controller
                 ->with('error', 'Onboarding is not available until the latest migration is run.');
         }
 
-        DB::transaction(function () use ($employee) {
-            $assignment = OnboardingAssignment::firstOrCreate(
-                ['employee_id' => $employee->id],
-                [
-                    'assigned_by' => Auth::id(),
-                    'status' => OnboardingAssignment::STATUS_IN_PROGRESS,
-                    'started_at' => now(),
-                ]
-            );
-
-            if ($assignment->tasks()->exists()) {
-                return;
-            }
-
-            $this->ensureDefaultTaskTemplatesExist();
-
-            $templates = OnboardingTaskTemplate::query()
-                ->where('is_active', true)
-                ->orderBy('sequence')
-                ->get();
-
-            if ($templates->isEmpty()) {
-                return;
-            }
-
-            foreach ($templates as $template) {
-                $assignment->tasks()->create([
-                    'onboarding_task_template_id' => $template->id,
-                    'title' => $template->title,
-                    'category' => $template->category,
-                    'instructions' => $template->instructions,
-                    'assigned_role' => $template->assigned_role,
-                    'action_type' => $template->action_type,
-                    'document_type' => $template->document_type,
-                    'sequence' => $template->sequence,
-                ]);
-            }
-        });
+        $this->onboardingAssignmentService->ensureEmployeeIsOnboarded($employee, Auth::id());
 
         return redirect()
             ->route('onboarding', ['employee' => $employee->id])
@@ -373,6 +342,7 @@ class OnboardingController extends Controller
             'status' => $status,
             'progress' => $progress,
             'hire_date' => $employee->hire_date?->format('M d, Y') ?? 'N/A',
+            'hire_date_sort' => $employee->hire_date?->timestamp ?? 0,
             'is_priority_hire' => $employee->hire_date !== null
                 && (int) $employee->hire_date->year === (int) $now->year
                 && (int) $employee->hire_date->month === (int) $now->month,
@@ -415,86 +385,7 @@ class OnboardingController extends Controller
 
     private function hasOnboardingTables(): bool
     {
-        return Schema::hasTable('onboarding_assignments')
-            && Schema::hasTable('onboarding_tasks')
-            && Schema::hasTable('onboarding_task_templates');
-    }
-
-    private function ensureDefaultTaskTemplatesExist(): void
-    {
-        if (OnboardingTaskTemplate::query()->exists()) {
-            return;
-        }
-
-        foreach ($this->defaultTaskTemplates() as $template) {
-            OnboardingTaskTemplate::query()->create($template);
-        }
-    }
-
-    private function defaultTaskTemplates(): array
-    {
-        return [
-            [
-                'title' => 'Sign employment contract',
-                'category' => 'Documents',
-                'instructions' => 'Review the employment contract and confirm once you agree.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_EMPLOYEE,
-                'action_type' => OnboardingTask::ACTION_ACKNOWLEDGEMENT,
-                'document_type' => null,
-                'sequence' => 1,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Submit government IDs',
-                'category' => 'Documents',
-                'instructions' => 'Upload your government IDs directly in onboarding.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_EMPLOYEE,
-                'action_type' => OnboardingTask::ACTION_DOCUMENT_UPLOAD,
-                'document_type' => 'Government IDs',
-                'sequence' => 2,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Laptop & accessories setup',
-                'category' => 'IT Setup',
-                'instructions' => 'Prepare the employee laptop, peripherals, and access credentials.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
-                'action_type' => OnboardingTask::ACTION_CHECKLIST,
-                'document_type' => null,
-                'sequence' => 3,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Email & system access',
-                'category' => 'IT Setup',
-                'instructions' => 'Coordinate internal access and confirm the employee can sign in.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
-                'action_type' => OnboardingTask::ACTION_CHECKLIST,
-                'document_type' => null,
-                'sequence' => 4,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Orientation with HR',
-                'category' => 'HR',
-                'instructions' => 'Conduct the HR orientation and explain company policies.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_HR,
-                'action_type' => OnboardingTask::ACTION_CHECKLIST,
-                'document_type' => null,
-                'sequence' => 5,
-                'is_active' => true,
-            ],
-            [
-                'title' => 'Team introduction',
-                'category' => 'Training',
-                'instructions' => 'Introduce the employee to the team and immediate support contacts.',
-                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
-                'action_type' => OnboardingTask::ACTION_CHECKLIST,
-                'document_type' => null,
-                'sequence' => 6,
-                'is_active' => true,
-            ],
-        ];
+        return $this->onboardingAssignmentService->hasOnboardingTables();
     }
 
     private function loadEmployee(int $employeeId): ?Employee
