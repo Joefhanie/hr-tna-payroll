@@ -15,6 +15,8 @@ class OnboardingTask extends Model
     public const ACTION_DOCUMENT_UPLOAD = 'document_upload';
     public const ACTION_ACKNOWLEDGEMENT = 'acknowledgement';
 
+    public const DOCUMENT_TYPE_EMPLOYMENT_CONTRACT = 'Employment Contract';
+
     protected $fillable = [
         'onboarding_assignment_id',
         'onboarding_task_template_id',

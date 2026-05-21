@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\OnboardingAssignment;
+use App\Models\OnboardingTask;
 use App\Models\OnboardingTaskTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -76,12 +77,12 @@ class OnboardingAssignmentService
     {
         return [
             [
-                'title' => 'Review and sign employment contract',
+                'title' => 'Sign employment contract',
                 'category' => 'Documents',
-                'instructions' => 'Open the onboarding page and confirm that you have reviewed and accepted the employment contract.',
-                'assigned_role' => 'employee',
-                'action_type' => 'acknowledgement',
-                'document_type' => null,
+                'instructions' => 'Download the latest employment contract, sign it, and upload the signed copy here.',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_EMPLOYEE,
+                'action_type' => OnboardingTask::ACTION_DOCUMENT_UPLOAD,
+                'document_type' => OnboardingTask::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT,
                 'sequence' => 1,
                 'is_active' => true,
             ],
@@ -89,8 +90,8 @@ class OnboardingAssignmentService
                 'title' => 'Upload required government IDs',
                 'category' => 'Documents',
                 'instructions' => 'Upload the government-issued IDs needed to complete your employee records.',
-                'assigned_role' => 'employee',
-                'action_type' => 'document_upload',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_EMPLOYEE,
+                'action_type' => OnboardingTask::ACTION_DOCUMENT_UPLOAD,
                 'document_type' => 'Government IDs',
                 'sequence' => 2,
                 'is_active' => true,
@@ -99,8 +100,8 @@ class OnboardingAssignmentService
                 'title' => 'Upload profile picture',
                 'category' => 'Documents',
                 'instructions' => 'Upload a clear headshot for your employee profile and company directory.',
-                'assigned_role' => 'employee',
-                'action_type' => 'document_upload',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_EMPLOYEE,
+                'action_type' => OnboardingTask::ACTION_DOCUMENT_UPLOAD,
                 'document_type' => 'Picture',
                 'sequence' => 3,
                 'is_active' => true,
@@ -109,8 +110,8 @@ class OnboardingAssignmentService
                 'title' => 'Prepare workstation and accounts',
                 'category' => 'IT Setup',
                 'instructions' => 'Set up the employee workstation, email, and required system access.',
-                'assigned_role' => 'hr',
-                'action_type' => 'checklist',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_HR,
+                'action_type' => OnboardingTask::ACTION_CHECKLIST,
                 'document_type' => null,
                 'sequence' => 4,
                 'is_active' => true,
@@ -119,8 +120,8 @@ class OnboardingAssignmentService
                 'title' => 'Orientation with HR',
                 'category' => 'HR',
                 'instructions' => 'Conduct the HR orientation and explain company policies.',
-                'assigned_role' => 'hr',
-                'action_type' => 'checklist',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_HR,
+                'action_type' => OnboardingTask::ACTION_CHECKLIST,
                 'document_type' => null,
                 'sequence' => 5,
                 'is_active' => true,
@@ -129,8 +130,8 @@ class OnboardingAssignmentService
                 'title' => 'Team introduction',
                 'category' => 'Training',
                 'instructions' => 'Introduce the employee to the team and immediate support contacts.',
-                'assigned_role' => 'supervisor',
-                'action_type' => 'checklist',
+                'assigned_role' => OnboardingTask::ASSIGNED_ROLE_SUPERVISOR,
+                'action_type' => OnboardingTask::ACTION_CHECKLIST,
                 'document_type' => null,
                 'sequence' => 6,
                 'is_active' => true,

@@ -145,6 +145,16 @@
                                     @if ($task['document_type'])
                                         <p class="mt-2 text-xs font-medium uppercase tracking-wide text-slate-400">Document type: {{ $task['document_type'] }}</p>
                                     @endif
+                                    @if ($task['company_contract_download_url'])
+                                        <div class="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-900">
+                                            <p class="font-medium">Latest contract file</p>
+                                            <p class="mt-1 text-xs text-blue-700">{{ $task['company_contract_name'] }}</p>
+                                            <a href="{{ $task['company_contract_download_url'] }}" class="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
+                                                <i class="ti ti-download text-base"></i>
+                                                Download contract
+                                            </a>
+                                        </div>
+                                    @endif
                                     @if ($task['submission_file_name'])
                                         <p class="mt-2 text-sm text-slate-600">Uploaded file: {{ $task['submission_file_name'] }}</p>
                                     @endif
@@ -327,6 +337,16 @@
                                                     @endif
                                                     @if ($task['submission_file_name'])
                                                         <p class="mt-1 text-sm text-slate-600">Submitted file: {{ $task['submission_file_name'] }}</p>
+                                                    @endif
+                                                    @if ($task['company_contract_download_url'])
+                                                        <div class="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-900">
+                                                            <p class="font-medium">Latest contract file</p>
+                                                            <p class="mt-1 text-xs text-blue-700">{{ $task['company_contract_name'] }}</p>
+                                                            <a href="{{ $task['company_contract_download_url'] }}" class="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
+                                                                <i class="ti ti-download text-base"></i>
+                                                                Download contract
+                                                            </a>
+                                                        </div>
                                                     @endif
                                                     @if ($task['submission_notes'])
                                                         <p class="mt-1 text-sm text-slate-500">Notes: {{ $task['submission_notes'] }}</p>

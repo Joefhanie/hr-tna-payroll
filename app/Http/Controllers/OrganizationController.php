@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\CompanyDocument;
 use App\Models\CompanySetting;
 use App\Models\Employee;
 use App\Models\Position;
@@ -11,8 +12,10 @@ use App\Services\OnboardingAssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrganizationController extends Controller
 {
@@ -387,8 +390,14 @@ class OrganizationController extends Controller
     public function settings(): View
     {
         $settings = CompanySetting::current();
+        $companyDocuments = CompanyDocument::query()
+            ->with('uploadedBy')
+            ->orderByDesc('uploaded_at')
+            ->orderByDesc('created_at')
+            ->get();
+        $companyDocumentCategories = CompanyDocument::categoryOptions();
 
-        return view('organization.settings', compact('settings'));
+        return view('organization.settings', compact('settings', 'companyDocuments', 'companyDocumentCategories'));
     }
 
     /**
@@ -428,5 +437,40 @@ class OrganizationController extends Controller
         $settings->save();
 
         return redirect()->route('organization.settings')->with('success', 'Company settings updated successfully.');
+    }
+
+    public function storeCompanyDocument(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', Rule::in(CompanyDocument::categoryOptions())],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'document_file' => ['required', 'file', 'max:25600', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg'],
+        ]);
+
+        $file = $validated['document_file'];
+        $storedPath = $file->store('company-documents', 'public');
+
+        CompanyDocument::create([
+            'title' => $validated['title'],
+            'category' => $validated['category'],
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $storedPath,
+            'file_extension' => strtolower((string) $file->getClientOriginalExtension()),
+            'file_size' => $file->getSize(),
+            'file_size_kb' => round($file->getSize() / 1024, 2),
+            'description' => $validated['description'] ?? null,
+            'uploaded_by' => auth()->id(),
+            'uploaded_at' => now(),
+        ]);
+
+        return redirect()->route('organization.settings')->with('success', 'Company file uploaded successfully.');
+    }
+
+    public function downloadCompanyDocument(CompanyDocument $companyDocument): StreamedResponse
+    {
+        abort_unless(Storage::disk('public')->exists($companyDocument->file_path), 404);
+
+        return Storage::disk('public')->download($companyDocument->file_path, $companyDocument->file_name);
     }
 }
