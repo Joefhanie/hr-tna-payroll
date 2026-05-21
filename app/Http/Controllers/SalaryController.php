@@ -6,6 +6,8 @@ use App\Models\Employee;
 use App\Models\SalaryRecord;
 use App\Models\TaxBracket;
 use App\Models\DeductionRule;
+use App\Models\GovernmentPremium;
+use App\Models\GovernmentPremiumBracket;
 use App\Models\GovernmentContributionRate;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -40,6 +42,118 @@ class SalaryController extends Controller
         $global = \App\Models\PayrollSetting::first();
 
         return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules', 'lateDeductionRules', 'global'));
+    }
+
+    /**
+     * Show government premium rules.
+     */
+    public function governmentPremiums(): View
+    {
+        $governmentPremiums = GovernmentPremium::with('brackets')->orderBy('sort_order')->get();
+        $employeeFixedTotal = $governmentPremiums
+            ->where('is_active', true)
+            ->where('calculation_type', 'Fixed')
+            ->sum('employee_value');
+        $employerFixedTotal = $governmentPremiums
+            ->where('is_active', true)
+            ->where('calculation_type', 'Fixed')
+            ->sum('employer_value');
+
+        return view('salary.government-premiums', compact('governmentPremiums', 'employeeFixedTotal', 'employerFixedTotal'));
+    }
+
+    /**
+     * Show official government contribution tables.
+     */
+    public function contributionTables(): View
+    {
+        $governmentPremiums = GovernmentPremium::with('brackets')
+            ->whereIn('name', ['SSS Premium', 'PhilHealth Premium'])
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('salary.contribution-tables', compact('governmentPremiums'));
+    }
+
+    /**
+     * Save existing rows for one government contribution table.
+     */
+    public function saveContributionTable(Request $request, GovernmentPremium $governmentPremium): RedirectResponse
+    {
+        $validated = $request->validate([
+            'brackets' => 'required|array',
+            'brackets.*.id' => 'required|integer',
+            'brackets.*.label' => 'nullable|string|max:160',
+            'brackets.*.min_compensation' => 'required|numeric|min:0',
+            'brackets.*.max_compensation' => 'nullable|numeric|min:0',
+            'brackets.*.calculation_type' => 'required|in:Fixed,Percentage',
+            'brackets.*.employee_value' => 'required|numeric|min:0',
+            'brackets.*.employer_value' => 'required|numeric|min:0',
+            'brackets.*.employer_extra_value' => 'required|numeric|min:0',
+        ]);
+
+        foreach ($validated['brackets'] as $index => $bracketData) {
+            $bracket = GovernmentPremiumBracket::where('government_premium_id', $governmentPremium->id)
+                ->findOrFail($bracketData['id']);
+
+            $bracket->update([
+                'label' => $bracketData['label'] ?? null,
+                'min_compensation' => $bracketData['min_compensation'],
+                'max_compensation' => $bracketData['max_compensation'] ?? null,
+                'calculation_type' => $bracketData['calculation_type'],
+                'employee_value' => $bracketData['employee_value'],
+                'employer_value' => $bracketData['employer_value'],
+                'employer_extra_value' => $bracketData['employer_extra_value'],
+                'sort_order' => $index,
+            ]);
+        }
+
+        return redirect()->route('salary.contribution-tables')->with('success', $governmentPremium->name . ' table updated successfully.');
+    }
+
+    /**
+     * Save government premium rules.
+     */
+    public function saveGovernmentPremiums(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'premiums' => 'nullable|array',
+            'premiums.*.id' => 'nullable|integer',
+            'premiums.*.name' => 'required|string|max:120',
+            'premiums.*.calculation_type' => 'required|in:Fixed,Percentage',
+            'premiums.*.basis' => 'required|in:Gross Pay,Taxable Pay',
+            'premiums.*.employee_value' => 'required|numeric|min:0',
+            'premiums.*.employer_value' => 'required|numeric|min:0',
+            'premiums.*.description' => 'nullable|string',
+            'premiums.*.is_taxable' => 'nullable',
+            'premiums.*.is_active' => 'nullable',
+        ]);
+
+        $premiums = $validated['premiums'] ?? [];
+        $premiumIds = collect($premiums)->pluck('id')->filter()->all();
+        GovernmentPremium::whereNotIn('id', $premiumIds)->delete();
+
+        foreach ($premiums as $index => $premiumData) {
+            $payload = [
+                'name' => $premiumData['name'],
+                'calculation_type' => $premiumData['calculation_type'],
+                'basis' => $premiumData['basis'],
+                'employee_value' => $premiumData['employee_value'],
+                'employer_value' => $premiumData['employer_value'],
+                'description' => $premiumData['description'] ?? null,
+                'is_taxable' => isset($premiumData['is_taxable']),
+                'is_active' => isset($premiumData['is_active']),
+                'sort_order' => $index,
+            ];
+
+            if (isset($premiumData['id']) && $premiumData['id']) {
+                GovernmentPremium::findOrFail($premiumData['id'])->update($payload);
+            } else {
+                GovernmentPremium::create($payload);
+            }
+        }
+
+        return redirect()->route('salary.government-premiums')->with('success', 'Government premiums updated successfully.');
     }
 
     /**
