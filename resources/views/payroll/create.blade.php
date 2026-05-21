@@ -63,7 +63,7 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 @forelse($employees as $employee)
-                                    <tr class="hover:bg-slate-50 cursor-pointer" onclick="document.getElementById('emp_{{ $employee->id }}').click()">
+                                    <tr class="employee-row hover:bg-slate-50 cursor-pointer" data-employee-id="{{ $employee->id }}" onclick="const cb = document.getElementById('emp_{{ $employee->id }}'); if (!cb.disabled) cb.click();">
                                         <td class="px-6 py-4">
                                             <input type="checkbox" id="emp_{{ $employee->id }}" name="employee_ids[]" value="{{ $employee->id }}" class="employee-checkbox h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" checked onclick="event.stopPropagation()">
                                         </td>
@@ -100,22 +100,77 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const btn = document.getElementById('toggleSelectAllBtn');
                 const checkboxes = document.querySelectorAll('.employee-checkbox');
+                const startInput = document.querySelector('input[name="period_start"]');
+                const endInput = document.querySelector('input[name="period_end"]');
+                const activePayRuns = @json($activePayRuns ?? []);
 
                 function updateButtonLabel() {
-                    if (checkboxes.length === 0) return;
+                    const enabledCheckboxes = Array.from(checkboxes).filter(cb => !cb.disabled);
+                    if (enabledCheckboxes.length === 0) {
+                        btn.textContent = 'Select All';
+                        return;
+                    }
                     
-                    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-                    if (checkedCount === checkboxes.length) {
+                    const checkedCount = enabledCheckboxes.filter(cb => cb.checked).length;
+                    if (checkedCount === enabledCheckboxes.length) {
                         btn.textContent = 'Unselect All';
                     } else {
                         btn.textContent = 'Select All';
                     }
                 }
 
+                function updateEmployeeAvailability() {
+                    const startVal = startInput?.value;
+                    const endVal = endInput?.value;
+                    if (!startVal || !endVal) return;
+
+                    const busyEmployees = {};
+
+                    activePayRuns.forEach(run => {
+                        // Check overlap
+                        if (run.period_start <= endVal && run.period_end >= startVal) {
+                            run.employee_ids.forEach(empId => {
+                                busyEmployees[empId] = {
+                                    name: run.name,
+                                    status: run.status_label
+                                };
+                            });
+                        }
+                    });
+
+                    document.querySelectorAll('.employee-row').forEach(row => {
+                        const empId = row.getAttribute('data-employee-id');
+                        const cb = document.getElementById('emp_' + empId);
+                        if (!cb) return;
+
+                        if (busyEmployees[empId]) {
+                            const info = busyEmployees[empId];
+                            cb.checked = false;
+                            cb.disabled = true;
+                            row.classList.add('opacity-50', 'cursor-not-allowed');
+                            row.classList.remove('hover:bg-slate-50');
+                            row.setAttribute('title', `Already in Pay Run: ${info.name} (${info.status})`);
+                        } else {
+                            if (cb.disabled) {
+                                cb.disabled = false;
+                                cb.checked = true;
+                            }
+                            row.classList.remove('opacity-50', 'cursor-not-allowed');
+                            row.classList.add('hover:bg-slate-50');
+                            row.removeAttribute('title');
+                        }
+                    });
+
+                    updateButtonLabel();
+                }
+
                 btn?.addEventListener('click', function () {
-                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    const enabledCheckboxes = Array.from(checkboxes).filter(cb => !cb.disabled);
+                    if (enabledCheckboxes.length === 0) return;
+
+                    const allChecked = enabledCheckboxes.every(cb => cb.checked);
                     
-                    checkboxes.forEach(cb => {
+                    enabledCheckboxes.forEach(cb => {
                         cb.checked = !allChecked;
                     });
                     
@@ -126,8 +181,11 @@
                     cb.addEventListener('change', updateButtonLabel);
                 });
 
+                startInput?.addEventListener('change', updateEmployeeAvailability);
+                endInput?.addEventListener('change', updateEmployeeAvailability);
+
                 // Initialize state
-                updateButtonLabel();
+                updateEmployeeAvailability();
             });
         </script>
     </x-slot:scripts>
