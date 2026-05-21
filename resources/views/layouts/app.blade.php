@@ -42,29 +42,34 @@
     $user = auth()->user();
     $nav = [
       ['url' => route('dashboard'),     'label' => 'Dashboard',     'group' => 'Overview'],
-      ['label' => 'Employees', 'group' => 'Modules', 'permission' => 'employees.view', 'children' => [
+      ['label' => 'Employees', 'group' => 'Modules', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete', 'children' => [
         ['url' => route('employees.index'),           'label' => 'Employee List'],
         ['url' => route('employees.temporary-access'), 'label' => 'Temporary Access'],
       ]],
-      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules', 'permission' => 'employees.view'],
-      ['label' => 'Timekeeping', 'group' => 'Modules', 'permission' => 'timekeeping.view', 'children' => [
+      ['url' => route('onboarding'),   'label' => 'Onboarding',    'group' => 'Modules', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete'],
+      ['label' => 'Timekeeping', 'group' => 'Modules', 'permission' => 'timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete', 'children' => [
         ['url' => route('timekeeping.index'),          'label' => 'Attendance'],
         ['url' => route('timekeeping.shift-schedule'), 'label' => 'Shift Schedule'],
       ]],
-      ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules', 'permission' => 'leaves.view'],
-      ['label' => 'Salaries', 'group' => 'Modules', 'permission' => 'payroll.view', 'children' => [
+      ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete'],
+      ['label' => 'Salaries', 'group' => 'Modules', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
         ['url' => route('salary.settings'), 'label' => 'Salary Settings'],
       ]],
-      ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules', 'permission' => 'payroll.view'],
-      ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules', 'permission' => 'benefits.view'],
+      ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete'],
+      ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
       ['url' => route('self-service'), 'label' => 'Self-Service',  'group' => 'Modules', 'permission' => 'self-service.view'],
-      ['url' => route('reports'),      'label' => 'Reports',       'group' => 'Modules', 'permission' => 'reports.view'],
+      ['url' => route('reports'),      'label' => 'Reports',       'group' => 'Modules', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
     ];
 
     $nav = array_filter($nav, function ($item) use ($user) {
       if (isset($item['permission'])) {
-        return $user && $user->hasPermission($item['permission']);
+        if (!$user) return false;
+        $perms = explode(',', $item['permission']);
+        foreach ($perms as $p) {
+            if ($user->hasPermission(trim($p))) return true;
+        }
+        return false;
       }
       return true;
     });
@@ -104,6 +109,9 @@
                   </summary>
                   <div class="mt-1 space-y-1 pl-2">
                     @foreach ($item['children'] as $child)
+                      @if(isset($child['roles']) && !in_array($user->role ?? 0, $child['roles']))
+                          @continue
+                      @endif
                       <a href="{{ $child['url'] }}" class="nav-link-sub {{ ($current === $child['url'] || str_starts_with($current, $child['url'])) ? 'active' : '' }}">
                         <span class="h-1 w-1 rounded-full bg-current opacity-50"></span>
                         {{ $child['label'] }}

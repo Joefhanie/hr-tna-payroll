@@ -205,6 +205,8 @@ class EmployeeController extends Controller
      */
     public function terminate(Request $request, Employee $employee): RedirectResponse
     {
+        abort_if(auth()->user()->role !== 4, 403, 'Only HR can terminate employees.');
+
         $validated = $request->validate([
             'termination_date' => ['required', 'date'],
             'termination_reason' => ['nullable', 'string', 'max:255'],
@@ -303,6 +305,8 @@ class EmployeeController extends Controller
      */
     public function temporaryAccess(): \Illuminate\View\View
     {
+        abort_if(!in_array(auth()->user()->role, [2, 4]), 403, 'Unauthorized access to temporary access management.');
+
         $employees = Employee::whereDoesntHave('user', function ($query) {
                 $query->where('role', 2);
             })

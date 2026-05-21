@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
 
     // Timekeeping Management
-    Route::middleware('permission:timekeeping.view')->group(function () {
+    Route::middleware('permission:timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete')->group(function () {
         Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
         Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
         Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
@@ -46,13 +46,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // Onboarding, Leave, Benefits, Reports
-    Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:employees.view');
-    Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view');
-    Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view');
-    Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view');
+    Route::view('/onboarding', 'onboarding')->name('onboarding')->middleware('permission:employees.view,employees.create,employees.edit,employees.delete');
+    Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete');
+    Route::view('/benefits', 'benefits')->name('benefits')->middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete');
+    Route::view('/reports', 'reports')->name('reports')->middleware('permission:reports.view,reports.create,reports.edit,reports.delete');
 
     // Organization Management (Settings)
-    Route::middleware('permission:settings.view')->group(function () {
+    Route::middleware('permission:settings.view,settings.create,settings.edit,settings.delete')->group(function () {
         Route::redirect('/organization', '/organization/departments');
         Route::get('/organization/departments', [OrganizationController::class, 'departments'])->name('organization.departments.index');
         Route::get('/organization/departments/{department}', [OrganizationController::class, 'showDepartment'])->name('organization.departments.show');
@@ -82,7 +82,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Employee Management
-    Route::middleware('permission:employees.view')->group(function () {
+    Route::middleware('permission:employees.view,employees.create,employees.edit,employees.delete')->group(function () {
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
         Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
@@ -96,10 +96,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
         Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
         Route::post('/employees/{employee}/revoke-role', [EmployeeController::class, 'revokeRole'])->name('employees.revoke-role');
-        Route::post('/employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
     });
     Route::middleware('permission:employees.delete')->group(function () {
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+        Route::post('/employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
     });
 
     // Salary & Payroll Management
@@ -109,10 +109,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/create', [PayrollController::class, 'create'])->name('payroll.create');
         Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
     });
-    Route::middleware('permission:payroll.view')->group(function () {
+    Route::middleware('permission:payroll.view,payroll.create,payroll.edit,payroll.delete')->group(function () {
         Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
         Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
         
+        Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
 
         Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
@@ -125,7 +126,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
     });
     Route::middleware('permission:payroll.edit')->group(function () {
-        Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
         Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
         Route::post('/salaries/settings/late-deduction-rules', [SalaryController::class, 'saveLateDeductionRules'])->name('salary.save-late-deduction-rules');
         Route::post('/salaries/settings/government-contributions', [SalaryController::class, 'saveGovernmentContributions'])->name('salary.save-government-contributions');

@@ -17,27 +17,27 @@
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
             ],
             'Modules' => [
-                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view', 'children' => [
+                ['label' => 'Employees', 'icon' => 'user', 'path' => '/employees', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete', 'children' => [
                     ['route' => 'employees.index',           'path' => '/employees',                  'label' => 'Employee List'],
-                    ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access'],
+                    ['route' => 'employees.temporary-access', 'path' => '/employees-temporary-access', 'label' => 'Temporary Access', 'roles' => [2, 4]],
                 ]],
-                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view'],
-                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view', 'children' => [
+                ['route' => 'onboarding', 'path' => '/onboarding', 'label' => 'Onboarding', 'icon' => 'user-plus', 'permission' => 'employees.view,employees.create,employees.edit,employees.delete'],
+                ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Timekeeping', 'icon' => 'clock', 'permission' => 'timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete', 'children' => [
                     ['route' => 'timekeeping.index', 'path' => '/timekeeping', 'label' => 'Attendance'],
                     ['route' => 'timekeeping.shift-schedule', 'path' => '/timekeeping/shift-schedule', 'label' => 'Shift Schedule'],
                 ]],
-                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view'],
-                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view', 'children' => [
+                ['route' => 'leave', 'path' => '/leave', 'label' => 'Leave', 'icon' => 'calendar-event', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete'],
+                ['label' => 'Salaries', 'icon' => 'coins', 'path' => '/salaries', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'salary.index',    'path' => '/salaries',          'label' => 'Salary Records'],
                     ['route' => 'salary.settings', 'path' => '/salaries/settings', 'label' => 'Salary Settings'],
                 ]],
-                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view', 'children' => [
+                ['label' => 'Payroll', 'icon' => 'wallet', 'path' => '/payroll', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
                     ['route' => 'payroll.index',           'path' => '/payroll',                  'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment','path' => '/payroll/plotting-payment', 'label' => 'Plotting of Payments'],
                 ]],
-                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view'],
+                ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
                 ['route' => 'self-service', 'path' => '/self-service', 'label' => 'Self-Service', 'icon' => 'user-circle', 'permission' => 'self-service.view'],
-                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view'],
+                ['route' => 'reports', 'path' => '/reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
             ],
         ];
 
@@ -45,7 +45,12 @@
         foreach ($navGroups as $groupName => &$items) {
             $items = array_filter($items, function ($item) use ($user) {
                 if (isset($item['permission'])) {
-                    return $user && $user->hasPermission($item['permission']);
+                    if (!$user) return false;
+                    $perms = explode(',', $item['permission']);
+                    foreach ($perms as $p) {
+                        if ($user->hasPermission(trim($p))) return true;
+                    }
+                    return false;
                 }
                 return true;
             });
@@ -99,6 +104,9 @@
 
                                     <div class="mt-1 space-y-1 pl-2">
                                         @foreach ($item['children'] as $child)
+                                            @if(isset($child['roles']) && !in_array($user->role ?? 0, $child['roles']))
+                                                @continue
+                                            @endif
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
                                                 $childIsActive = $childRouteExists
@@ -133,7 +141,7 @@
                         @endforeach
                     @endforeach
 
-                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view')))
+                    @if ($user && ($user->role === 4 || $user->hasPermission('settings.view') || $user->hasPermission('settings.create') || $user->hasPermission('settings.edit') || $user->hasPermission('settings.delete')))
                     <p class="sidebar-group-label px-2 pt-4 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Organization</p>
 
                     @php

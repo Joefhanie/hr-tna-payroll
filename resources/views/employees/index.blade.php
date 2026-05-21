@@ -7,12 +7,14 @@
             <h1 class="text-3xl font-bold text-slate-900">Employees</h1>
             <p class="mt-1 text-sm text-slate-600">Manage employee records, positions, and departments.</p>
         </div>
+        @if(auth()->user()->hasPermission('employees.create'))
         <a href="{{ route('employees.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-sm hover:bg-blue-700 transition">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
             <span>Add Employee</span>
         </a>
+        @endif
     </div>
 
     {{-- Tabs removed --}}
@@ -135,19 +137,23 @@
                                     </a>
 
                                     {{-- Edit --}}
+                                    @if(auth()->user()->hasPermission('employees.edit'))
                                     <a href="{{ route('employees.edit', $employee) }}"
                                        class="text-blue-600 hover:text-blue-800 transition"
                                        title="Edit Employee">
                                         <i class="ti ti-edit text-base"></i>
                                     </a>
+                                    @endif
 
                                     {{-- Terminate --}}
+                                    @if(auth()->check() && auth()->user()->role === 4)
                                     <button type="button"
                                             class="text-red-600 hover:text-red-800 transition"
                                             title="Terminate Employee"
                                             onclick="openTerminationModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}')">
                                         <i class="ti ti-ban text-base"></i>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
