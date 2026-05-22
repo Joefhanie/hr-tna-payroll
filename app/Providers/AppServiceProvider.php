@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $publicUploadRoot = config('filesystems.disks.public.root');
+
+        File::ensureDirectoryExists($publicUploadRoot);
+        File::ensureDirectoryExists($publicUploadRoot . DIRECTORY_SEPARATOR . 'company-images');
+        File::ensureDirectoryExists($publicUploadRoot . DIRECTORY_SEPARATOR . 'company-documents');
+
         if (!app()->runningInConsole()) {
             try {
                 if (\Illuminate\Support\Facades\Schema::hasTable('employees') && \Illuminate\Support\Facades\Schema::hasTable('leave_requests')) {
@@ -55,31 +62,31 @@ class AppServiceProvider extends ServiceProvider
                     if (\Illuminate\Support\Facades\Schema::hasTable('attendance')) {
                         $checkDaysCount = 7;
                         $allEmployees = \App\Models\Employee::whereHas('user')->get();
-                        
+
                         for ($i = 0; $i < $checkDaysCount; $i++) {
                             $checkDate = now()->subDays($i);
                             $dateStr = $checkDate->toDateString();
                             $dayOfWeek = $checkDate->format('D');
-                            
+
                             foreach ($allEmployees as $employee) {
                                 /** @var \App\Models\Employee $employee */
                                 $user = $employee->user;
                                 if (!$user) continue;
-                                
+
                                 // Get active shift for this day
                                 $dayShift = $employee->getActiveShiftForDate($checkDate);
-                                
+
                                 // Find any existing attendance record for this day
                                 $existingRecord = \App\Models\Attendance::where('user_id', $user->id)
                                     ->where('attendance_date', $dateStr)
                                     ->first();
-                                
+
                                 $isScheduled = $dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week);
-                                
+
                                 if ($isScheduled) {
                                     // Get shift start datetime in Asia/Manila timezone
                                     $shiftStart = \Carbon\Carbon::parse($dateStr . ' ' . $dayShift->start_time, 'Asia/Manila');
-                                    
+
                                     // Has the shift started yet?
                                     if (now('Asia/Manila')->gt($shiftStart)) {
                                         // Should be marked absent/excused/on leave
@@ -98,12 +105,12 @@ class AppServiceProvider extends ServiceProvider
                                             ->where('leave_requests.start_date', '<=', $dateStr)
                                             ->where('leave_requests.end_date', '>=', $dateStr)
                                             ->exists();
-                                            
+
                                         $expectedStatus = $hasApprovedLeave ? 4 : 3; // 4 = On Leave, 3 = Absent
-                                        $expectedNotes = $hasApprovedLeave 
+                                        $expectedNotes = $hasApprovedLeave
                                             ? ($hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave')
                                             : 'Auto-marked absent: no time-in by shift start.';
-                                        
+
                                         if ($existingRecord) {
                                             $shouldOverride = false;
                                             if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {

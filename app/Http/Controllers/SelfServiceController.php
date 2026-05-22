@@ -10,6 +10,7 @@ use App\Models\Payslip;
 use App\Models\ProfileUpdateRequest;
 use App\Models\User;
 use App\Services\LeaveRequestService;
+use App\Support\UploadFilename;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -358,12 +359,12 @@ class SelfServiceController extends Controller
         ]);
 
         $file = $validated['document_file'];
-        $storedPath = $file->store('self-service-documents/' . $employee->id, 'public');
-        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $storedFileName = UploadFilename::build($file);
+        $storedPath = $file->storeAs('self-service-documents/' . $employee->id, $storedFileName, 'public');
 
         $attributes = [
             'employee_id' => $employee->id,
-            'file_name' => $file->getClientOriginalName(),
+            'file_name' => $storedFileName,
             'expiry_date' => $validated['expiry_date'] ?? null,
         ];
 
@@ -384,7 +385,7 @@ class SelfServiceController extends Controller
         }
 
         if (Schema::hasColumn('employee_documents', 'file_extension')) {
-            $attributes['file_extension'] = $extension;
+            $attributes['file_extension'] = strtolower((string) $file->getClientOriginalExtension());
         }
 
         if (Schema::hasColumn('employee_documents', 'file_size')) {

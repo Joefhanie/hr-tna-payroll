@@ -8,6 +8,7 @@ use App\Models\EmployeeDocument;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
 use App\Services\OnboardingAssignmentService;
+use App\Support\UploadFilename;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -547,12 +548,12 @@ class OnboardingController extends Controller
     private function storeTaskDocument(Employee $employee, OnboardingTask $task, array $validated): void
     {
         $file = $validated['document_file'];
-        $storedPath = $file->store('onboarding-documents/' . $employee->id, 'public');
-        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $storedFileName = UploadFilename::build($file);
+        $storedPath = $file->storeAs('onboarding-documents/' . $employee->id, $storedFileName, 'public');
 
         $attributes = [
             'employee_id' => $employee->id,
-            'file_name' => $file->getClientOriginalName(),
+            'file_name' => $storedFileName,
             'expiry_date' => $validated['expiry_date'] ?? null,
         ];
 
@@ -573,7 +574,7 @@ class OnboardingController extends Controller
         }
 
         if (Schema::hasColumn('employee_documents', 'file_extension')) {
-            $attributes['file_extension'] = $extension;
+            $attributes['file_extension'] = strtolower((string) $file->getClientOriginalExtension());
         }
 
         if (Schema::hasColumn('employee_documents', 'file_size')) {
@@ -608,7 +609,7 @@ class OnboardingController extends Controller
 
         $task->update([
             'submission_notes' => $validated['submission_notes'] ?? null,
-            'submission_file_name' => $file->getClientOriginalName(),
+            'submission_file_name' => $storedFileName,
             'submission_file_path' => $storedPath,
             'submitted_at' => now(),
             'completed_at' => now(),

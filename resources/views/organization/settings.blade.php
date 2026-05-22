@@ -11,6 +11,7 @@
         $hasCompanyDocumentErrors = $errors->has('title')
             || $errors->has('category')
             || $errors->has('description')
+            || $errors->has('document_name')
             || $errors->has('document_file');
     @endphp
 
@@ -266,6 +267,12 @@
                     <div>
                         <label for="company_document_description" class="mb-2 block text-sm font-medium text-slate-700">Description</label>
                         <textarea id="company_document_description" name="description" rows="3" placeholder="Optional note about this file" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="company_document_name" class="mb-2 block text-sm font-medium text-slate-700">Rename File <span class="text-slate-400">(optional)</span></label>
+                        <input id="company_document_name" name="document_name" type="text" value="{{ old('document_name') }}" placeholder="e.g. Employee Handbook 2026" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <p class="mt-1 text-xs text-slate-500">If left blank, the original file name will be used.</p>
                     </div>
 
                     <div>

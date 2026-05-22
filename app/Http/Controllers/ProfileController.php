@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Leave;
 use App\Models\Payslip;
 use App\Models\Attendance;
+use App\Support\UploadFilename;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -214,7 +215,7 @@ class ProfileController extends Controller
                 }
 
                 // Store the new picture
-                $storedPath = $file->store('profile_pictures', 'public');
+                $storedPath = $file->storeAs('profile_pictures', UploadFilename::build($file), 'public');
                 $employee->profile_picture = $storedPath;
             }
 

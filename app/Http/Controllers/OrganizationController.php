@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use App\Services\OnboardingAssignmentService;
+use App\Support\UploadFilename;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -425,12 +426,14 @@ class OrganizationController extends Controller
         $settings->fill($validated);
 
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('company', 'public');
+            $file = $request->file('logo');
+            $path = $file->storeAs('company-images', UploadFilename::build($file), 'public');
             $settings->logo_path = $path;
         }
 
         if ($request->hasFile('logo_dark')) {
-            $path = $request->file('logo_dark')->store('company', 'public');
+            $file = $request->file('logo_dark');
+            $path = $file->storeAs('company-images', UploadFilename::build($file), 'public');
             $settings->logo_dark_path = $path;
         }
 
@@ -445,16 +448,19 @@ class OrganizationController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', Rule::in(CompanyDocument::categoryOptions())],
             'description' => ['nullable', 'string', 'max:2000'],
+            'document_name' => ['nullable', 'string', 'max:255'],
             'document_file' => ['required', 'file', 'max:25600', 'mimes:pdf,doc,docx,xls,xlsx,png,jpg,jpeg'],
         ]);
 
         $file = $validated['document_file'];
-        $storedPath = $file->store('company-documents', 'public');
+        $displayName = trim((string) ($validated['document_name'] ?? $file->getClientOriginalName()));
+        $storedFileName = UploadFilename::build($file, $displayName);
+        $storedPath = $file->storeAs('company-documents', $storedFileName, 'public');
 
         CompanyDocument::create([
             'title' => $validated['title'],
             'category' => $validated['category'],
-            'file_name' => $file->getClientOriginalName(),
+            'file_name' => $storedFileName,
             'file_path' => $storedPath,
             'file_extension' => strtolower((string) $file->getClientOriginalExtension()),
             'file_size' => $file->getSize(),

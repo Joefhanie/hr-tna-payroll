@@ -7,6 +7,7 @@ use App\Models\PayRun;
 use App\Models\Payslip;
 use App\Models\PreviousClaim;
 use App\Services\PayrollService;
+use App\Support\UploadFilename;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -111,8 +112,8 @@ class PreviousClaimController extends Controller
         // We validate it's before today as a baseline. HR can fine-tune.
         $docPath = null;
         if ($request->hasFile('supporting_document')) {
-            $docPath = $request->file('supporting_document')
-                ->store('previous-claims', 'public');
+            $file = $request->file('supporting_document');
+            $docPath = $file->storeAs('previous-claims', UploadFilename::build($file), 'public');
         }
 
         PreviousClaim::create([

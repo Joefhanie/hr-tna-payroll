@@ -1,5 +1,15 @@
 <?php
 
+$externalUploadRoot = env('UPLOADS_ROOT');
+
+if ($externalUploadRoot && !preg_match('/^(?:[A-Za-z]:[\\\/]|\\\\|\/)/', $externalUploadRoot)) {
+    $externalUploadRoot = base_path($externalUploadRoot);
+}
+
+if (!$externalUploadRoot) {
+    $externalUploadRoot = base_path('../micro');
+}
+
 return [
 
     /*
@@ -40,7 +50,7 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => $externalUploadRoot,
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -74,7 +84,7 @@ return [
     */
 
     'links' => [
-        public_path('storage') => storage_path('app/public'),
+        public_path('storage') => $externalUploadRoot,
     ],
 
 ];
