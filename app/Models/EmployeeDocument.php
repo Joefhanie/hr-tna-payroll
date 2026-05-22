@@ -15,6 +15,7 @@ class EmployeeDocument extends Model
         'document_type',
         'doc_type',
         'file_name',
+        'display_name',
         'file_path',
         'file_url',
         'file_extension',

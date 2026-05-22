@@ -136,7 +136,7 @@ class ProfileController extends Controller
                 ->values()
                 ->map(function ($document) {
                     return [
-                        'name' => $document->file_name,
+                        'name' => $document->display_name ?? $document->file_name,
                         'type' => $document->doc_type ?? $document->document_type ?? 'Document',
                         'date' => optional($document->uploaded_at ?? $document->created_at ?? $document->issued_date)->format('M d, Y'),
                         'file_path' => $document->file_url ?? $document->file_path ?? null,

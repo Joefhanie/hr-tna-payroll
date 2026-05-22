@@ -219,8 +219,8 @@
     </div>
 
     @if ($canSubmitRequests)
-        <div id="leaveRequestModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="leaveRequestModal">
-            <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div id="leaveRequestModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="leaveRequestModal">
+            <div class="my-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900">Request Leave</h2>
@@ -272,8 +272,8 @@
             </div>
         </div>
 
-        <div id="profileUpdateModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="profileUpdateModal">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+        <div id="profileUpdateModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="profileUpdateModal">
+            <div class="my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
                 <div class="mb-3 flex items-center justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-slate-900">Request Profile Update</h2>
@@ -311,8 +311,8 @@
             </div>
         </div>
 
-        <div id="documentUploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" data-modal-backdrop="documentUploadModal">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div id="documentUploadModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="documentUploadModal">
+            <div class="my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">Upload Document</h2>
@@ -323,12 +323,17 @@
                 <form method="POST" action="{{ route('self-service.documents.store', $employee) }}" enctype="multipart/form-data" class="space-y-3">
                     @csrf
                     <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Document Name</label>
+                        <input type="text" name="display_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="e.g. My Passport, HMO Form" value="{{ old('display_name') }}">
+                    </div>
+                    <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Document Type</label>
                         <input type="text" name="document_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Government ID, Contract, Tax Form" value="{{ old('document_type') }}">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">File</label>
-                        <input type="file" name="document_file" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                            class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-emerald-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-emerald-100 transition focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Expiry Date</label>
@@ -476,8 +481,8 @@
         </div>
     </div>
 
-    <div id="payslipModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-        <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="payslipModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
                 <div class="flex items-center gap-6">
                     <div>
@@ -496,7 +501,7 @@
                     </svg>
                 </button>
             </div>
-            <div class="overflow-y-auto px-6 py-5">
+            <div class="flex-1 overflow-y-auto px-6 py-5">
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div class="rounded-lg border border-slate-200 bg-white p-4">
                         <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Earnings</h4>

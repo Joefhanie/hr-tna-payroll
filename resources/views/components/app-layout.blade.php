@@ -373,8 +373,8 @@
         </main>
     </div>
 
-    <div id="logoutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+    <div id="logoutModal" class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 justify-center items-start sm:items-center overflow-y-auto">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="border-b border-slate-100 px-6 py-4">
                 <h3 class="text-lg font-semibold text-slate-900">Confirm Logout</h3>
                 <p class="mt-1 text-sm text-slate-500">Are you sure you want to sign out of the system?</p>
@@ -390,8 +390,8 @@
         </div>
     </div>
 
-    <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm justify-center items-start sm:items-center overflow-y-auto">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl overflow-y-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
             <div class="px-6 py-6">
                 <div class="flex flex-col items-center text-center">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-3">

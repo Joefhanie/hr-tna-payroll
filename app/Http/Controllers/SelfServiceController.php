@@ -264,7 +264,7 @@ class SelfServiceController extends Controller
             ->values()
             ->map(function (EmployeeDocument $document) {
                 return [
-                    'name' => $document->file_name,
+                    'name' => $document->display_name ?? $document->file_name,
                     'type' => $document->doc_type ?? $document->document_type ?? 'Document',
                     'date' => optional($document->uploaded_at ?? $document->created_at ?? $document->issued_date)->format('M d, Y'),
                     'file_path' => $document->file_url ?? $document->file_path ?? null,
@@ -391,20 +391,26 @@ class SelfServiceController extends Controller
 
         $validated = $request->validate([
             'document_type' => ['required', 'string', 'max:100'],
-            'document_file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx'],
+            'display_name' => ['nullable', 'string', 'max:255'],
+            'document_file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
             'description' => ['nullable', 'string', 'max:2000'],
             'expiry_date' => ['nullable', 'date'],
         ]);
 
         $file = $validated['document_file'];
-        $storedFileName = UploadFilename::build($file, null, 'self-service-documents/' . $employee->id);
-        $storedPath = $file->storeAs('self-service-documents/' . $employee->id, $storedFileName, 'public');
+        $folderName = 'employee-documents/' . ($employee->employee_code ?: $employee->id);
+        $storedFileName = UploadFilename::build($file, null, $folderName);
+        $storedPath = $file->storeAs($folderName, $storedFileName, 'public');
 
         $attributes = [
             'employee_id' => $employee->id,
             'file_name' => $storedFileName,
             'expiry_date' => $validated['expiry_date'] ?? null,
         ];
+
+        if (Schema::hasColumn('employee_documents', 'display_name')) {
+            $attributes['display_name'] = $validated['display_name'] ?? null;
+        }
 
         if (Schema::hasColumn('employee_documents', 'document_type')) {
             $attributes['document_type'] = $validated['document_type'];

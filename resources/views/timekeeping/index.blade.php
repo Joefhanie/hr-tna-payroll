@@ -600,10 +600,10 @@
 
     {{-- ── Manual Entry Modal ─────────────────────────────── --}}
     <div id="manualEntryModal"
-         class="{{ $errors->any() ? 'flex' : 'hidden' }} fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity"
+         class="{{ $errors->any() ? 'flex' : 'hidden' }} fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto"
          style="padding-left: var(--sidebar-width);">
 
-        <div class="w-full max-w-lg rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+        <div class="my-auto w-full max-w-lg rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
 
             {{-- Header --}}
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">

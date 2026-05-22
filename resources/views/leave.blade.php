@@ -220,8 +220,8 @@
     ========================================================= --}}
     @if(auth()->user()->hasPermission('leaves.create'))
     <div id="requestLeaveModal"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 class="text-base font-semibold text-slate-900">Request Leave</h3>
@@ -313,8 +313,8 @@
     ========================================================= --}}
     @if(auth()->user()->hasPermission('leaves.edit'))
     <div id="declineModal"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 class="text-base font-semibold text-slate-900">Decline Leave Request</h3>
@@ -352,8 +352,8 @@
     ========================================================= --}}
     @if(auth()->user()->hasPermission('leaves.edit'))
     <div id="cancelModal"
-        class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 class="text-base font-semibold text-slate-900">Cancel Approved Leave</h3>

@@ -165,8 +165,8 @@
     </section>
 
     <!-- Add Department Modal -->
-    <div id="departmentFormModal" class="{{ $errors->has('name') || $errors->has('parent_dept_id') ? 'flex' : 'hidden' }} fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="departmentFormModal" class="{{ $errors->has('name') || $errors->has('parent_dept_id') ? 'flex' : 'hidden' }} fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 class="text-lg font-bold text-[#06112e]">Add Department</h3>
                 <button type="button" onclick="document.getElementById('departmentFormModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
@@ -207,8 +207,8 @@
     </div>
 
     <!-- View Department Modal -->
-    <div id="departmentViewModal" class="hidden fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="departmentViewModal" class="hidden fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 id="departmentViewTitle" class="text-lg font-bold text-[#06112e]"></h3>
@@ -242,8 +242,8 @@
     </div>
 
     <!-- Add Position Modal -->
-    <div id="positionFormModal" class="{{ $errors->has('title') || $errors->has('level') || $errors->has('department_id') || $errors->has('min_salary') || $errors->has('max_salary') ? 'flex' : 'hidden' }} fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="positionFormModal" class="{{ $errors->has('title') || $errors->has('level') || $errors->has('department_id') || $errors->has('min_salary') || $errors->has('max_salary') ? 'flex' : 'hidden' }} fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 class="text-lg font-bold text-[#06112e]">Add Position</h3>
                 <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
