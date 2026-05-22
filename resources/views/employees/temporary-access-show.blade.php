@@ -71,11 +71,11 @@
         <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
             <div>
                 <h2 class="text-base font-semibold text-slate-900 mb-4">Active & Scheduled Assignment</h2>
-                
+
                 @php
                     $tempAssignment = $employee->user?->temporaryAssignments;
                     $temporaryAssignment = $tempAssignment?->where('is_active', true)->first();
-                    
+
                     $isCurrentTemporary = false;
                     $isScheduled = false;
                     $statusLabel = 'None';
@@ -87,7 +87,7 @@
                         $now = now();
                         $fromDate = \Carbon\Carbon::parse($temporaryAssignment->from_date);
                         $toDate = \Carbon\Carbon::parse($temporaryAssignment->to_date);
-                        
+
                         if ($now->between($fromDate, $toDate)) {
                             $isCurrentTemporary = true;
                             $statusLabel = 'Active';

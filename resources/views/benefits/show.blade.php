@@ -35,12 +35,12 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        
+
         {{-- LEFT COLUMN: Plan Details & Edit Form --}}
         <div class="lg:col-span-1 space-y-6">
             <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                 <h3 class="text-sm font-bold text-[#06112e] uppercase tracking-wide mb-4">Edit Plan Details</h3>
-                
+
                 <form method="POST" action="{{ route('benefits.update', $plan->id) }}" class="space-y-4">
                     @csrf
                     @method('PUT')
@@ -126,7 +126,7 @@
 
         {{-- RIGHT COLUMN: Enrollment Management --}}
         <div class="lg:col-span-2 space-y-6">
-            
+
             {{-- Enrolled List --}}
             <div class="rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
                 <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
