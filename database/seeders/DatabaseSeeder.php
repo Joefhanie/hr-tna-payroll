@@ -8,7 +8,7 @@ use App\Models\Department;
 use App\Models\Position;
 use App\Models\EmployeePlotting;
 use App\Models\TaxBracket;
-use App\Models\GovernmentContributionRate;
+
 use App\Models\DeductionRule;
 use App\Models\SalaryRecord;
 use Illuminate\Database\Seeder;
@@ -32,12 +32,10 @@ class DatabaseSeeder extends Seeder
         Position::truncate();
         EmployeePlotting::truncate();
         TaxBracket::truncate();
-        GovernmentContributionRate::truncate();
         DeductionRule::truncate();
         SalaryRecord::truncate();
         DB::table('sessions')->truncate();
         DB::table('employee_tax_bracket')->truncate();
-        DB::table('employee_government_contribution')->truncate();
         DB::table('employee_deduction_rule')->truncate();
         DB::table('leave_requests')->truncate();
         DB::table('leave_balances')->truncate();
@@ -65,14 +63,7 @@ class DatabaseSeeder extends Seeder
             TaxBracket::create($tb);
         }
 
-        $govContributions = [
-            ['name' => 'SSS', 'employee_rate' => 0.045, 'employer_rate' => 0.095, 'is_active' => true, 'sort_order' => 0],
-            ['name' => 'PhilHealth', 'employee_rate' => 0.025, 'employer_rate' => 0.025, 'is_active' => true, 'sort_order' => 1],
-            ['name' => 'Pag-IBIG', 'employee_rate' => 0.020, 'employer_rate' => 0.020, 'is_active' => true, 'sort_order' => 2],
-        ];
-        foreach ($govContributions as $gc) {
-            GovernmentContributionRate::create($gc);
-        }
+
 
         $deductions = [
             ['name' => 'Late Deduction', 'type' => 'Prorated', 'amount' => null, 'rate' => 0.001, 'scope' => 'Attendance linked', 'is_active' => true, 'sort_order' => 0],
@@ -180,9 +171,8 @@ class DatabaseSeeder extends Seeder
                 'reason' => 'Initial Salary',
             ]);
 
-            // Sync default tax, contribution and deduction settings
+            // Sync default tax and deduction settings
             $emp->taxBrackets()->sync(TaxBracket::pluck('id')->all());
-            $emp->governmentContributionRates()->sync(GovernmentContributionRate::pluck('id')->all());
             $emp->deductionRules()->sync(DeductionRule::pluck('id')->all());
 
             return $emp;

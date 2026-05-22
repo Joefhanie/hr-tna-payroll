@@ -8,7 +8,7 @@ use App\Models\TaxBracket;
 use App\Models\DeductionRule;
 use App\Models\GovernmentPremium;
 use App\Models\GovernmentPremiumBracket;
-use App\Models\GovernmentContributionRate;
+
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -35,13 +35,12 @@ class SalaryController extends Controller
     public function settings(): View
     {
         $taxBrackets = TaxBracket::orderBy('sort_order')->orderBy('threshold')->get();
-        $governmentContributions = GovernmentContributionRate::orderBy('sort_order')->get();
         $deductionRules = DeductionRule::orderBy('sort_order')->get();
         $lateDeductionRules = \App\Models\LateDeductionRule::orderBy('sort_order')->get();
 
         $global = \App\Models\PayrollSetting::first();
 
-        return view('salary.settings', compact('taxBrackets', 'governmentContributions', 'deductionRules', 'lateDeductionRules', 'global'));
+        return view('salary.settings', compact('taxBrackets', 'deductionRules', 'lateDeductionRules', 'global'));
     }
 
     /**
@@ -68,7 +67,6 @@ class SalaryController extends Controller
     public function contributionTables(): View
     {
         $governmentPremiums = GovernmentPremium::with('brackets')
-            ->whereIn('name', ['SSS Premium', 'PhilHealth Premium'])
             ->orderBy('sort_order')
             ->get();
 
@@ -76,13 +74,13 @@ class SalaryController extends Controller
     }
 
     /**
-     * Save existing rows for one government contribution table.
+     * Save rows for one government contribution table (create, update, delete).
      */
     public function saveContributionTable(Request $request, GovernmentPremium $governmentPremium): RedirectResponse
     {
         $validated = $request->validate([
-            'brackets' => 'required|array',
-            'brackets.*.id' => 'required|integer',
+            'brackets' => 'nullable|array',
+            'brackets.*.id' => 'nullable|integer',
             'brackets.*.label' => 'nullable|string|max:160',
             'brackets.*.min_compensation' => 'required|numeric|min:0',
             'brackets.*.max_compensation' => 'nullable|numeric|min:0',
@@ -92,11 +90,17 @@ class SalaryController extends Controller
             'brackets.*.employer_extra_value' => 'required|numeric|min:0',
         ]);
 
-        foreach ($validated['brackets'] as $index => $bracketData) {
-            $bracket = GovernmentPremiumBracket::where('government_premium_id', $governmentPremium->id)
-                ->findOrFail($bracketData['id']);
+        $brackets = $validated['brackets'] ?? [];
 
-            $bracket->update([
+        // Collect IDs that are still present in the form to delete removed ones
+        $submittedIds = collect($brackets)->pluck('id')->filter()->all();
+        GovernmentPremiumBracket::where('government_premium_id', $governmentPremium->id)
+            ->whereNotIn('id', $submittedIds)
+            ->delete();
+
+        foreach ($brackets as $index => $bracketData) {
+            $payload = [
+                'government_premium_id' => $governmentPremium->id,
                 'label' => $bracketData['label'] ?? null,
                 'min_compensation' => $bracketData['min_compensation'],
                 'max_compensation' => $bracketData['max_compensation'] ?? null,
@@ -105,7 +109,15 @@ class SalaryController extends Controller
                 'employer_value' => $bracketData['employer_value'],
                 'employer_extra_value' => $bracketData['employer_extra_value'],
                 'sort_order' => $index,
-            ]);
+            ];
+
+            if (!empty($bracketData['id'])) {
+                GovernmentPremiumBracket::where('government_premium_id', $governmentPremium->id)
+                    ->findOrFail($bracketData['id'])
+                    ->update($payload);
+            } else {
+                GovernmentPremiumBracket::create($payload);
+            }
         }
 
         return redirect()->route('salary.contribution-tables')->with('success', $governmentPremium->name . ' table updated successfully.');
@@ -278,38 +290,7 @@ class SalaryController extends Controller
         return redirect()->route('salary.settings')->with('success', 'Tax brackets updated successfully.');
     }
 
-    /**
-     * Save government contribution rates.
-     */
-    public function saveGovernmentContributions(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'contributions' => 'required|array',
-            'contributions.*.id' => 'nullable|integer',
-            'contributions.*.name' => 'required|string|max:255',
-            'contributions.*.employee_rate' => 'required|numeric|min:0|max:100',
-            'contributions.*.employer_rate' => 'required|numeric|min:0|max:100',
-            'contributions.*.is_active' => 'nullable',
-        ]);
 
-        foreach ($validated['contributions'] as $index => $contribData) {
-            $payload = [
-                'name' => $contribData['name'],
-                'employee_rate' => $contribData['employee_rate'] / 100,
-                'employer_rate' => $contribData['employer_rate'] / 100,
-                'is_active' => isset($contribData['is_active']),
-                'sort_order' => $index,
-            ];
-
-            if (isset($contribData['id']) && $contribData['id']) {
-                GovernmentContributionRate::findOrFail($contribData['id'])->update($payload);
-            } else {
-                GovernmentContributionRate::create($payload);
-            }
-        }
-
-        return redirect()->route('salary.settings')->with('success', 'Government contributions updated successfully.');
-    }
 
     /**
      * Save deduction rules.
@@ -359,18 +340,17 @@ class SalaryController extends Controller
      */
     public function show(Employee $employee): View
     {
-        $employee->load('salaryRecords', 'taxBrackets', 'governmentContributionRates', 'deductionRules');
+        $employee->load('salaryRecords', 'taxBrackets', 'deductionRules');
         $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
         $allTaxBrackets = TaxBracket::where('is_active', true)->orderBy('sort_order')->get();
-        $allContributions = GovernmentContributionRate::where('is_active', true)->orderBy('sort_order')->get();
         $allDeductionRules = DeductionRule::where('is_active', true)->orderBy('sort_order')->get();
 
         $global = \App\Models\PayrollSetting::first();
 
         return view('salary.show', compact(
             'employee', 'payFrequencies',
-            'allTaxBrackets', 'allContributions', 'allDeductionRules', 'global'
+            'allTaxBrackets', 'allDeductionRules', 'global'
         ));
     }
 
@@ -425,7 +405,6 @@ class SalaryController extends Controller
             $salaryRecord = SalaryRecord::create($validated);
 
             $this->syncTaxBracketFromSalaryRecord($employee, $salaryRecord);
-            $this->syncGovernmentContributionsForEmployeeType($employee);
         });
 
         return redirect()->route('salary.show', $employee)
@@ -520,7 +499,6 @@ class SalaryController extends Controller
     {
         $taxBracketId = $request->input('tax_bracket_id');
         $employee->taxBrackets()->sync($taxBracketId ? [$taxBracketId] : []);
-        $employee->governmentContributionRates()->sync($request->input('contributions', []));
         $employee->deductionRules()->sync($request->input('deduction_rules', []));
 
         return redirect()->route('salary.show', $employee)
@@ -539,17 +517,5 @@ class SalaryController extends Controller
         }
     }
 
-    private function syncGovernmentContributionsForEmployeeType(Employee $employee): void
-    {
-        if (in_array((int) $employee->employment_type, [3, 4], true)) {
-            return;
-        }
 
-        $contributionIds = GovernmentContributionRate::where('is_active', true)
-            ->orderBy('sort_order')
-            ->pluck('id')
-            ->all();
-
-        $employee->governmentContributionRates()->sync($contributionIds);
-    }
 }

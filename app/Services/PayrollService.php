@@ -113,28 +113,7 @@ class PayrollService
         return round($tax, 2);
     }
 
-    /**
-     * Calculate government deductions using the employee's assigned contribution rates.
-     * Returns an array of individual contributions with names.
-     */
-    public function calculateGovernmentDeductions(float $gross, Employee $employee): array
-    {
-        $contributions = $employee->governmentContributionRates()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
 
-        $items = [];
-        foreach ($contributions as $contrib) {
-            $items[] = [
-                'name' => $contrib->name,
-                'employee_share' => round($gross * (float) $contrib->employee_rate, 2),
-                'employer_share' => round($gross * (float) $contrib->employer_rate, 2),
-            ];
-        }
-
-        return $items;
-    }
 
     /**
      * Calculate deductions from the employee's assigned deduction rules.
@@ -533,7 +512,7 @@ class PayrollService
             $periodEnd = Carbon::parse($payRun->period_end);
 
             // Load employee pivot assignments
-            $employee->load('taxBrackets', 'governmentContributionRates', 'deductionRules');
+            $employee->load('taxBrackets', 'deductionRules');
 
             $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
             $gross = 0.0;
@@ -673,26 +652,8 @@ class PayrollService
                 ]);
             }
 
-            // Government contributions — using employee's assigned rates
-            $govItems = $this->calculateGovernmentDeductions($gross, $employee);
+            // Government contributions — using government premium bracket tables
             $totalGovEmployee = 0.0;
-            foreach ($govItems as $gov) {
-                GovernmentContribution::create([
-                    'payslip_id' => $payslip->id,
-                    'contribution_type' => $gov['name'],
-                    'employee_share' => $gov['employee_share'],
-                    'employer_share' => $gov['employer_share'],
-                ]);
-                PayslipLineItem::create([
-                    'payslip_id' => $payslip->id,
-                    'component_type' => 4,
-                    'description' => $gov['name'],
-                    'amount' => $gov['employee_share'],
-                    'is_taxable' => false,
-                ]);
-                $totalGovEmployee += $gov['employee_share'];
-            }
-
             $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
             $premiumItems = $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation);
             foreach ($premiumItems as $premium) {
@@ -705,7 +666,7 @@ class PayrollService
                 PayslipLineItem::create([
                     'payslip_id' => $payslip->id,
                     'component_type' => 4,
-                    'description' => 'Government Premium: ' . $premium['name'],
+                    'description' => $premium['name'],
                     'amount' => $premium['employee_share'],
                     'is_taxable' => $premium['is_taxable'],
                 ]);
@@ -744,7 +705,7 @@ class PayrollService
      */
     public function computeFinalPay(Employee $employee, array $options = []): array
     {
-        $employee->load('taxBrackets', 'governmentContributionRates', 'deductionRules');
+        $employee->load('taxBrackets', 'deductionRules');
 
         $date = Carbon::now();
         $salaryRecord = $this->getSalaryRecordForDate($employee, $date);
@@ -754,23 +715,20 @@ class PayrollService
         $bonusTotal = array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
 
         $tax = $this->calculateTax($gross + $bonusTotal, $employee);
-        $govItems = $this->calculateGovernmentDeductions($gross, $employee);
         $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
         $premiumItems = $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation);
         $deductionItems = $this->calculateDeductionRules($gross, $employee);
 
-        $totalGovEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $govItems));
         $totalPremiumEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $premiumItems));
         $totalDeductionRules = array_sum(array_map(fn($d) => $d['amount'], $deductionItems));
 
-        $totalDeductions = $tax + $totalGovEmployee + $totalPremiumEmployee + $totalDeductionRules;
+        $totalDeductions = $tax + $totalPremiumEmployee + $totalDeductionRules;
         $net = round($gross + $bonusTotal - $totalDeductions, 2);
 
         return [
             'gross' => round($gross, 2),
             'bonuses' => round($bonusTotal, 2),
             'tax' => $tax,
-            'government' => $govItems,
             'government_premiums' => $premiumItems,
             'deductions' => $deductionItems,
             'total_deductions' => $totalDeductions,

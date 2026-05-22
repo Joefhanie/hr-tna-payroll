@@ -5,7 +5,7 @@
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="mt-1 text-2xl font-semibold text-slate-900">Payroll Rules Configuration</h1>
-            <p class="mt-1 text-sm text-slate-500">Edit tax brackets, government contributions, and deduction rules.</p>
+            <p class="mt-1 text-sm text-slate-500">Edit tax brackets, attendance rates, and deduction rules.</p>
         </div>
 
         <a href="{{ route('salary.index') }}" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Salary Records</a>
@@ -187,68 +187,6 @@
         </form>
     </div>
 
-    <!-- Government Contributions Section -->
-    <div class="card p-6 shadow-sm mb-6">
-        <div class="flex items-center justify-between gap-3 mb-5">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">Government Contributions</h2>
-                <p class="mt-1 text-sm text-slate-500">Set employee and employer contribution rates.</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="badge badge-green">{{ $governmentContributions->count() }} contributions</span>
-                <button type="button" id="add-contribution-btn" class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 hover:border-indigo-300">
-                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Add
-                </button>
-            </div>
-        </div>
-
-        <form method="POST" action="{{ route('salary.save-government-contributions') }}" id="contributions-form" class="space-y-4">
-            @csrf
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                        <tr>
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3">Employee Rate (%)</th>
-                            <th class="px-4 py-3">Employer Rate (%)</th>
-                            <th class="px-4 py-3">Active</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse ($governmentContributions as $contrib)
-                            <tr>
-                                <td class="px-4 py-3">
-                                    <input type="hidden" name="contributions[{{ $loop->index }}][id]" value="{{ $contrib->id }}">
-                                    <input type="text" name="contributions[{{ $loop->index }}][name]" value="{{ $contrib->name }}" class="w-32 rounded border border-slate-200 px-2 py-1 text-sm" required>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <input type="number" name="contributions[{{ $loop->index }}][employee_rate]" value="{{ $contrib->employee_rate * 100 }}" step="0.01" min="0" max="100" class="w-24 rounded border border-slate-200 px-2 py-1 text-sm" required>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <input type="number" name="contributions[{{ $loop->index }}][employer_rate]" value="{{ $contrib->employer_rate * 100 }}" step="0.01" min="0" max="100" class="w-24 rounded border border-slate-200 px-2 py-1 text-sm" required>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <input type="checkbox" name="contributions[{{ $loop->index }}][is_active]" @checked($contrib->is_active) class="rounded">
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-4 py-6 text-center text-slate-500">No government contributions configured yet.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-4">
-                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
-                    Save Contributions
-                </button>
-            </div>
-        </form>
-    </div>
-
     <!-- Deduction Rules Section -->
     <div class="card p-6 shadow-sm">
         <div class="flex items-center justify-between gap-3 mb-5">
@@ -370,12 +308,7 @@
         <td class="px-4 py-3"><input type="checkbox" name="brackets[${i}][is_active]" checked class="rounded"></td>
     `);
 
-    addRow('add-contribution-btn', 'contributions-form', i => `
-        <td class="px-4 py-3"><input type="text" name="contributions[${i}][name]" class="w-32 ${inputCls}" placeholder="Name" required></td>
-        <td class="px-4 py-3"><input type="number" name="contributions[${i}][employee_rate]" value="0" step="0.01" min="0" max="100" class="w-24 ${inputCls}" required></td>
-        <td class="px-4 py-3"><input type="number" name="contributions[${i}][employer_rate]" value="0" step="0.01" min="0" max="100" class="w-24 ${inputCls}" required></td>
-        <td class="px-4 py-3"><input type="checkbox" name="contributions[${i}][is_active]" checked class="rounded"></td>
-    `);
+
 
     addRow('add-deduction-btn', 'deductions-form', i => `
         <td class="px-4 py-3"><input type="text" name="rules[${i}][name]" class="w-32 ${inputCls}" placeholder="Name" required></td>
@@ -398,7 +331,6 @@
     button[type="submit"], 
     #add-late-rule-btn, 
     #add-tax-bracket-btn, 
-    #add-contribution-btn, 
     #add-deduction-btn, 
     .remove-row-btn {
         display: none !important;

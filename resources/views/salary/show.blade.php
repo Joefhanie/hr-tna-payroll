@@ -150,7 +150,7 @@
     <div class="card overflow-hidden mt-6">
         <div class="border-b border-slate-200 px-6 py-4">
             <h2 class="text-lg font-semibold text-slate-900">Tax & Deductions Assignments</h2>
-            <p class="mt-1 text-sm text-slate-600">Select which tax brackets, government contributions, and deduction rules apply to this employee.</p>
+            <p class="mt-1 text-sm text-slate-600">Select which tax brackets and deduction rules apply to this employee. Government contributions are managed via <a href="{{ route('salary.government-premiums') }}" class="text-indigo-600 hover:text-indigo-800">Government Premiums</a>.</p>
         </div>
 
         <form method="POST" action="{{ route('salary.save-assignments', $employee) }}" class="p-6">
@@ -159,7 +159,6 @@
             @php
                 $assignedTaxIds = $employee->taxBrackets->pluck('id')->toArray();
                 $assignedTaxId = $assignedTaxIds[0] ?? null;
-                $assignedContribIds = $employee->governmentContributionRates->pluck('id')->toArray();
                 $assignedDeductionIds = $employee->deductionRules->pluck('id')->toArray();
             @endphp
 
@@ -192,39 +191,6 @@
                 @endif
             </div>
 
-            <!-- Government Contributions -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-slate-800">Government Contributions</h3>
-                        <p class="text-xs text-slate-500">SSS, PhilHealth, Pag-IBIG, etc.</p>
-                    </div>
-                </div>
-
-                @if ($allContributions->count() > 0)
-                    <div class="mb-3 flex justify-end">
-                        <button type="button" class="select-all-group rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-target="contributions-group">
-                            Select All
-                        </button>
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach ($allContributions as $contrib)
-                            <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($contrib->id, $assignedContribIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
-                                <input type="checkbox" name="contributions[]" value="{{ $contrib->id }}" {{ in_array($contrib->id, $assignedContribIds) ? 'checked' : '' }} class="group-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" data-group="contributions-group">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-medium text-slate-800 truncate">{{ $contrib->name }}</p>
-                                    <p class="text-xs text-slate-500">Employee: {{ $contrib->employee_rate * 100 }}% · Employer: {{ $contrib->employer_rate * 100 }}%</p>
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-sm text-slate-500 italic">No active contributions configured. <a href="{{ route('salary.settings') }}" class="text-indigo-600 hover:text-indigo-800">Configure settings</a></p>
-                @endif
-            </div>
 
             <!-- Deduction Rules -->
             <div class="mb-6">
