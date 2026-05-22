@@ -5,6 +5,8 @@
     @php
         $documentCount = $companyDocuments->count();
         $totalFileSizeKb = (float) $companyDocuments->sum(fn ($document) => (float) ($document->file_size_kb ?? 0));
+        $brandPalette = $settings->brand_palette;
+        $defaultBrandColors = \App\Models\CompanySetting::defaultBrandColors();
         $totalSizeLabel = $totalFileSizeKb >= 1024
             ? number_format($totalFileSizeKb / 1024, 2) . ' MB'
             : number_format($totalFileSizeKb, 2) . ' KB';
@@ -22,11 +24,15 @@
             </div>
         @endif
 
-        <div class="rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 p-8 text-white shadow-sm">
+        <form id="resetBrandColorsForm" method="POST" action="{{ route('organization.settings.reset-brand-colors') }}">
+            @csrf
+        </form>
+
+        <div class="rounded-lg p-8 text-white shadow-sm" style="background-image: linear-gradient(90deg, {{ $brandPalette['primary'] }} 0%, {{ $brandPalette['secondary'] }} 100%);">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div class="flex items-end gap-4">
                     <div class="group relative">
-                        <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-gradient-to-br from-indigo-400 to-indigo-600 text-3xl font-bold text-white shadow-lg">
+                        <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white text-3xl font-bold shadow-lg" style="background-image: linear-gradient(135deg, {{ $brandPalette['accent'] }} 0%, {{ $brandPalette['secondary'] }} 100%); color: {{ $brandPalette['text_on_secondary'] }};">
                             @if ($settings->logo_path)
                                 <img id="headerLogoPreview" src="{{ asset('storage/' . $settings->logo_path) }}" alt="logo" class="h-full w-full object-cover">
                             @else
@@ -44,7 +50,7 @@
 
                     <div>
                         <h1 class="text-3xl font-bold text-white">{{ $settings->company_name ?: 'Company Settings' }}</h1>
-                        <p class="text-sm text-blue-100">{{ $settings->email ?: 'No email' }}</p>
+                        <p class="text-sm text-white/80">{{ $settings->email ?: 'No email' }}</p>
                     </div>
                 </div>
             </div>
@@ -60,22 +66,22 @@
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Company Name</label>
-                        <input name="company_name" value="{{ old('company_name', $settings->company_name) }}" placeholder="e.g. Acme Corporation" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="company_name" value="{{ old('company_name', $settings->company_name) }}" placeholder="e.g. Acme Corporation" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Tagline</label>
-                        <input name="tagline" value="{{ old('tagline', $settings->tagline) }}" placeholder="e.g. Innovation & Excellence" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="tagline" value="{{ old('tagline', $settings->tagline) }}" placeholder="e.g. Innovation & Excellence" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Email</label>
-                        <input name="email" value="{{ old('email', $settings->email) }}" placeholder="e.g. info@company.com" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="email" value="{{ old('email', $settings->email) }}" placeholder="e.g. info@company.com" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Phone Number</label>
-                        <div class="mt-1 flex rounded-lg border border-slate-200 bg-slate-50 transition focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20">
+                        <div class="brand-focus-shell mt-1 flex rounded-lg border border-slate-200 bg-slate-50 transition">
                             <div class="flex items-center overflow-hidden rounded-l-lg border-r border-slate-200 bg-slate-100/50">
                                 <select id="phone_country" class="cursor-pointer border-none bg-transparent px-3 py-3 text-sm font-semibold text-slate-700 outline-none focus:ring-0">
                                     <option value="PH">PH +63</option>
@@ -95,17 +101,17 @@
 
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-slate-700">Address</label>
-                        <input name="address" value="{{ old('address', $settings->address) }}" placeholder="Street / Barangay" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="address" value="{{ old('address', $settings->address) }}" placeholder="Street / Barangay" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">City</label>
-                        <input name="city" value="{{ old('city', $settings->city) }}" placeholder="e.g. Quezon City" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="city" value="{{ old('city', $settings->city) }}" placeholder="e.g. Quezon City" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Country</label>
-                        <select name="country" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <select name="country" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                             <option value="">Select Country</option>
                             <option value="Philippines" @selected(old('country', $settings->country ?? 'Philippines') === 'Philippines')>Philippines</option>
                             <option value="United States" @selected(old('country', $settings->country) === 'United States')>United States</option>
@@ -127,18 +133,125 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Website</label>
-                        <input name="website" value="{{ old('website', $settings->website) }}" placeholder="e.g. https://www.company.com" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="website" value="{{ old('website', $settings->website) }}" placeholder="e.g. https://www.company.com" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700">TIN</label>
-                        <input name="tin" value="{{ old('tin', $settings->tin) }}" placeholder="e.g. 123-456-789-101" class="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input name="tin" value="{{ old('tin', $settings->tin) }}" placeholder="e.g. 123-456-789-101" class="brand-input mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                    </div>
+
+                    <div class="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                            <div>
+                                <h3 class="text-base font-semibold text-slate-900">Workspace Branding</h3>
+                                <p class="text-sm text-slate-500">Customize the organization palette to match your company's identity.</p>
+                            </div>
+                            <button
+                                type="submit"
+                                form="resetBrandColorsForm"
+                                data-confirm="Restore the original blue and indigo system colors?"
+                                data-confirm-title="Restore Original Colors"
+                                class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Restore Original Colors
+                            </button>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-3">
+                            <!-- Primary Color Card -->
+                            <div class="brand-color-card rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                                <label class="block text-sm font-medium text-slate-700">Primary Brand Color</label>
+                                <div class="mt-2 flex gap-2">
+                                    <div class="relative flex-1">
+                                        <input
+                                            name="brand_primary_color"
+                                            type="text"
+                                            value="{{ old('brand_primary_color', $brandPalette['primary']) }}"
+                                            placeholder="#4F46E5"
+                                            maxlength="7"
+                                            class="hex-text-input block w-full rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-800 font-mono uppercase outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                        >
+                                    </div>
+                                    <div class="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm color-picker-wrapper">
+                                        <input
+                                            type="color"
+                                            value="{{ old('brand_primary_color', $brandPalette['primary']) }}"
+                                            class="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
+                                            style="transform: scale(1.4);"
+                                        >
+                                    </div>
+                                </div>
+                                <div class="mt-3 rounded-lg border border-slate-200/80 px-3 py-2 bg-white color-strip" style="border-left: 4px solid {{ $brandPalette['primary'] }};">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Preview</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">Default: <span class="font-mono text-default-hex">{{ $defaultBrandColors['brand_primary_color'] }}</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Secondary Color Card -->
+                            <div class="brand-color-card rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                                <label class="block text-sm font-medium text-slate-700">Secondary Brand Color</label>
+                                <div class="mt-2 flex gap-2">
+                                    <div class="relative flex-1">
+                                        <input
+                                            name="brand_secondary_color"
+                                            type="text"
+                                            value="{{ old('brand_secondary_color', $brandPalette['secondary']) }}"
+                                            placeholder="#2563EB"
+                                            maxlength="7"
+                                            class="hex-text-input block w-full rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-800 font-mono uppercase outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                        >
+                                    </div>
+                                    <div class="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm color-picker-wrapper">
+                                        <input
+                                            type="color"
+                                            value="{{ old('brand_secondary_color', $brandPalette['secondary']) }}"
+                                            class="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
+                                            style="transform: scale(1.4);"
+                                        >
+                                    </div>
+                                </div>
+                                <div class="mt-3 rounded-lg border border-slate-200/80 px-3 py-2 bg-white color-strip" style="border-left: 4px solid {{ $brandPalette['secondary'] }};">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Preview</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">Default: <span class="font-mono text-default-hex">{{ $defaultBrandColors['brand_secondary_color'] }}</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Accent Color Card -->
+                            <div class="brand-color-card rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                                <label class="block text-sm font-medium text-slate-700">Accent Brand Color</label>
+                                <div class="mt-2 flex gap-2">
+                                    <div class="relative flex-1">
+                                        <input
+                                            name="brand_accent_color"
+                                            type="text"
+                                            value="{{ old('brand_accent_color', $brandPalette['accent']) }}"
+                                            placeholder="#818CF8"
+                                            maxlength="7"
+                                            class="hex-text-input block w-full rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-800 font-mono uppercase outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                        >
+                                    </div>
+                                    <div class="relative h-9 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm color-picker-wrapper">
+                                        <input
+                                            type="color"
+                                            value="{{ old('brand_accent_color', $brandPalette['accent']) }}"
+                                            class="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
+                                            style="transform: scale(1.4);"
+                                        >
+                                    </div>
+                                </div>
+                                <div class="mt-3 rounded-lg border border-slate-200/80 px-3 py-2 bg-white color-strip" style="border-left: 4px solid {{ $brandPalette['accent'] }};">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Preview</p>
+                                    <p class="mt-0.5 text-xs text-slate-500">Default: <span class="font-mono text-default-hex">{{ $defaultBrandColors['brand_accent_color'] }}</span></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-6">
                     <a href="{{ route('organization.departments.index') }}" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</a>
-                    <button type="submit" class="rounded-lg bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">Save Settings</button>
+                    <button type="submit" class="brand-button-primary rounded-lg px-6 py-2 text-sm font-semibold text-white shadow-sm transition">Save Settings</button>
                 </div>
             </div>
         </form>
@@ -149,7 +262,7 @@
                     <h2 class="text-base font-semibold text-slate-900">Company Files</h2>
                     <p class="text-sm text-slate-500">Upload and manage company documents used across settings and onboarding.</p>
                 </div>
-                <button type="button" data-open-modal="company-file-modal" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white shadow-sm transition hover:bg-indigo-700">
+                <button type="button" data-open-modal="company-file-modal" class="brand-button-primary inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white shadow-sm transition">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -544,6 +657,53 @@
             });
 
             parseExistingPhone();
+        })();
+
+        (() => {
+            document.querySelectorAll('.brand-color-card').forEach(card => {
+                const textInput = card.querySelector('input[type="text"]');
+                const colorInput = card.querySelector('input[type="color"]');
+                const colorStrip = card.querySelector('.color-strip');
+                
+                if (!textInput || !colorInput) return;
+
+                // Sync function
+                const sync = (value) => {
+                    let hex = value.trim();
+                    if (!hex.startsWith('#')) {
+                        hex = '#' + hex;
+                    }
+                    hex = hex.toUpperCase();
+
+                    // Only update color picker if it is a valid hex code
+                    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+                        colorInput.value = hex.toLowerCase();
+                        if (colorStrip) {
+                            colorStrip.style.borderLeftColor = hex;
+                        }
+                    }
+                };
+
+                // When user types in the hex text input
+                textInput.addEventListener('input', (e) => {
+                    let val = e.target.value;
+                    // Auto prepend hash if not present
+                    if (val && !val.startsWith('#')) {
+                        val = '#' + val;
+                        e.target.value = val;
+                    }
+                    sync(val);
+                });
+
+                // When user selects a color via native color picker
+                colorInput.addEventListener('input', (e) => {
+                    const hex = e.target.value.toUpperCase();
+                    textInput.value = hex;
+                    if (colorStrip) {
+                        colorStrip.style.borderLeftColor = hex;
+                    }
+                });
+            });
         })();
     </script>
 </x-app-layout>

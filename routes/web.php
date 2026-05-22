@@ -260,6 +260,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/organization/users/{user}', [OrganizationController::class, 'updateUser'])->name('organization.users.update');
         Route::put('/organization/users/{user}/permissions', [OrganizationController::class, 'updateUserPermissions'])->name('organization.users.permissions.update');
         Route::post('/organization/settings', [OrganizationController::class, 'updateSettings'])->name('organization.settings.update');
+        Route::post('/organization/settings/reset-brand-colors', [OrganizationController::class, 'resetBrandColors'])->name('organization.settings.reset-brand-colors');
     });
     Route::middleware('permission:settings.delete')->group(function () {
         Route::delete('/organization/departments/{department}', [OrganizationController::class, 'destroyDepartment'])->name('organization.departments.destroy');

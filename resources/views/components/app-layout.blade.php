@@ -8,10 +8,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @php
+        $themeSettings = \App\Models\CompanySetting::current();
+        $brandPalette = $themeSettings->brand_palette;
+    @endphp
     <title>{{ $title ?? 'HR System' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        :root {
+            --brand-primary: {{ $brandPalette['primary'] }};
+            --brand-primary-hover: {{ $brandPalette['primary_hover'] }};
+            --brand-primary-soft: {{ $brandPalette['primary_soft'] }};
+            --brand-primary-ring: {{ $brandPalette['primary_ring'] }};
+            --brand-secondary: {{ $brandPalette['secondary'] }};
+            --brand-secondary-hover: {{ $brandPalette['secondary_hover'] }};
+            --brand-secondary-soft: {{ $brandPalette['secondary_soft'] }};
+            --brand-secondary-ring: {{ $brandPalette['secondary_ring'] }};
+            --brand-accent: {{ $brandPalette['accent'] }};
+            --brand-accent-hover: {{ $brandPalette['accent_hover'] }};
+            --brand-accent-soft: {{ $brandPalette['accent_soft'] }};
+            --brand-surface-tint: {{ $brandPalette['surface_tint'] }};
+            --brand-text-on-primary: {{ $brandPalette['text_on_primary'] }};
+            --brand-text-on-secondary: {{ $brandPalette['text_on_secondary'] }};
+            --brand-text-on-accent: {{ $brandPalette['text_on_accent'] }};
+        }
+    </style>
 </head>
 <body class="min-h-screen font-sans text-slate-900 bg-slate-50">
     <!-- Global Toast Container -->
@@ -132,7 +155,7 @@
 
         <aside class="sidebar fixed left-0 top-0 z-40 flex h-full flex-col border-r border-slate-200 bg-white px-3 py-3 text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
             @php
-                $companySetting = \App\Models\CompanySetting::current();
+                $companySetting = $themeSettings;
                 $hasLogo = !empty($companySetting->logo_path);
                 $settingsRouteExists = \Illuminate\Support\Facades\Route::has('organization.settings');
                 $settingsHref = $settingsRouteExists ? route('organization.settings') : '#';
@@ -148,7 +171,7 @@
                         <img src="{{ asset('storage/' . $companySetting->logo_path) }}" alt="Company Logo" class="h-full w-full object-cover">
                     </div>
                 @else
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-slate-100 to-slate-50 border border-slate-200/80 text-slate-400 shadow-sm transition duration-150 group-hover:border-slate-300">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
                         <i class="ti ti-building text-lg"></i>
                     </div>
                 @endif
@@ -298,7 +321,7 @@
             <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pl-4 pr-5 py-3 backdrop-blur-md sm:pl-5 sm:pr-6 sm:py-3.5 lg:pr-8">
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex min-w-0 items-center gap-2 text-slate-500">
-                        <button id="sidebar-toggle" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200" aria-label="Toggle Sidebar">
+                        <button id="sidebar-toggle" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2" style="--tw-ring-color: var(--brand-primary-ring);" aria-label="Toggle Sidebar">
                             <i class="ti ti-layout-sidebar text-[1.15rem]"></i>
                         </button>
                         <h1 class="truncate text-[1.05rem] font-medium text-slate-700">{{ $workspaceLabel }}</h1>
@@ -308,7 +331,7 @@
                         <button class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications">
                             <i class="ti ti-bell text-xl"></i>
                         </button>
-                        <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-blue-600 text-sm font-bold text-white shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" title="View Profile">
+                        <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 text-sm font-bold shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" style="background-color: var(--brand-primary); color: var(--brand-text-on-primary);" title="View Profile">
                             @if ($user && $user->employee && $user->employee->profile_picture)
                                 <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
                             @else
@@ -525,7 +548,12 @@
                     el.addEventListener('click', function (e) {
                         const message = el.getAttribute('data-confirm') || 'Are you sure you want to proceed?';
                         const title = el.getAttribute('data-confirm-title') || 'Confirm Action';
-                        const form = el.closest('form');
+                        let form = null;
+                        if (el.hasAttribute('form')) {
+                            form = document.getElementById(el.getAttribute('form'));
+                        } else {
+                            form = el.closest('form');
+                        }
 
                         if (!form) return;
 

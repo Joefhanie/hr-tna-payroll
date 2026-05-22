@@ -421,6 +421,9 @@ class OrganizationController extends Controller
             'industry' => ['nullable', 'string', 'max:120'],
             'logo' => ['nullable', 'image', 'max:10240'],
             'logo_dark' => ['nullable', 'image', 'max:10240'],
+            'brand_primary_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'brand_secondary_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
+            'brand_accent_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
         ]);
 
         $settings->fill($validated);
@@ -440,6 +443,15 @@ class OrganizationController extends Controller
         $settings->save();
 
         return redirect()->route('organization.settings')->with('success', 'Company settings updated successfully.');
+    }
+
+    public function resetBrandColors(): RedirectResponse
+    {
+        $settings = CompanySetting::current();
+        $settings->fill(CompanySetting::resetBrandColorsPayload());
+        $settings->save();
+
+        return redirect()->route('organization.settings')->with('success', 'Brand colors restored to the original system palette.');
     }
 
     public function storeCompanyDocument(Request $request): RedirectResponse
