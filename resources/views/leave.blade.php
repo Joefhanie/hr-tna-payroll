@@ -130,17 +130,17 @@
                                     {{-- Approve --}}
                                     <form method="POST" action="{{ route('leave.approve', $req['id']) }}">
                                         @csrf
-                                        <button type="submit"
-                                            class="rounded-[0.5rem] bg-[#1a56db] px-3 py-1.5 text-[0.75rem] font-bold text-white shadow-sm transition hover:bg-[#1e40af]">
-                                            Approve
+                                        <button type="submit" title="Approve" aria-label="Approve"
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                            <i class="ti ti-check text-lg"></i>
                                         </button>
                                     </form>
                                     {{-- Decline --}}
-                                    <button type="button"
-                                        class="open-decline-modal rounded-[0.5rem] border border-slate-200 bg-white px-3 py-1.5 text-[0.75rem] font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50"
+                                    <button type="button" title="Decline" aria-label="Decline"
+                                        class="open-decline-modal inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100"
                                         data-id="{{ $req['id'] }}"
                                         data-employee="{{ $req['employee'] }}">
-                                        Decline
+                                        <i class="ti ti-x text-lg"></i>
                                     </button>
                                 </div>
                             @elseif($req['status_code'] === 2 && auth()->user()->hasPermission('leaves.edit'))

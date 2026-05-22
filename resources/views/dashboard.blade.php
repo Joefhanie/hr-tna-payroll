@@ -97,20 +97,37 @@
         </div>
 
         <div class="card p-5">
-            <h3 class="text-[1.05rem] font-semibold text-slate-950">Pending Leave</h3>
-            <div class="mt-5 space-y-3.5">
+            <div class="mb-5 flex items-center justify-between">
+                <h3 class="text-[1.05rem] font-semibold text-slate-950">Pending Leave</h3>
+                <a href="{{ route('leave.index') }}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+                    View all <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                </a>
+            </div>
+            <div class="space-y-3.5">
                 @forelse($pendingLeaves as $leave)
                     <div class="rounded-2xl border border-slate-200 p-4">
                         <div class="mb-3 flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-[0.98rem] font-semibold text-slate-950">{{ $leave->user->display_name }}</p>
-                                <p class="mt-0.5 text-sm text-slate-500">{{ ucfirst($leave->type) }} • {{ $leave->start_date->format('M d') }} – {{ $leave->end_date->format('M d') }}</p>
+                                <p class="text-[0.98rem] font-semibold text-slate-950">{{ $leave->employee?->full_name ?? 'Unknown' }}</p>
+                                <p class="mt-0.5 text-sm text-slate-500">{{ $leaveTypeNames[$leave->leave_type_id] ?? 'Leave' }} • {{ $leave->start_date->format('M d') }} – {{ $leave->end_date->format('M d') }}</p>
                             </div>
                             <span class="badge badge-amber">Pending</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button type="button" class="btn-primary px-4 py-2 text-xs">Approve</button>
-                            <button type="button" class="btn-outline px-4 py-2 text-xs">Decline</button>
+                        <div class="flex items-center gap-2">
+                            <form action="{{ route('leave.approve', $leave) }}" method="POST">
+                                @csrf
+                                <button type="submit" title="Approve" aria-label="Approve"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                    <i class="ti ti-check text-lg"></i>
+                                </button>
+                            </form>
+                            <form action="{{ route('leave.decline', $leave) }}" method="POST">
+                                @csrf
+                                <button type="submit" title="Decline" aria-label="Decline"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                    <i class="ti ti-x text-lg"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @empty

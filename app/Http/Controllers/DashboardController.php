@@ -10,6 +10,7 @@ use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -20,15 +21,11 @@ class DashboardController extends Controller
         // Total Employees (from employees table)
         $totalEmployees = Employee::where('status', 1)->count();
 
-        // New Hires: employees hired within the last 30 days (interns, probationary, part-time)
-        // employment_type: 2=Part-time, 4=Temporary (Interns); status: 2=Probationary
-        $newHires = Employee::whereBetween('hire_date', [Carbon::now()->subDays(30)->startOfDay(), Carbon::now()->endOfDay()])
-            ->where(function ($query) {
-                $query->where('employment_type', 2)  // Part-time
-                      ->orWhere('employment_type', 4) // Temporary/Interns
-                      ->orWhere('status', 2);          // Probationary
-            })
-            ->count();
+        // New Hires: employees whose hire_date falls within the last 30 days
+        $newHires = Employee::whereBetween('hire_date', [
+            Carbon::now()->subDays(30)->startOfDay(),
+            Carbon::now()->endOfDay(),
+        ])->count();
 
         // On Leave Today
         $today = Carbon::now()->toDateString();
@@ -60,10 +57,17 @@ class DashboardController extends Controller
             ->where('attendance_date', $today)
             ->get();
 
-        // Pending Leave Requests
-        $pendingLeaves = Leave::with('user')
-            ->where('status', 'pending')
+        // Pending Leave Requests (status 1 = pending)
+        $pendingLeaves = Leave::with('employee')
+            ->where('status', 1)
+            ->latest('created_at')
             ->get();
+
+        // Load leave type names for display
+        $leaveTypeNames = collect();
+        if (Schema::hasTable('leave_types')) {
+            $leaveTypeNames = DB::table('leave_types')->pluck('name', 'id');
+        }
 
         return view('dashboard', [
             'user' => $user,
@@ -75,6 +79,7 @@ class DashboardController extends Controller
             'payrollProcessing' => $payrollProcessing,
             'todayAttendance' => $todayAttendance,
             'pendingLeaves' => $pendingLeaves,
+            'leaveTypeNames' => $leaveTypeNames,
         ]);
     }
 }
