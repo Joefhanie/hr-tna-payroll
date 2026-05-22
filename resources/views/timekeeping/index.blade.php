@@ -211,20 +211,66 @@
     {{-- List View --}}
     <div id="view-list" class="hidden">
         <section class="card p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 border-b border-slate-100 pb-4">
                 <div>
                     <h3 class="text-base font-bold text-slate-800">Attendance Records</h3>
                     <p class="text-xs text-slate-500">View and manage attendance logs for the selected date.</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label for="list-date-selector" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Select Date:</label>
-                    <input type="date" 
-                           id="list-date-selector" 
-                           value="{{ $selectedDate }}" 
-                           onchange="window.location.href = '{{ route('timekeeping.index') }}?date=' + this.value + '&tab=list'" 
-                           class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
-                </div>
             </div>
+
+            {{-- Filters Form --}}
+            <form id="filterForm" method="GET" action="{{ route('timekeeping.index') }}" class="mb-5 flex flex-wrap gap-3 items-end">
+                <input type="hidden" name="tab" value="list">
+                
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
+                    <div class="relative">
+                        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
+                        <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
+                            placeholder="Search by name, code, email…"
+                            class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                    </div>
+                </div>
+
+                <div class="min-w-[150px]">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
+                    <select name="status" id="filterStatus"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                        <option value="">All Statuses</option>
+                        <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Present</option>
+                        <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Late</option>
+                        <option value="3" {{ ($filters['status'] ?? '') == '3' ? 'selected' : '' }}>Absent</option>
+                        <option value="4" {{ ($filters['status'] ?? '') == '4' ? 'selected' : '' }}>On Leave</option>
+                        <option value="5" {{ ($filters['status'] ?? '') == '5' ? 'selected' : '' }}>Shift Not Started</option>
+                    </select>
+                </div>
+
+                <div class="min-w-[150px]">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Date</label>
+                    <input type="date" name="date" id="filterDate" value="{{ $selectedDate }}"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                </div>
+
+                <button type="submit"
+                    class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+                    Filter
+                </button>
+
+                @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
+                <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
+                    class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                    Clear Filters
+                </a>
+                @endif
+
+                <a href="{{ route('timekeeping.export') }}" id="btnExport"
+                    class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 ml-auto flex items-center gap-1.5">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export CSV
+                </a>
+            </form>
             <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
@@ -661,6 +707,36 @@
             const urlParams = new URLSearchParams(window.location.search);
             const activeTab = urlParams.get('tab') || 'calendar';
             switchTab(activeTab);
+
+            // Dynamic Export URL update
+            const filterSearch = document.getElementById('filterSearch');
+            const filterStatus = document.getElementById('filterStatus');
+            const filterDate = document.getElementById('filterDate');
+            const btnExport = document.getElementById('btnExport');
+
+            function updateExportUrl() {
+                if (!btnExport) return;
+                const q = filterSearch ? filterSearch.value : '';
+                const status = filterStatus ? filterStatus.value : '';
+                const date = filterDate ? filterDate.value : '';
+
+                let url = "{{ route('timekeeping.export') }}";
+                const params = [];
+                if (q) params.push(`q=${encodeURIComponent(q)}`);
+                if (status) params.push(`status=${encodeURIComponent(status)}`);
+                if (date) params.push(`date=${encodeURIComponent(date)}`);
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                btnExport.href = url;
+            }
+
+            if (filterSearch) filterSearch.addEventListener('input', updateExportUrl);
+            if (filterStatus) filterStatus.addEventListener('change', updateExportUrl);
+            if (filterDate) filterDate.addEventListener('change', updateExportUrl);
+
+            updateExportUrl();
         });
 
         @php

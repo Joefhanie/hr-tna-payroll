@@ -38,6 +38,44 @@
         </div>
     </div>
 
+    {{-- Live Filters --}}
+    <form id="filterForm" method="GET" action="{{ route('payroll.index') }}" class="card p-4 mb-6">
+        <div class="flex flex-wrap gap-3 items-end">
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Period Start From</label>
+                <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </div>
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Period End To</label>
+                <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </div>
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+                <select name="status" id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="">All Statuses</option>
+                    <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Draft</option>
+                    <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Processing</option>
+                    <option value="3" {{ ($filters['status'] ?? '') == '3' ? 'selected' : '' }}>Completed</option>
+                    <option value="4" {{ ($filters['status'] ?? '') == '4' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+                Apply
+            </button>
+            <a href="{{ route('payroll.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                Clear
+            </a>
+            <a href="{{ route('payroll.export') }}" id="btnExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+            </a>
+        </div>
+    </form>
+
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -55,11 +93,11 @@
                     @forelse($payRuns as $payRun)
                         @php
                             // PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
-                                // Status 13 = Deleted (soft delete equivalent)
-                                if ($payRun->status == 13) continue;
-                            $grossTotal = $payRun->payslips()->sum('gross_pay');
-                            $netTotal = $payRun->payslips()->sum('net_pay');
-                            $employeeCount = $payRun->payslips()->count();
+                            // Status 13 = Deleted (soft delete equivalent)
+                            if ($payRun->status == 13) continue;
+                            $grossTotal = $payRun->payslips->sum('gross_pay');
+                            $netTotal = $payRun->payslips->sum('net_pay');
+                            $employeeCount = $payRun->payslips->count();
                             $statusLabels = [1 => 'Draft', 2 => 'Processing', 3 => 'Completed', 4 => 'Cancelled'];
                             $statusLabel = $statusLabels[$payRun->status] ?? 'Unknown';
                             $statusColor = match((int) $payRun->status) {
@@ -125,5 +163,37 @@
                 </tbody>
             </table>
         </div>
+        @if ($payRuns->hasPages())
+            <div class="border-t border-slate-100 px-6 py-4">
+                {{ $payRuns->links() }}
+            </div>
+        @endif
     </div>
+
+    <script>
+        // Update export button URL dynamically based on form inputs
+        function updateExportUrl() {
+            const startDate = document.getElementById('filterStartDate')?.value || '';
+            const endDate = document.getElementById('filterEndDate')?.value || '';
+            const status = document.getElementById('filterStatus')?.value || '';
+
+            let url = "{{ route('payroll.export') }}";
+            const params = [];
+            if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
+            if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
+            if (status) params.push(`status=${encodeURIComponent(status)}`);
+            if (params.length > 0) {
+                url += `?${params.join('&')}`;
+            }
+            const exportBtn = document.getElementById('btnExport');
+            if (exportBtn) exportBtn.href = url;
+        }
+
+        document.getElementById('filterStartDate')?.addEventListener('change', updateExportUrl);
+        document.getElementById('filterEndDate')?.addEventListener('change', updateExportUrl);
+        document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
+
+        // Run once on load
+        updateExportUrl();
+    </script>
 </x-app-layout>

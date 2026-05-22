@@ -22,8 +22,70 @@ class LeaveController extends Controller
     /**
      * Display the main leave management page.
      */
+    /**
+     * Build the query for index and export.
+     */
+    private function buildQuery(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $query = Leave::with(['employee', 'approver'])
+            ->latest('created_at');
+
+        // Employees only see their own leaves
+        if ($user && $user->role === 1 && $user->employee_id) {
+            $query->where('employee_id', $user->employee_id);
+        }
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($subQuery) use ($q) {
+                $subQuery->whereHas('employee', function ($empQuery) use ($q) {
+                    $empQuery->where('first_name', 'like', "%{$q}%")
+                        ->orWhere('last_name', 'like', "%{$q}%")
+                        ->orWhere('middle_name', 'like', "%{$q}%")
+                        ->orWhere('employee_code', 'like', "%{$q}%");
+                });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $statusMap = ['pending' => 1, 'approved' => 2, 'rejected' => 3, 'cancelled' => 4];
+            $statusVal = $request->input('status');
+            if (isset($statusMap[$statusVal])) {
+                $query->where('status', $statusMap[$statusVal]);
+            }
+        }
+
+        if ($request->filled('type')) {
+            $query->where('leave_type_id', $request->input('type'));
+        }
+
+        if ($request->filled('start_date')) {
+            $query->where('start_date', '>=', $request->input('start_date'));
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('end_date', '<=', $request->input('end_date'));
+        }
+
+        return $query;
+    }
+
+    /**
+     * Display the main leave management page.
+     */
     public function index(Request $request)
     {
+        $request->validate([
+            'q'          => ['nullable', 'string', 'max:255'],
+            'status'     => ['nullable', 'string', 'in:pending,approved,rejected,cancelled'],
+            'type'       => ['nullable', 'integer'],
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+        ]);
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
@@ -74,34 +136,19 @@ class LeaveController extends Controller
 
         // Filters
         $filters = [
-            'q'      => trim((string) $request->string('q')),
-            'status' => trim((string) $request->string('status')),
-            'type'   => trim((string) $request->string('type')),
+            'q'          => trim((string) $request->string('q')),
+            'status'     => trim((string) $request->string('status')),
+            'type'       => trim((string) $request->string('type')),
+            'start_date' => trim((string) $request->string('start_date')),
+            'end_date'   => trim((string) $request->string('end_date')),
         ];
 
-        // Build leave requests query
-        $query = Leave::with(['employee', 'approver'])
-            ->latest('created_at');
+        // Paginate the query
+        $leaveRequestsPaginated = $this->buildQuery($request)
+            ->paginate(15)
+            ->appends($request->query());
 
-        // Employees only see their own leaves
-        if ($user && $user->role === 1 && $user->employee_id) {
-            $query->where('employee_id', $user->employee_id);
-        }
-
-        // Status filter
-        if ($filters['status'] !== '') {
-            $statusMap = ['pending' => 1, 'approved' => 2, 'rejected' => 3];
-            if (isset($statusMap[$filters['status']])) {
-                $query->where('status', $statusMap[$filters['status']]);
-            }
-        }
-
-        // Leave type filter
-        if ($filters['type'] !== '') {
-            $query->where('leave_type_id', $filters['type']);
-        }
-
-        $leaveRequests = $query->get()->map(function (Leave $leave) use ($leaveTypes) {
+        $leaveRequests = collect($leaveRequestsPaginated->items())->map(function (Leave $leave) use ($leaveTypes) {
             $leaveTypeName = collect($leaveTypes)->firstWhere('id', $leave->leave_type_id)?->name ?? 'Leave Request';
             $employee = $leave->employee;
 
@@ -123,24 +170,99 @@ class LeaveController extends Controller
             ];
         });
 
-        // Search filter
-        if ($filters['q'] !== '') {
-            $needle = mb_strtolower($filters['q']);
-            $leaveRequests = $leaveRequests->filter(function ($r) use ($needle) {
-                return str_contains(mb_strtolower($r['employee']), $needle)
-                    || str_contains(mb_strtolower($r['type']), $needle);
-            })->values();
-        }
-
         return view('leave', [
-            'balances'      => $balances,
-            'leaveRequests' => $leaveRequests,
-            'leaveTypes'    => $leaveTypes,
-            'filters'       => $filters,
-            'employees'     => $user && $user->role !== 1
+            'balances'               => $balances,
+            'leaveRequests'          => $leaveRequests,
+            'leaveRequestsPaginated' => $leaveRequestsPaginated,
+            'leaveTypes'             => $leaveTypes,
+            'filters'                => $filters,
+            'employees'              => $user && $user->role !== 1
                 ? Employee::with('user')->orderBy('first_name')->get()
                 : collect(),
         ]);
+    }
+
+    /**
+     * Export leaves to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'q'          => ['nullable', 'string', 'max:255'],
+            'status'     => ['nullable', 'string', 'in:pending,approved,rejected,cancelled'],
+            'type'       => ['nullable', 'integer'],
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+        ]);
+
+        $leaves = $this->buildQuery($request)->get();
+        $filename = "leave_requests_export_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        // Fetch leave types for labels
+        $leaveTypes = [];
+        if (Schema::hasTable('leave_types')) {
+            $leaveTypes = DB::table('leave_types')
+                ->where('is_active', 1)
+                ->get()
+                ->keyBy('id');
+        }
+
+        return response()->stream(function () use ($leaves, $leaveTypes) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'Request ID',
+                'Employee Code',
+                'Employee Name',
+                'Leave Type',
+                'Start Date',
+                'End Date',
+                'Days Requested',
+                'Status',
+                'Reason',
+                'Approver/Resolver',
+                'Rejection Note/Cancellation Reason'
+            ]);
+
+            $statusLabels = [
+                1 => 'Pending',
+                2 => 'Approved',
+                3 => 'Rejected',
+                4 => 'Cancelled'
+            ];
+
+            foreach ($leaves as $leave) {
+                $employee = $leave->employee;
+                $leaveTypeName = isset($leaveTypes[$leave->leave_type_id]) ? $leaveTypes[$leave->leave_type_id]->name : 'Leave';
+                
+                fputcsv($file, [
+                    $leave->id,
+                    $employee->employee_code ?? 'N/A',
+                    $employee ? $employee->full_name : 'N/A',
+                    $leaveTypeName,
+                    optional($leave->start_date)->toDateString() ?? '',
+                    optional($leave->end_date)->toDateString() ?? '',
+                    $leave->days_requested,
+                    $statusLabels[$leave->status] ?? 'Unknown',
+                    $leave->reason ?? '',
+                    $leave->approver ? $leave->approver->name : '',
+                    $leave->rejection_note ?? ''
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**

@@ -14,24 +14,62 @@ use Illuminate\View\View;
 class PayrollController extends Controller
 {
     /**
+     * Build the query for index and export.
+     */
+    private function buildQuery(Request $request)
+    {
+        $query = PayRun::with('payslips')->where('status', '!=', 13);
+
+        if ($request->filled('start_date')) {
+            $query->where('period_start', '>=', $request->input('start_date'));
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('period_end', '<=', $request->input('end_date'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // If no date filters are active, default to current year
+        if (!$request->filled('start_date') && !$request->filled('end_date')) {
+            $query->whereYear('period_start', now()->year);
+        }
+
+        return $query->orderBy('period_end', 'desc');
+    }
+
+    /**
      * Display the payroll dashboard.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+            'status'     => ['nullable', 'integer', 'in:1,2,3,4'],
+        ]);
+
         $currentYear = now()->year;
 
-        // Get all pay runs for the current year, excluding deleted ones (status 13)
-        $payRuns = PayRun::whereYear('period_start', $currentYear)
+        // Paginate the filtered pay runs
+        $payRuns = $this->buildQuery($request)
+            ->paginate(15)
+            ->appends($request->query());
+
+        $filters = $request->only(['start_date', 'end_date', 'status']);
+
+        // Calculate YTD totals (Year-to-Date using all non-deleted pay runs for the current year)
+        $ytdPayRuns = PayRun::whereYear('period_start', $currentYear)
             ->where('status', '!=', 13)
-            ->orderBy('period_end', 'desc')
             ->get();
 
-        // Calculate YTD totals
-        $ytdGross = $payRuns->sum(function ($payRun) {
+        $ytdGross = $ytdPayRuns->sum(function ($payRun) {
             return $payRun->payslips()->sum('gross_pay');
         });
 
-        $ytdNet = $payRuns->sum(function ($payRun) {
+        $ytdNet = $ytdPayRuns->sum(function ($payRun) {
             return $payRun->payslips()->sum('net_pay');
         });
 
@@ -52,7 +90,77 @@ class PayrollController extends Controller
                 return $contribution->employee_share + $contribution->employer_share;
             });
 
-        return view('payroll.index', compact('payRuns', 'ytdGross', 'ytdNet', 'statutoryAmount'));
+        return view('payroll.index', compact('payRuns', 'ytdGross', 'ytdNet', 'statutoryAmount', 'filters'));
+    }
+
+    /**
+     * Export pay runs to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+            'status'     => ['nullable', 'integer', 'in:1,2,3,4'],
+        ]);
+
+        $payRuns = $this->buildQuery($request)->get();
+        $filename = "pay_runs_export_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($payRuns) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'Pay Run ID',
+                'Period Start',
+                'Period End',
+                'Pay Date',
+                'Status',
+                'Number of Employees',
+                'Total Gross Pay',
+                'Total Net Pay',
+                'Total Deductions'
+            ]);
+
+            $statusLabels = [
+                1 => 'Draft',
+                2 => 'Processing',
+                3 => 'Completed',
+                4 => 'Cancelled'
+            ];
+
+            foreach ($payRuns as $payRun) {
+                $employeeCount = $payRun->payslips->count();
+                $grossPay = $payRun->payslips->sum('gross_pay');
+                $netPay = $payRun->payslips->sum('net_pay');
+                $deductions = $payRun->payslips->sum('total_deductions');
+
+                fputcsv($file, [
+                    $payRun->id,
+                    $payRun->period_start ? $payRun->period_start->format('Y-m-d') : 'N/A',
+                    $payRun->period_end ? $payRun->period_end->format('Y-m-d') : 'N/A',
+                    $payRun->pay_date ? $payRun->pay_date->format('Y-m-d') : 'N/A',
+                    $statusLabels[$payRun->status] ?? 'Unknown',
+                    $employeeCount,
+                    number_format($grossPay, 2, '.', ''),
+                    number_format($netPay, 2, '.', ''),
+                    number_format($deductions, 2, '.', '')
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**

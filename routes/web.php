@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () {
 
     // Timekeeping Management
     Route::middleware('permission:timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete')->group(function () {
+        Route::get('/timekeeping/export', [TimekeepingController::class, 'export'])->name('timekeeping.export');
         Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
         Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
         Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
@@ -220,6 +221,7 @@ Route::middleware('auth')->group(function () {
 
     // Leave Management
     Route::middleware('permission:leaves.view,leaves.create,leaves.edit,leaves.delete')->group(function () {
+        Route::get('/leave/export', [LeaveController::class, 'export'])->name('leave.export');
         Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
         Route::get('/leave/calendar', [LeaveController::class, 'calendarView'])->name('leave.calendar');
     });
@@ -270,6 +272,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
     });
     Route::middleware('permission:employees.view,employees.create,employees.edit,employees.delete')->group(function () {
+        Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
         Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
         Route::get('/employees/{employee}', [EmployeeController::class, 'show'])->name('employees.show');
         Route::get('/employees-temporary-access', [EmployeeController::class, 'temporaryAccess'])->name('employees.temporary-access');
@@ -294,6 +297,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
     });
     Route::middleware('permission:payroll.view,payroll.create,payroll.edit,payroll.delete')->group(function () {
+        Route::get('/salaries/export', [SalaryController::class, 'export'])->name('salary.export');
         Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
         Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
 
@@ -304,6 +308,7 @@ Route::middleware('auth')->group(function () {
         Route::redirect('/payroll/special-case', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-of-payments', '/payroll/plotting-payment');
         Route::redirect('/payroll/plotting-payments', '/payroll/plotting-payment');
+        Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
         Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
         Route::get('/payroll/plotting-payment', [PayrollController::class, 'plottingPayment'])->name('payroll.plotting-payment');
         Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
@@ -311,10 +316,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
 
         // Previous Claims — must be BEFORE the {payRun} wildcard
+        Route::get('/payroll/previous-claims/export', [PreviousClaimController::class, 'export'])->name('payroll.previous-claims.export');
         Route::get('/payroll/previous-claims', [PreviousClaimController::class, 'index'])->name('payroll.previous-claims.index');
         Route::post('/payroll/previous-claims', [PreviousClaimController::class, 'store'])->name('payroll.previous-claims.store');
 
         // Disputes — must be BEFORE the {payRun} wildcard
+        Route::get('/payroll/disputes/export', [PayslipDisputeController::class, 'export'])->name('payroll.disputes.export');
         Route::get('/payroll/disputes', [PayslipDisputeController::class, 'index'])->name('payroll.disputes.index');
         Route::post('/payroll/disputes', [PayslipDisputeController::class, 'store'])->name('payroll.disputes.store');
         Route::get('/payroll/disputes/api/payslip-items/{payslip}', [PayslipDisputeController::class, 'getPayslipItems'])->name('payroll.disputes.api.payslip-items');

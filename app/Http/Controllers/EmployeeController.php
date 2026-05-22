@@ -19,14 +19,138 @@ class EmployeeController extends Controller
     }
 
     /**
+     * Build the query for index and export.
+     */
+    private function buildQuery(Request $request)
+    {
+        $query = Employee::with(['department', 'position', 'manager']);
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($subQuery) use ($q) {
+                $subQuery->where('first_name', 'like', "%{$q}%")
+                    ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhere('middle_name', 'like', "%{$q}%")
+                    ->orWhere('employee_code', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('employment_type')) {
+            $query->where('employment_type', $request->input('employment_type'));
+        }
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->input('department_id'));
+        }
+
+        return $query;
+    }
+
+    /**
      * Display a listing of employees.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $employees = Employee::with(['department', 'position', 'manager'])
-            ->paginate(15);
+        $request->validate([
+            'q'               => ['nullable', 'string', 'max:255'],
+            'status'          => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'employment_type' => ['nullable', 'integer', 'in:1,2,3,4'],
+            'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
 
-        return view('employees.index', compact('employees'));
+        $employees = $this->buildQuery($request)
+            ->paginate(15)
+            ->appends($request->query());
+
+        $departments = Department::all();
+        $filters = $request->only(['q', 'status', 'employment_type', 'department_id']);
+
+        return view('employees.index', compact('employees', 'departments', 'filters'));
+    }
+
+    /**
+     * Export employees to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'q'               => ['nullable', 'string', 'max:255'],
+            'status'          => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'employment_type' => ['nullable', 'integer', 'in:1,2,3,4'],
+            'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+
+        $employees = $this->buildQuery($request)->get();
+        $filename = "employees_export_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($employees) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'ID',
+                'Employee Code',
+                'First Name',
+                'Middle Name',
+                'Last Name',
+                'Email',
+                'Phone',
+                'Hire Date',
+                'Employment Type',
+                'Status',
+                'Department',
+                'Position'
+            ]);
+
+            $statusLabels = [
+                1 => 'Active',
+                2 => 'Probationary',
+                3 => 'On Leave',
+                4 => 'Resigned',
+                5 => 'Terminated'
+            ];
+
+            $empLabels = [
+                1 => 'Full-time',
+                2 => 'Part-time',
+                3 => 'Contractual',
+                4 => 'Intern'
+            ];
+
+            foreach ($employees as $emp) {
+                fputcsv($file, [
+                    $emp->id,
+                    $emp->employee_code,
+                    $emp->first_name,
+                    $emp->middle_name,
+                    $emp->last_name,
+                    $emp->email,
+                    $emp->phone,
+                    optional($emp->hire_date)->toDateString() ?? '',
+                    $empLabels[$emp->employment_type] ?? 'N/A',
+                    $statusLabels[$emp->status] ?? 'Unknown',
+                    $emp->department->name ?? 'N/A',
+                    $emp->position->title ?? 'N/A',
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**

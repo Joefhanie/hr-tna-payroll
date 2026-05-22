@@ -11,15 +11,80 @@ class PayslipDisputeController extends Controller
     /**
      * Display a listing of the disputes.
      */
-    public function index(Request $request)
+    /**
+     * Build the query for Disputes based on request parameters.
+     */
+    private function buildQuery(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $query = PayslipDispute::with(['employee', 'payslip.payRun', 'lineItem', 'resolver'])->latest('created_at');
+        $query = PayslipDispute::with(['employee', 'payslip.payRun', 'lineItem', 'resolver'])
+            ->latest('created_at');
 
         // Employees only see their own
         if ($user && $user->role === 1 && $user->employee_id) {
             $query->where('employee_id', $user->employee_id);
+        }
+
+        // Status filter (1 = Pending, 2 = Resolved, 3 = Rejected)
+        if ($request->filled('status')) {
+            $map = ['pending' => 1, 'resolved' => 2, 'rejected' => 3];
+            if (isset($map[$request->status])) {
+                $query->where('status', $map[$request->status]);
+            }
+        }
+
+        // Date range filters (by created_at)
+        if ($request->filled('start_date')) {
+            $query->where('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->where('created_at', '<=', $request->end_date . ' 23:59:59');
+        }
+
+        // Search filter (SQL level)
+        if ($request->filled('q')) {
+            $needle = trim($request->q);
+            $query->where(function ($subQuery) use ($needle) {
+                $subQuery->whereHas('employee', function ($empQuery) use ($needle) {
+                    $empQuery->where('first_name', 'like', "%{$needle}%")
+                        ->orWhere('last_name', 'like', "%{$needle}%")
+                        ->orWhere('middle_name', 'like', "%{$needle}%");
+                })
+                ->orWhere('dispute_reason', 'like', "%{$needle}%");
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Display a listing of the disputes.
+     */
+    public function index(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $request->validate([
+            'q'          => ['nullable', 'string', 'max:255'],
+            'status'     => ['nullable', 'string', 'in:pending,resolved,rejected'],
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+        ]);
+
+        $filters = [
+            'q'          => trim((string) $request->string('q')),
+            'status'     => trim((string) $request->string('status')),
+            'start_date' => trim((string) $request->string('start_date')),
+            'end_date'   => trim((string) $request->string('end_date')),
+        ];
+
+        $query = $this->buildQuery($request);
+
+        // Employees only see their own
+        if ($user && $user->role === 1 && $user->employee_id) {
             $payslips = \App\Models\Payslip::with('payRun')
                 ->whereHas('payRun', function($q) {
                     $q->whereNotIn('status', [1, 2, 13]);
@@ -43,12 +108,102 @@ class PayslipDisputeController extends Controller
 
         return view('payroll.disputes.index', [
             'disputes'      => $disputes,
+            'filters'       => $filters,
             'totalPending'  => $totalPending,
             'totalResolved' => $totalResolved,
             'totalRejected' => $totalRejected,
             'employees'     => $employees,
             'payslips'      => $payslips,
         ]);
+    }
+
+    /**
+     * Export Payslip Disputes to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'q'          => ['nullable', 'string', 'max:255'],
+            'status'     => ['nullable', 'string', 'in:pending,resolved,rejected'],
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+        ]);
+
+        $disputes = $this->buildQuery($request)->get();
+        $now = Carbon::now()->format('Y-m-d');
+        $filename = "payslip_disputes_export_{$now}.csv";
+
+        $headers = [
+            'Dispute ID',
+            'Employee Code',
+            'Employee Name',
+            'Pay Run Period',
+            'Dispute Amount',
+            'Line Item',
+            'Reason',
+            'Status',
+            'Resolved By',
+            'Resolved At',
+            'HR Notes'
+        ];
+
+        $statusLabels = [
+            1 => 'Pending',
+            2 => 'Resolved',
+            3 => 'Rejected'
+        ];
+
+        return $this->streamCsv($filename, $headers, function ($file) use ($disputes, $statusLabels) {
+            foreach ($disputes as $dispute) {
+                $employee = $dispute->employee;
+                $payslip = $dispute->payslip;
+                $payRun = $payslip?->payRun;
+                $payRunPeriod = $payRun 
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                    : 'N/A';
+
+                fputcsv($file, [
+                    $dispute->id,
+                    $employee->employee_code ?? 'N/A',
+                    $employee ? $employee->full_name : 'N/A',
+                    $payRunPeriod,
+                    $dispute->dispute_amount,
+                    $dispute->lineItem ? $dispute->lineItem->description : 'Entire Payslip',
+                    $dispute->dispute_reason,
+                    $statusLabels[$dispute->status] ?? 'Unknown',
+                    $dispute->resolver ? $dispute->resolver->name : 'N/A',
+                    $dispute->resolved_at ? $dispute->resolved_at->format('Y-m-d H:i') : '',
+                    $dispute->hr_notes ?? ''
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Helper method to stream a CSV response.
+     */
+    private function streamCsv($filename, $headers, $callback)
+    {
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($headers, $callback) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, $headers);
+
+            $callback($file);
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**

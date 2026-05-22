@@ -10,10 +10,16 @@
             <h1 class="text-3xl font-bold text-slate-900">Payslip Disputes</h1>
             <p class="mt-1 text-sm text-slate-600">Review and resolve disputes raised by employees regarding their processed payslips.</p>
         </div>
-        <button type="button" id="openDisputeModal"
-            class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium text-sm">
-            <i class="ti ti-plus text-base"></i> File a Dispute
-        </button>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('payroll.disputes.export') }}" id="btnExport"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg transition border border-slate-200 flex items-center gap-2 font-medium text-sm">
+                <i class="ti ti-download text-base"></i> Export CSV
+            </a>
+            <button type="button" id="openDisputeModal"
+                class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
+                <i class="ti ti-plus text-base"></i> File a Dispute
+            </button>
+        </div>
     </div>
 
     {{-- Stats (HR only) --}}
@@ -41,7 +47,7 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
                 <div class="relative">
                     <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input type="text" id="filterSearch" placeholder="Employee, reason…"
+                    <input type="text" id="filterSearch" placeholder="Employee, reason…" value="{{ $filters['q'] ?? '' }}"
                         class="w-full rounded-lg border border-slate-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -49,10 +55,20 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
                 <select id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All</option>
-                    <option value="pending">Pending</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="rejected">Rejected</option>
+                    <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="resolved" {{ ($filters['status'] ?? '') === 'resolved' ? 'selected' : '' }}>Resolved</option>
+                    <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                 </select>
+            </div>
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
+                <input type="date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="min-w-[140px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">End Date</label>
+                <input type="date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="button" id="clearFilters" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 <i class="ti ti-x text-xs"></i> Clear
@@ -89,6 +105,7 @@
                     <tr class="hover:bg-slate-50 transition dispute-row"
                         data-employee="{{ strtolower($dispute->employee?->full_name ?? '') }}"
                         data-status="{{ strtolower($statusLabel) }}"
+                        data-date="{{ $dispute->created_at->toDateString() }}"
                         data-reason="{{ strtolower($dispute->dispute_reason ?? '') }}">
                         
                         @if($isHR)
@@ -120,7 +137,7 @@
                             <span class="badge {{ $statusColor }}">{{ $statusLabel }}</span>
                         </td>
                         <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
-                            {{ $dispute->resolver ? $dispute->resolver->first_name . ' ' . $dispute->resolver->last_name : '—' }}
+                            {{ $dispute->resolver ? $dispute->resolver->name : '—' }}
                         </td>
                         <td class="px-4 py-3 text-slate-600 whitespace-nowrap text-xs">
                             {{ $dispute->resolved_at ? $dispute->resolved_at->format('M d, Y h:i A') : '—' }}
@@ -319,6 +336,8 @@
         // ===== LIVE FILTERING =====
         const searchInput  = document.getElementById('filterSearch');
         const statusSelect = document.getElementById('filterStatus');
+        const filterStartDate = document.getElementById('filterStartDate');
+        const filterEndDate   = document.getElementById('filterEndDate');
         const clearBtn     = document.getElementById('clearFilters');
         const filterCount  = document.getElementById('filterCount');
         const rows         = document.querySelectorAll('.dispute-row');
@@ -328,8 +347,10 @@
         function getColspan() { return {{ $isHR ? 9 : 8 }}; }
 
         function applyFilters() {
-            const q      = (searchInput?.value  || '').toLowerCase().trim();
-            const status = (statusSelect?.value || '').toLowerCase();
+            const q         = (searchInput?.value  || '').toLowerCase().trim();
+            const status    = (statusSelect?.value || '').toLowerCase();
+            const startDate = filterStartDate?.value || '';
+            const endDate   = filterEndDate?.value || '';
 
             let visible = 0;
 
@@ -339,11 +360,29 @@
                     row.dataset.reason.includes(q);
 
                 const matchStatus = !status || row.dataset.status === status;
+                
+                const rowDate = row.dataset.date;
+                const matchDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
 
-                const show = matchQ && matchStatus;
+                const show = matchQ && matchStatus && matchDate;
                 row.style.display = show ? '' : 'none';
                 if (show) visible++;
             });
+
+            // Update export button URL dynamically
+            const exportBtn = document.getElementById('btnExport');
+            if (exportBtn) {
+                let url = "{{ route('payroll.disputes.export') }}";
+                const params = [];
+                if (q) params.push(`q=${encodeURIComponent(q)}`);
+                if (status) params.push(`status=${encodeURIComponent(status)}`);
+                if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
+                if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
+                if (params.length > 0) {
+                    url += `?${params.join('&')}`;
+                }
+                exportBtn.href = url;
+            }
 
             const tbody = document.getElementById('disputesTableBody');
             if (visible === 0 && totalRows > 0) {
@@ -358,7 +397,7 @@
                 noResultsRow.style.display = 'none';
             }
 
-            const isFiltered = q || status;
+            const isFiltered = q || status || startDate || endDate;
             if (isFiltered && filterCount) {
                 filterCount.textContent = `Showing ${visible} of ${totalRows} dispute${totalRows !== 1 ? 's' : ''}`;
                 filterCount.classList.remove('hidden');
@@ -374,12 +413,19 @@
         });
 
         statusSelect?.addEventListener('change', applyFilters);
+        filterStartDate?.addEventListener('change', applyFilters);
+        filterEndDate?.addEventListener('change', applyFilters);
 
         clearBtn?.addEventListener('click', () => {
-            if (searchInput)  searchInput.value  = '';
-            if (statusSelect) statusSelect.value = '';
+            if (searchInput)     searchInput.value     = '';
+            if (statusSelect)    statusSelect.value    = '';
+            if (filterStartDate) filterStartDate.value = '';
+            if (filterEndDate)   filterEndDate.value   = '';
             applyFilters();
         });
+
+        // Apply filters on load to sync initial query state
+        applyFilters();
         // ===== MODALS =====
         function openModal(el) { el.classList.remove('hidden'); el.classList.add('flex'); }
         function closeModal(el) { el.classList.remove('flex'); el.classList.add('hidden'); }

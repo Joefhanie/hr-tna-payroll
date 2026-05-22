@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Schema;
 
 class TimekeepingController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Build the attendance list for the selected date, including actual and virtual records.
+     */
+    private function buildTodayAttendance(Request $request)
     {
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
-        $selectedDateCarbon = Carbon::parse($selectedDate);
 
         $employees = Schema::hasTable('employees')
             ? Employee::with(['user', 'currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
@@ -25,16 +27,6 @@ class TimekeepingController extends Controller
         $todayAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
                 ->where('attendance_date', $selectedDate)
-                ->orderBy('check_in')
-                ->get()
-            : collect();
-
-        $calendarDataRecords = Schema::hasTable('attendance')
-            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->whereBetween('attendance_date', [
-                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
-                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
-                ])
                 ->orderBy('check_in')
                 ->get()
             : collect();
@@ -125,8 +117,194 @@ class TimekeepingController extends Controller
             return $attendanceCollection->concat($virtualRecords);
         };
 
-        // Add virtual records to today's list and the calendar data
         $todayAttendance = $addVirtualShiftNotStarted($todayAttendance, $employees, $selectedDate);
+
+        // Enforce approved leave priority over any status in view
+        $allApprovedLeaves = \Illuminate\Support\Facades\DB::table('leave_requests')
+            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+            ->where('leave_requests.status', 2) // Approved
+            ->select('leave_requests.*', 'leave_types.is_paid')
+            ->get();
+
+        $leaveLookup = [];
+        $paidLeaveLookup = [];
+        foreach ($allApprovedLeaves as $leave) {
+            $start = Carbon::parse($leave->start_date);
+            $end = Carbon::parse($leave->end_date);
+            $c = $start->copy();
+            while ($c->lte($end)) {
+                $dateKey = $c->toDateString();
+                $leaveLookup[$leave->employee_id][$dateKey] = true;
+                if ($leave->is_paid) {
+                    $paidLeaveLookup[$leave->employee_id][$dateKey] = true;
+                }
+                $c->addDay();
+            }
+        }
+
+        foreach ($todayAttendance as $att) {
+            $employee = $att->user?->employee;
+            if ($employee) {
+                $dateStr = $att->attendance_date->toDateString();
+                $isPaidLeave = isset($paidLeaveLookup[$employee->id][$dateStr]);
+                $isAnyLeave = isset($leaveLookup[$employee->id][$dateStr]);
+                
+                $shouldOverride = false;
+                // If no check-in/out, always override with leave
+                if (is_null($att->check_in) && is_null($att->check_out) && $isAnyLeave) {
+                    $shouldOverride = true;
+                }
+                // If they timed in, but it's a paid leave, override with paid leave
+                elseif ($isPaidLeave) {
+                    $shouldOverride = true;
+                }
+
+                if ($shouldOverride) {
+                    $att->status = 4; // On Leave
+                    $att->notes = $isPaidLeave ? 'Approved Paid Leave (Priority Override)' : 'Approved Leave (Priority Override)';
+                }
+            }
+        }
+
+        return $todayAttendance;
+    }
+
+    public function index(Request $request)
+    {
+        $request->validate([
+            'date'   => ['nullable', 'date'],
+            'q'      => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+        ]);
+
+        $selectedDate = $request->query('date', Carbon::now()->toDateString());
+        $selectedDateCarbon = Carbon::parse($selectedDate);
+
+        // Get unfiltered list for summary counts
+        $unfilteredAttendance = $this->buildTodayAttendance($request);
+
+        // Apply filters to $todayAttendance
+        $todayAttendance = $unfilteredAttendance;
+        if ($request->filled('q')) {
+            $qLower = strtolower($request->input('q'));
+            $todayAttendance = $todayAttendance->filter(function ($att) use ($qLower) {
+                $emp = $att->user?->employee;
+                if (!$emp) return false;
+                return str_contains(strtolower($emp->first_name), $qLower)
+                    || str_contains(strtolower($emp->last_name), $qLower)
+                    || str_contains(strtolower($emp->middle_name), $qLower)
+                    || str_contains(strtolower($emp->employee_code), $qLower)
+                    || str_contains(strtolower($emp->email), $qLower);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $statusVal = (int) $request->input('status');
+            $todayAttendance = $todayAttendance->filter(function ($att) use ($statusVal) {
+                return ((int) $att->status) === $statusVal;
+            });
+        }
+
+        $employees = Schema::hasTable('employees')
+            ? Employee::with(['user', 'currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            : collect();
+
+        $calendarDataRecords = Schema::hasTable('attendance')
+            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
+                ->whereBetween('attendance_date', [
+                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
+                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
+                ])
+                ->orderBy('check_in')
+                ->get()
+            : collect();
+
+        // Helper function to insert virtual "Shift Not Started" records for calendar
+        $addVirtualShiftNotStarted = function ($attendanceCollection, $employees, $startDate, $endDate = null) {
+            $endDate = $endDate ?: $startDate;
+            $start = Carbon::parse($startDate);
+            $end = Carbon::parse($endDate);
+            
+            $existingMap = [];
+            foreach ($attendanceCollection as $att) {
+                $dateStr = $att->attendance_date->toDateString();
+                $existingMap[$dateStr][$att->user_id] = true;
+            }
+            
+            $virtualRecords = [];
+            $nowManila = now('Asia/Manila');
+            
+            $cursor = $start->copy();
+            while ($cursor->lte($end)) {
+                $dateStr = $cursor->toDateString();
+                $dayOfWeek = $cursor->format('D');
+                
+                foreach ($employees as $employee) {
+                    $user = $employee->user;
+                    if (!$user) continue;
+                    
+                    if (isset($existingMap[$dateStr][$user->id])) {
+                        continue;
+                    }
+                    
+                    $dayShift = $employee->getActiveShiftForDate($cursor);
+                    
+                    if ($dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week)) {
+                        $isFutureDate = $cursor->gt(now('Asia/Manila')->startOfDay());
+                        $isToday = $cursor->isToday();
+                        
+                        $hasNotStarted = false;
+                        if ($isFutureDate) {
+                            $hasNotStarted = true;
+                        } elseif ($isToday) {
+                            $shiftStart = Carbon::parse($dateStr . ' ' . $dayShift->start_time, 'Asia/Manila');
+                            if ($nowManila->lte($shiftStart)) {
+                                $hasNotStarted = true;
+                            }
+                        }
+                        
+                        $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
+                            ->where('employee_id', $employee->id)
+                            ->where('status', 2) // Approved
+                            ->where('start_date', '<=', $dateStr)
+                            ->where('end_date', '>=', $dateStr)
+                            ->exists();
+
+                        if ($hasApprovedLeave) {
+                            $virtual = new Attendance([
+                                'user_id' => $user->id,
+                                'shift_id' => $dayShift->id,
+                                'attendance_date' => $cursor->copy(),
+                                'status' => 4, // On Leave
+                                'check_in' => null,
+                                'check_out' => null,
+                                'notes' => 'Auto-marked: Approved Leave'
+                            ]);
+                            $virtual->setRelation('user', $user);
+                            $virtual->setRelation('shift', $dayShift);
+                            $virtualRecords[] = $virtual;
+                        } elseif ($hasNotStarted) {
+                            $virtual = new Attendance([
+                                'user_id' => $user->id,
+                                'shift_id' => $dayShift->id,
+                                'attendance_date' => $cursor->copy(),
+                                'status' => 5, // Shift Not Started
+                                'check_in' => null,
+                                'check_out' => null,
+                                'notes' => 'Shift has not started yet.'
+                            ]);
+                            $virtual->setRelation('user', $user);
+                            $virtual->setRelation('shift', $dayShift);
+                            $virtualRecords[] = $virtual;
+                        }
+                    }
+                }
+                $cursor->addDay();
+            }
+            
+            return $attendanceCollection->concat($virtualRecords);
+        };
+
         $calendarDataRecords = $addVirtualShiftNotStarted(
             $calendarDataRecords, 
             $employees, 
@@ -134,7 +312,6 @@ class TimekeepingController extends Controller
             $selectedDateCarbon->copy()->endOfMonth()->toDateString()
         );
 
-        // Enforce approved leave priority over any status in view
         $allApprovedLeaves = \Illuminate\Support\Facades\DB::table('leave_requests')
             ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
             ->where('leave_requests.status', 2) // Approved
@@ -166,11 +343,9 @@ class TimekeepingController extends Controller
                     $isAnyLeave = isset($leaveLookup[$employee->id][$dateStr]);
                     
                     $shouldOverride = false;
-                    // If no check-in/out, always override with leave
                     if (is_null($att->check_in) && is_null($att->check_out) && $isAnyLeave) {
                         $shouldOverride = true;
                     }
-                    // If they timed in, but it's a paid leave, override with paid leave
                     elseif ($isPaidLeave) {
                         $shouldOverride = true;
                     }
@@ -183,7 +358,6 @@ class TimekeepingController extends Controller
             }
         };
 
-        $enforceLeavePriority($todayAttendance);
         $enforceLeavePriority($calendarDataRecords);
 
         $calendarData = $calendarDataRecords->groupBy(function ($attendance) {
@@ -192,7 +366,7 @@ class TimekeepingController extends Controller
 
         $recentAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->whereIn('user_id', $todayAttendance->pluck('user_id')->unique())
+                ->whereIn('user_id', $unfilteredAttendance->pluck('user_id')->unique())
                 ->where('attendance_date', '>=', Carbon::now()->subDays(30)->toDateString())
                 ->orderByDesc('attendance_date')
                 ->orderByDesc('check_in')
@@ -222,7 +396,7 @@ class TimekeepingController extends Controller
             return strtolower((string) $status);
         };
 
-        $statusCounts = $todayAttendance->countBy(function ($attendance) use ($normalizeStatus) {
+        $statusCounts = $unfilteredAttendance->countBy(function ($attendance) use ($normalizeStatus) {
             return $normalizeStatus($attendance->status);
         });
 
@@ -248,7 +422,7 @@ class TimekeepingController extends Controller
                 ->all()
             : [];
 
-        $selectedDateCarbon = Carbon::parse($selectedDate);
+        $filters = $request->only(['q', 'status']);
 
         return view('timekeeping.index', [
             'todayAttendance' => $todayAttendance,
@@ -264,7 +438,98 @@ class TimekeepingController extends Controller
             'users' => $employees,
             'openAttendanceMap' => $openAttendanceMap,
             'calendarData' => $calendarData,
+            'filters' => $filters,
         ]);
+    }
+
+    /**
+     * Export attendance logs to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'date'   => ['nullable', 'date'],
+            'q'      => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+        ]);
+
+        $selectedDate = $request->query('date', Carbon::now()->toDateString());
+        $todayAttendance = $this->buildTodayAttendance($request);
+
+        if ($request->filled('q')) {
+            $qLower = strtolower($request->input('q'));
+            $todayAttendance = $todayAttendance->filter(function ($att) use ($qLower) {
+                $emp = $att->user?->employee;
+                if (!$emp) return false;
+                return str_contains(strtolower($emp->first_name), $qLower)
+                    || str_contains(strtolower($emp->last_name), $qLower)
+                    || str_contains(strtolower($emp->middle_name), $qLower)
+                    || str_contains(strtolower($emp->employee_code), $qLower)
+                    || str_contains(strtolower($emp->email), $qLower);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $statusVal = (int) $request->input('status');
+            $todayAttendance = $todayAttendance->filter(function ($att) use ($statusVal) {
+                return ((int) $att->status) === $statusVal;
+            });
+        }
+
+        $filename = "attendance_export_" . $selectedDate . "_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($todayAttendance, $selectedDate) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'Date',
+                'Employee Code',
+                'Employee Name',
+                'Shift',
+                'Check In',
+                'Check Out',
+                'Status',
+                'Notes'
+            ]);
+
+            $statusLabels = [
+                1 => 'Present',
+                2 => 'Late',
+                3 => 'Absent',
+                4 => 'On Leave',
+                5 => 'Shift Not Started'
+            ];
+
+            foreach ($todayAttendance as $att) {
+                $employee = $att->user?->employee;
+                $shift = $att->shift ?? $employee?->currentShift?->shift;
+                $displayShiftTime = $shift ? $shift->getDisplayTimeRange() : 'N/A';
+                
+                fputcsv($file, [
+                    $selectedDate,
+                    $employee->employee_code ?? 'N/A',
+                    $employee ? $employee->full_name : 'Unknown',
+                    $displayShiftTime,
+                    $att->check_in ? $att->check_in->format('H:i') : '',
+                    $att->check_out ? $att->check_out->format('H:i') : '',
+                    $statusLabels[$att->status] ?? 'Unknown',
+                    $att->notes ?? ''
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     public function storeManual(Request $request)

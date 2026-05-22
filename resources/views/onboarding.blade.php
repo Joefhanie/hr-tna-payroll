@@ -269,8 +269,8 @@
                 </div>
             </div>
 
-            <div class="space-y-4 lg:col-span-2">
-                <div class="rounded-[0.8rem] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <div class="lg:col-span-2 flex flex-col h-[58rem] min-h-0 lg:h-[calc(100vh-13rem)]">
+                <div class="flex h-full flex-col overflow-hidden rounded-[0.8rem] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                     @if ($selectedEmployee)
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
@@ -312,7 +312,7 @@
                                 <p class="mt-2 text-[0.75rem] text-slate-500">{{ $selectedEmployee['progress'] }}% complete</p>
                             </div>
 
-                            <div class="mt-5 flex flex-col gap-3">
+                            <div class="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
                                 @foreach ($selectedEmployee['tasks'] as $task)
                                     <div class="rounded-[0.8rem] border {{ $task['completed'] ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-200 bg-white' }} p-4 shadow-sm">
                                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

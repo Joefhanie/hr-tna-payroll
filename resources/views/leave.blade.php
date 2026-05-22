@@ -47,41 +47,62 @@
     @endif
 
     {{-- Filters --}}
-    <form method="GET" action="{{ route('leave.index') }}" class="mb-4 flex flex-wrap gap-3 items-center">
+    <form id="filterForm" method="GET" action="{{ route('leave.index') }}" class="mb-4 flex flex-wrap gap-3 items-center">
         <div class="relative flex-1 min-w-[180px]">
             <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
-            <input type="text" name="q" value="{{ $filters['q'] }}"
+            <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
                 placeholder="Search employee or type…"
                 class="w-full rounded-[0.5rem] border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
         </div>
 
-        <select name="status"
+        <select name="status" id="filterStatus"
             class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
             <option value="">All Statuses</option>
-            <option value="pending"  {{ $filters['status'] === 'pending'  ? 'selected' : '' }}>Pending</option>
-            <option value="approved" {{ $filters['status'] === 'approved' ? 'selected' : '' }}>Approved</option>
-            <option value="rejected" {{ $filters['status'] === 'rejected' ? 'selected' : '' }}>Rejected</option>
+            <option value="pending"  {{ ($filters['status'] ?? '') === 'pending'  ? 'selected' : '' }}>Pending</option>
+            <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>Approved</option>
+            <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+            <option value="cancelled" {{ ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
         </select>
 
-        <select name="type"
+        <select name="type" id="filterType"
             class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
             <option value="">All Types</option>
             @foreach($leaveTypes as $lt)
-                <option value="{{ $lt->id }}" {{ $filters['type'] == $lt->id ? 'selected' : '' }}>{{ $lt->name }}</option>
+                <option value="{{ $lt->id }}" {{ ($filters['type'] ?? '') == $lt->id ? 'selected' : '' }}>{{ $lt->name }}</option>
             @endforeach
         </select>
+
+        <div class="flex items-center gap-1.5">
+            <label class="text-xs font-medium text-slate-500">From</label>
+            <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
+                class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+        </div>
+
+        <div class="flex items-center gap-1.5">
+            <label class="text-xs font-medium text-slate-500">To</label>
+            <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
+                class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+        </div>
 
         <button type="submit"
             class="rounded-[0.5rem] bg-slate-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
             Filter
         </button>
 
-        @if($filters['q'] || $filters['status'] || $filters['type'])
+        @if(($filters['q'] ?? '') || ($filters['status'] ?? '') || ($filters['type'] ?? '') || ($filters['start_date'] ?? '') || ($filters['end_date'] ?? ''))
         <a href="{{ route('leave.index') }}"
             class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
             Clear
         </a>
         @endif
+
+        <a href="{{ route('leave.export') }}" id="btnExport"
+            class="rounded-[0.5rem] border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 ml-auto flex items-center gap-1.5">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+        </a>
     </form>
 
     {{-- Leave Requests Table --}}
@@ -173,6 +194,11 @@
                 @endforelse
             </tbody>
         </table>
+        @if ($leaveRequestsPaginated->hasPages())
+            <div class="bg-white px-6 py-4 border-t border-slate-200">
+                {{ $leaveRequestsPaginated->links() }}
+            </div>
+        @endif
     </div>
 
     {{-- =========================================================
@@ -455,6 +481,37 @@
             closeDeclineM();
             closeCancelM();
         });
+
+        // ── Dynamic Export URL Update ──
+        function updateExportUrl() {
+            const q = document.getElementById('filterSearch')?.value || '';
+            const status = document.getElementById('filterStatus')?.value || '';
+            const type = document.getElementById('filterType')?.value || '';
+            const startDate = document.getElementById('filterStartDate')?.value || '';
+            const endDate = document.getElementById('filterEndDate')?.value || '';
+
+            let url = "{{ route('leave.export') }}";
+            const params = [];
+            if (q) params.push(`q=${encodeURIComponent(q)}`);
+            if (status) params.push(`status=${encodeURIComponent(status)}`);
+            if (type) params.push(`type=${encodeURIComponent(type)}`);
+            if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
+            if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
+            if (params.length > 0) {
+                url += `?${params.join('&')}`;
+            }
+            const exportBtn = document.getElementById('btnExport');
+            if (exportBtn) exportBtn.href = url;
+        }
+
+        document.getElementById('filterSearch')?.addEventListener('input', updateExportUrl);
+        document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
+        document.getElementById('filterType')?.addEventListener('change', updateExportUrl);
+        document.getElementById('filterStartDate')?.addEventListener('change', updateExportUrl);
+        document.getElementById('filterEndDate')?.addEventListener('change', updateExportUrl);
+
+        // Run once on load
+        updateExportUrl();
     });
     </script>
     </x-slot:scripts>

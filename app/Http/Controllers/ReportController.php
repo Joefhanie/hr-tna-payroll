@@ -23,8 +23,10 @@ class ReportController extends Controller
         // 1. Total Active Employees
         $activeEmployeesCount = Employee::where('status', 1)->count();
 
-        // 2. Today's Attendance count
-        $todayAttendanceCount = Attendance::whereDate('attendance_date', Carbon::today())->count();
+        // 2. Today's Attendance count (only those with a time in/check_in record)
+        $todayAttendanceCount = Attendance::whereDate('attendance_date', Carbon::today())
+            ->whereNotNull('check_in')
+            ->count();
 
         // 3. Approved Leaves this month
         $approvedLeavesCount = Leave::where('status', 2)
@@ -60,6 +62,20 @@ class ReportController extends Controller
                 'description' => 'Summary of gross pay, government contributions, deductions, and net payouts.',
             ],
             [
+                'id' => 'previous-claims',
+                'name' => 'Previous Claims',
+                'category' => 'Finance',
+                'status' => 'Ready',
+                'description' => 'Summary of previous claims, including employee, type, date, amount, status, and associated pay run.',
+            ],
+            [
+                'id' => 'disputes',
+                'name' => 'Payslip Disputes',
+                'category' => 'Finance',
+                'status' => 'Ready',
+                'description' => 'Overview of employee payslip disputes, including amount, reason, status, and resolver notes.',
+            ],
+            [
                 'id' => 'leave',
                 'name' => 'Leave Utilization',
                 'category' => 'People Ops',
@@ -82,6 +98,13 @@ class ReportController extends Controller
      */
     public function download(string $type, Request $request)
     {
+        $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date'],
+            'status'     => ['nullable', 'string', 'max:255'],
+            'pay_run_id' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $now = Carbon::now()->format('Y-m-d');
 
         switch ($type) {
@@ -91,6 +114,10 @@ class ReportController extends Controller
                 return $this->downloadAttendanceReport($now, $request);
             case 'payroll':
                 return $this->downloadPayrollReport($now, $request);
+            case 'previous-claims':
+                return $this->downloadPreviousClaimsReport($now, $request);
+            case 'disputes':
+                return $this->downloadDisputesReport($now, $request);
             case 'leave':
                 return $this->downloadLeaveReport($now, $request);
             default:
@@ -310,6 +337,13 @@ class ReportController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('start_date')) {
+            $query->where('start_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->where('end_date', '<=', $request->end_date);
+        }
+
         $leaves = $query->get();
 
         // Fetch leave types for mapping
@@ -371,5 +405,130 @@ class ReportController extends Controller
 
             fclose($file);
         }, 200, $responseHeaders);
+    }
+
+    /**
+     * Export previous claims report.
+     */
+    private function downloadPreviousClaimsReport($date, Request $request)
+    {
+        $headers = [
+            'Claim ID',
+            'Employee Code',
+            'Employee Name',
+            'Claim Type',
+            'Claim Date',
+            'Amount',
+            'Description',
+            'Status',
+            'Pay Run Period',
+            'Reviewed By',
+            'Reviewed At',
+            'HR Notes'
+        ];
+
+        // Fetch claims
+        $query = \App\Models\PreviousClaim::with(['employee', 'reviewer', 'payRun'])
+            ->latest('created_at');
+
+        // Optional date filters (by claim_date)
+        if ($request->filled('start_date')) {
+            $query->where('claim_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->where('claim_date', '<=', $request->end_date);
+        }
+
+        $claims = $query->get();
+
+        return $this->streamCsv("previous_claims_report_{$date}.csv", $headers, function ($file) use ($claims) {
+            foreach ($claims as $claim) {
+                $employee = $claim->employee;
+                $payRun = $claim->payRun;
+                $payRunLabel = $payRun 
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                    : 'N/A';
+
+                fputcsv($file, [
+                    $claim->id,
+                    $employee->employee_code ?? 'N/A',
+                    $employee ? $employee->full_name : 'N/A',
+                    $claim->claim_type,
+                    $claim->claim_date ? $claim->claim_date->format('Y-m-d') : 'N/A',
+                    $claim->amount,
+                    $claim->description ?? '',
+                    $claim->status_label,
+                    $payRunLabel,
+                    $claim->reviewer ? $claim->reviewer->name : 'N/A',
+                    $claim->reviewed_at ? $claim->reviewed_at->format('Y-m-d H:i') : '',
+                    $claim->hr_notes ?? ''
+                ]);
+            }
+        });
+    }
+
+    /**
+     * Export payslip disputes report.
+     */
+    private function downloadDisputesReport($date, Request $request)
+    {
+        $headers = [
+            'Dispute ID',
+            'Employee Code',
+            'Employee Name',
+            'Pay Run Period',
+            'Dispute Amount',
+            'Line Item',
+            'Reason',
+            'Status',
+            'Resolved By',
+            'Resolved At',
+            'HR Notes'
+        ];
+
+        $statusLabels = [
+            1 => 'Pending',
+            2 => 'Resolved',
+            3 => 'Rejected'
+        ];
+
+        // Fetch disputes
+        $query = \App\Models\PayslipDispute::with(['employee', 'payslip.payRun', 'lineItem', 'resolver'])
+            ->latest('created_at');
+
+        // Optional date filters (by created_at)
+        if ($request->filled('start_date')) {
+            $query->where('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->where('created_at', '<=', $request->end_date . ' 23:59:59');
+        }
+
+        $disputes = $query->get();
+
+        return $this->streamCsv("payslip_disputes_report_{$date}.csv", $headers, function ($file) use ($disputes, $statusLabels) {
+            foreach ($disputes as $dispute) {
+                $employee = $dispute->employee;
+                $payslip = $dispute->payslip;
+                $payRun = $payslip?->payRun;
+                $payRunPeriod = $payRun 
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                    : 'N/A';
+
+                fputcsv($file, [
+                    $dispute->id,
+                    $employee->employee_code ?? 'N/A',
+                    $employee ? $employee->full_name : 'N/A',
+                    $payRunPeriod,
+                    $dispute->dispute_amount,
+                    $dispute->lineItem ? $dispute->lineItem->description : 'Entire Payslip',
+                    $dispute->dispute_reason,
+                    $statusLabels[$dispute->status] ?? 'Unknown',
+                    $dispute->resolver ? $dispute->resolver->name : 'N/A',
+                    $dispute->resolved_at ? $dispute->resolved_at->format('Y-m-d H:i') : '',
+                    $dispute->hr_notes ?? ''
+                ]);
+            }
+        });
     }
 }

@@ -77,24 +77,46 @@
     </div>
 
     <!-- Optional Filters Panel -->
-    <div class="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 class="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <svg class="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-            Report Configurations
-        </h3>
-        <form id="report-filter-form" method="GET" action="" class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50/50 p-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
             <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Start Date (For Attendance & Leaves)</label>
-                <input type="date" name="start_date" id="start_date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    Report Configurations
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">Configure date range parameters to filter your Attendance, Leaves, Claims, and Disputes report downloads.</p>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    Active Parameters
+                </span>
+            </div>
+        </div>
+        
+        <form id="report-filter-form" method="GET" action="" class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Start Date <span class="text-slate-400 font-normal text-[10px] lowercase">(attendance, leaves, claims & disputes)</span>
+                </label>
+                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+            </div>
+            <div class="flex-1 min-w-[200px]">
+                <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    End Date <span class="text-slate-400 font-normal text-[10px] lowercase">(attendance, leaves, claims & disputes)</span>
+                </label>
+                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">End Date (For Attendance & Leaves)</label>
-                <input type="date" name="end_date" id="end_date" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white">
-            </div>
-            <div class="flex items-end">
-                <button type="button" onclick="clearDates()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                <button type="button" onclick="clearDates()" 
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:bg-slate-100 transition duration-200">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                     Reset Date Filters
                 </button>
             </div>

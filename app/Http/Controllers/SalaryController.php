@@ -17,16 +17,135 @@ use Illuminate\Support\Facades\DB;
 class SalaryController extends Controller
 {
     /**
+     * Build the query for index and export.
+     */
+    private function buildQuery(Request $request)
+    {
+        $query = Employee::with(['salaryRecords', 'position', 'department']);
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(function ($subQuery) use ($q) {
+                $subQuery->where('first_name', 'like', "%{$q}%")
+                    ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhere('middle_name', 'like', "%{$q}%")
+                    ->orWhere('employee_code', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->input('department_id'));
+        }
+
+        if ($request->filled('pay_frequency')) {
+            $query->whereHas('salaryRecords', function ($subQuery) use ($request) {
+                $subQuery->whereNull('end_date')
+                    ->where('pay_frequency', $request->input('pay_frequency'));
+            });
+        }
+
+        return $query->orderBy('first_name')->orderBy('last_name');
+    }
+
+    /**
      * Display salary records for all employees.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $employees = Employee::with('salaryRecords', 'position')
-            ->get()
-            ->sortBy('full_name')
-            ->values();
+        $request->validate([
+            'q'             => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'pay_frequency' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
+        ]);
 
-        return view('salary.index', compact('employees'));
+        $employees = $this->buildQuery($request)
+            ->paginate(15)
+            ->appends($request->query());
+
+        $departments = \App\Models\Department::all();
+        $filters = $request->only(['q', 'department_id', 'pay_frequency']);
+
+        $totalEmployees = Employee::count();
+        $withActiveSalary = Employee::whereHas('salaryRecords', function($q) {
+            $q->whereNull('end_date');
+        })->count();
+        $totalSalaryRecords = \App\Models\SalaryRecord::count();
+
+        return view('salary.index', compact(
+            'employees',
+            'departments',
+            'filters',
+            'totalEmployees',
+            'withActiveSalary',
+            'totalSalaryRecords'
+        ));
+    }
+
+    /**
+     * Export salary records to CSV.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'q'             => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'pay_frequency' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
+        ]);
+
+        $employees = $this->buildQuery($request)->get();
+        $filename = "salary_records_export_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($employees) {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, [
+                'Employee Code',
+                'Employee Name',
+                'Department',
+                'Position',
+                'Current Salary',
+                'Pay Frequency',
+                'Effective From',
+                'Number of Records'
+            ]);
+
+            $payFrequencyLabels = [
+                1 => 'Hourly',
+                2 => 'Daily',
+                3 => 'Weekly',
+                4 => 'Bi-weekly',
+                5 => 'Monthly',
+                6 => 'Annual'
+            ];
+
+            foreach ($employees as $emp) {
+                $activeSalary = $emp->salaryRecords->where('end_date', null)->first();
+                fputcsv($file, [
+                    $emp->employee_code,
+                    $emp->full_name,
+                    $emp->department->name ?? 'N/A',
+                    $emp->position->title ?? 'N/A',
+                    $activeSalary ? number_format($activeSalary->amount, 2) : 'No active salary',
+                    $activeSalary ? ($payFrequencyLabels[$activeSalary->pay_frequency] ?? $activeSalary->pay_frequency) : '—',
+                    $activeSalary ? $activeSalary->effective_date->format('Y-m-d') : '—',
+                    $emp->salaryRecords->count(),
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**
