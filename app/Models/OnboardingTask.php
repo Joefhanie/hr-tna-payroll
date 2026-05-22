@@ -26,6 +26,7 @@ class OnboardingTask extends Model
         'assigned_role',
         'action_type',
         'document_type',
+        'company_document_ids',
         'submission_notes',
         'submission_file_name',
         'submission_file_path',
@@ -39,6 +40,7 @@ class OnboardingTask extends Model
         'sequence' => 'integer',
         'submitted_at' => 'datetime',
         'completed_at' => 'datetime',
+        'company_document_ids' => 'array',
     ];
 
     public function assignment(): BelongsTo

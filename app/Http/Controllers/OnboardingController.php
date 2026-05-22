@@ -172,6 +172,8 @@ class OnboardingController extends Controller
             'assigned_role' => ['required', Rule::in($this->assignableRoles())],
             'action_type' => ['nullable', Rule::in($this->employeeActionTypes())],
             'document_type' => ['nullable', 'string', 'max:100'],
+            'company_document_ids' => ['nullable', 'array'],
+            'company_document_ids.*' => ['integer', Rule::exists('company_documents', 'id')],
         ]);
 
         DB::transaction(function () use ($employee, $validated) {
@@ -199,6 +201,9 @@ class OnboardingController extends Controller
                 'action_type' => $actionType,
                 'document_type' => $actionType === OnboardingTask::ACTION_DOCUMENT_UPLOAD
                     ? ($validated['document_type'] ?? $validated['category'])
+                    : null,
+                'company_document_ids' => in_array($actionType, [OnboardingTask::ACTION_DOCUMENT_UPLOAD, OnboardingTask::ACTION_ACKNOWLEDGEMENT], true)
+                    ? ($validated['company_document_ids'] ?? null)
                     : null,
                 'sequence' => $nextSequence,
             ]);
@@ -241,6 +246,9 @@ class OnboardingController extends Controller
             'action_type' => $actionType,
             'document_type' => $actionType === OnboardingTask::ACTION_DOCUMENT_UPLOAD
                 ? ($validated['document_type'] ?? $validated['category'])
+                : null,
+            'company_document_ids' => in_array($actionType, [OnboardingTask::ACTION_DOCUMENT_UPLOAD, OnboardingTask::ACTION_ACKNOWLEDGEMENT], true)
+                ? ($validated['company_document_ids'] ?? null)
                 : null,
         ]);
 
@@ -346,7 +354,6 @@ class OnboardingController extends Controller
 
     public function downloadCompanyDocument(CompanyDocument $companyDocument): StreamedResponse
     {
-        abort_unless(strcasecmp($companyDocument->category, CompanyDocument::CATEGORY_CONTRACT) === 0, 404);
         abort_unless(Storage::disk('public')->exists($companyDocument->file_path), 404);
 
         return Storage::disk('public')->download($companyDocument->file_path, $companyDocument->file_name);
@@ -370,6 +377,8 @@ class OnboardingController extends Controller
             $status = 'In Progress';
             $progress = (int) round(($completedTasks / $totalTasks) * 100);
         }
+
+        $companyDocuments = CompanyDocument::query()->orderBy('title')->get();
 
         $visibleTasks = $includeAllTasks
             ? $allTasks->sortBy('sequence')->values()
@@ -401,12 +410,30 @@ class OnboardingController extends Controller
             'has_assignment' => $assignment !== null && $totalTasks > 0,
             'category_options' => $this->categoryOptions(),
             'document_type_options' => $this->documentTypeOptions(),
+            'company_document_options' => $companyDocuments->map(fn (CompanyDocument $document) => [
+                'value' => $document->id,
+                'label' => trim($document->title ? $document->title . ' — ' . $document->file_name : $document->file_name),
+            ])->values(),
             'task_owner_options' => $this->taskOwnerOptions(),
             'employee_action_options' => $this->employeeActionOptions(),
             'tasks' => $visibleTasks->map(function (OnboardingTask $task) {
                 $contractDocument = $this->shouldAttachContractDocument($task)
                     ? $this->latestContractDocument()
                     : null;
+
+                $attachedDocuments = collect($task->company_document_ids ?? [])
+                    ->filter(fn ($id) => is_numeric($id))
+                    ->map(fn ($id) => (int) $id)
+                    ->pipe(function ($ids) {
+                        if ($ids->isEmpty()) {
+                            return collect();
+                        }
+
+                        return CompanyDocument::query()
+                            ->whereIn('id', $ids)
+                            ->orderBy('title')
+                            ->get();
+                    });
 
                 return [
                     'id' => $task->id,
@@ -418,6 +445,12 @@ class OnboardingController extends Controller
                     'action_type' => $task->action_type ?? OnboardingTask::ACTION_CHECKLIST,
                     'action_type_label' => $this->actionTypeLabel($task->action_type ?? OnboardingTask::ACTION_CHECKLIST),
                     'document_type' => $task->document_type,
+                    'company_document_ids' => $task->company_document_ids,
+                    'attached_documents' => $attachedDocuments->map(fn (CompanyDocument $document) => [
+                        'id' => $document->id,
+                        'file_name' => $document->file_name,
+                        'download_url' => route('onboarding.company-documents.download', $document),
+                    ])->values(),
                     'submission_notes' => $task->submission_notes,
                     'submission_file_name' => $task->submission_file_name,
                     'submitted_at' => $task->submitted_at?->format('M d, Y h:i A'),

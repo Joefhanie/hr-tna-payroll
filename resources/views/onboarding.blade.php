@@ -338,16 +338,6 @@
                                                     @if ($task['submission_file_name'])
                                                         <p class="mt-1 text-sm text-slate-600">Submitted file: {{ $task['submission_file_name'] }}</p>
                                                     @endif
-                                                    @if ($task['company_contract_download_url'])
-                                                        <div class="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-900">
-                                                            <p class="font-medium">Latest contract file</p>
-                                                            <p class="mt-1 text-xs text-blue-700">{{ $task['company_contract_name'] }}</p>
-                                                            <a href="{{ $task['company_contract_download_url'] }}" class="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
-                                                                <i class="ti ti-download text-base"></i>
-                                                                Download contract
-                                                            </a>
-                                                        </div>
-                                                    @endif
                                                     @if ($task['submission_notes'])
                                                         <p class="mt-1 text-sm text-slate-500">Notes: {{ $task['submission_notes'] }}</p>
                                                     @endif
@@ -359,40 +349,61 @@
                                                     Completed
                                                 </span>
                                             @elseif ($canManageTasks)
-                                                <div class="flex items-center gap-2">
-                                                    @if ($canCreateTasks)
-                                                        <button
-                                                            type="button"
-                                                            title="Edit task"
-                                                            aria-label="Edit task"
-                                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
-                                                            data-task-edit
-                                                            data-task-id="{{ $task['id'] }}"
-                                                            data-task-title="{{ $task['title'] }}"
-                                                            data-task-category="{{ $task['category'] }}"
-                                                            data-task-instructions="{{ $task['instructions'] ?? '' }}"
-                                                            data-task-owner="{{ $task['assigned_role'] }}"
-                                                            data-task-action="{{ $task['action_type'] }}"
-                                                            data-task-document="{{ $task['document_type'] ?? '' }}"
-                                                        >
-                                                            <i class="ti ti-edit text-lg"></i>
-                                                        </button>
+                                                <div class="flex flex-col items-end gap-2">
+                                                    <div class="flex items-center gap-2">
+                                                        @if ($canCreateTasks)
+                                                            <button
+                                                                type="button"
+                                                                title="Edit task"
+                                                                aria-label="Edit task"
+                                                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
+                                                                data-task-edit
+                                                                data-task-id="{{ $task['id'] }}"
+                                                                data-task-title="{{ $task['title'] }}"
+                                                                data-task-category="{{ $task['category'] }}"
+                                                                data-task-instructions="{{ $task['instructions'] ?? '' }}"
+                                                                data-task-owner="{{ $task['assigned_role'] }}"
+                                                                data-task-action="{{ $task['action_type'] }}"
+                                                                data-task-document="{{ $task['document_type'] ?? '' }}"
+                                                                data-task-documents='@json($task['company_document_ids'] ?? [])'
+                                                            >
+                                                                <i class="ti ti-edit text-lg"></i>
+                                                            </button>
 
-                                                        <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" data-confirm="Delete this onboarding task?" data-confirm-title="Delete Task">
+                                                            <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" data-confirm="Delete this onboarding task?" data-confirm-title="Delete Task">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" title="Delete task" aria-label="Delete task" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                                                    <i class="ti ti-x text-lg"></i>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+
+                                                        <form method="POST" action="{{ route('onboarding.tasks.complete', $task['id']) }}">
                                                             @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" title="Delete task" aria-label="Delete task" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
-                                                                <i class="ti ti-x text-lg"></i>
+                                                            <button type="submit" title="Mark done" aria-label="Mark done" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                                                <i class="ti ti-check text-lg"></i>
                                                             </button>
                                                         </form>
-                                                    @endif
+                                                    </div>
 
-                                                    <form method="POST" action="{{ route('onboarding.tasks.complete', $task['id']) }}">
-                                                        @csrf
-                                                        <button type="submit" title="Mark done" aria-label="Mark done" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
-                                                            <i class="ti ti-check text-lg"></i>
-                                                        </button>
-                                                    </form>
+                                                    @if (!empty($task['attached_documents']) || $task['company_contract_download_url'])
+                                                        <div class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800 shadow-sm">
+                                                            Attached:
+                                                            @foreach ($task['attached_documents'] as $document)
+                                                                <a href="{{ $document['download_url'] }}" class="ml-1 inline-flex items-center gap-1 text-blue-700 hover:text-blue-900">
+                                                                    <i class="ti ti-download text-[0.8rem]"></i>
+                                                                    <span>{{ $document['file_name'] }}</span>
+                                                                </a>
+                                                            @endforeach
+                                                            @if (empty($task['attached_documents']) && $task['company_contract_download_url'])
+                                                                <a href="{{ $task['company_contract_download_url'] }}" class="ml-1 inline-flex items-center gap-1 text-blue-700 hover:text-blue-900">
+                                                                    <i class="ti ti-download text-[0.8rem]"></i>
+                                                                    <span>{{ $task['company_contract_name'] }}</span>
+                                                                </a>
+                                                            @endif
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @endif
                                         </div>
@@ -483,13 +494,30 @@
                             </select>
                         </div>
                         <div data-document-type-group class="sm:col-span-1">
-                            <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Document type</label>
-                            <select name="document_type" id="task_form_document_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                                <option value="">Select document type</option>
-                                @foreach ($selectedEmployee['document_type_options'] as $option)
-                                    <option value="{{ $option['value'] }}" @selected(old('document_type') === $option['value'])>{{ $option['label'] }}</option>
-                                @endforeach
-                            </select>
+                            <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Attach documents</label>
+                            <div class="relative">
+                                <button type="button" id="company_documents_toggle" class="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                                    <span id="company_documents_label" class="text-sm text-slate-700">Select one or more documents</span>
+                                    <i class="ti ti-chevron-down text-base text-slate-500"></i>
+                                </button>
+                                <div id="company_documents_dropdown" class="absolute left-0 right-0 z-20 hidden mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                                    <div class="max-h-56 overflow-y-auto p-2">
+                                        @foreach ($selectedEmployee['company_document_options'] as $option)
+                                            <label class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50">
+                                                <input
+                                                    type="checkbox"
+                                                    name="company_document_ids[]"
+                                                    value="{{ $option['value'] }}"
+                                                    class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]"
+                                                    @checked(collect(old('company_document_ids', []))->contains((string) $option['value']))
+                                                >
+                                                <span>{{ $option['label'] }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-500">Select one or more company documents for this task.</p>
                         </div>
                     </div>
 
@@ -596,7 +624,10 @@
             const instructionsField = document.getElementById('task_form_instructions');
             const ownerField = document.getElementById('task_form_assigned_role');
             const actionField = document.getElementById('task_form_action_type');
-            const documentField = document.getElementById('task_form_document_type');
+            const companyDocumentsToggle = document.getElementById('company_documents_toggle');
+            const companyDocumentsDropdown = document.getElementById('company_documents_dropdown');
+            const companyDocumentsLabel = document.getElementById('company_documents_label');
+            const companyDocumentCheckboxes = Array.from(form.querySelectorAll('input[name="company_document_ids[]"]'));
             const modalTitle = document.getElementById('task-modal-title');
             const modalSubtitle = document.getElementById('task-modal-subtitle');
             const submitButton = document.getElementById('task-form-submit');
@@ -615,7 +646,11 @@
                     instructionsField.value = task.instructions || '';
                     ownerField.value = task.owner || 'employee';
                     actionField.value = task.action || 'checklist';
-                    documentField.value = task.document || '';
+
+                    const selectedDocuments = task.documents ? JSON.parse(task.documents) : [];
+                    companyDocumentCheckboxes.forEach((checkbox) => {
+                        checkbox.checked = selectedDocuments.includes(checkbox.value) || selectedDocuments.includes(Number(checkbox.value));
+                    });
                 } else {
                     form.action = createAction;
                     taskIdInput.value = '';
@@ -624,14 +659,40 @@
                     modalSubtitle.textContent = 'Create employee, HR, or supervisor onboarding tasks for {{ $selectedEmployeeName }}.';
                     submitButton.textContent = 'Create task';
                     form.reset();
+
+                    companyDocumentCheckboxes.forEach((checkbox) => {
+                        checkbox.checked = false;
+                    });
                 }
 
+                updateCompanyDocumentsLabel();
+                closeCompanyDocumentsDropdown();
                 syncTaskForm();
+            };
+
+            const updateCompanyDocumentsLabel = () => {
+                if (!companyDocumentsLabel) {
+                    return;
+                }
+
+                const selected = companyDocumentCheckboxes
+                    .filter((checkbox) => checkbox.checked)
+                    .map((checkbox) => checkbox.nextElementSibling?.textContent?.trim())
+                    .filter(Boolean);
+
+                if (selected.length === 0) {
+                    companyDocumentsLabel.textContent = 'Select one or more documents';
+                } else if (selected.length === 1) {
+                    companyDocumentsLabel.textContent = selected[0];
+                } else {
+                    companyDocumentsLabel.textContent = `${selected.length} documents selected`;
+                }
             };
 
             const syncTaskForm = () => {
                 const isEmployeeTask = ownerSelect && ownerSelect.value === 'employee';
-                const needsDocumentType = isEmployeeTask && actionSelect && actionSelect.value === 'document_upload';
+                // show attach documents for any action other than simple checklist
+                const needsDocumentType = actionSelect && actionSelect.value !== 'checklist';
 
                 if (actionGroup) {
                     actionGroup.classList.toggle('hidden', !isEmployeeTask);
@@ -642,9 +703,43 @@
                 }
             };
 
+            const toggleCompanyDocumentsDropdown = () => {
+                if (!companyDocumentsDropdown) {
+                    return;
+                }
+
+                companyDocumentsDropdown.classList.toggle('hidden');
+            };
+
+            const closeCompanyDocumentsDropdown = () => {
+                if (companyDocumentsDropdown && !companyDocumentsDropdown.classList.contains('hidden')) {
+                    companyDocumentsDropdown.classList.add('hidden');
+                }
+            };
+
+            companyDocumentsToggle?.addEventListener('click', (event) => {
+                event.preventDefault();
+                toggleCompanyDocumentsDropdown();
+            });
+
+            document.addEventListener('click', (event) => {
+                if (!companyDocumentsDropdown || !companyDocumentsToggle) {
+                    return;
+                }
+
+                if (!companyDocumentsDropdown.contains(event.target) && !companyDocumentsToggle.contains(event.target)) {
+                    closeCompanyDocumentsDropdown();
+                }
+            });
+
+            companyDocumentCheckboxes.forEach((checkbox) => {
+                checkbox.addEventListener('change', updateCompanyDocumentsLabel);
+            });
+
             ownerSelect?.addEventListener('change', syncTaskForm);
             actionSelect?.addEventListener('change', syncTaskForm);
             syncTaskForm();
+            updateCompanyDocumentsLabel();
 
             document.querySelectorAll('[data-task-edit]').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -656,6 +751,7 @@
                         owner: button.dataset.taskOwner,
                         action: button.dataset.taskAction,
                         document: button.dataset.taskDocument,
+                        documents: button.dataset.taskDocuments,
                     });
 
                     openModal('add-task-modal');
