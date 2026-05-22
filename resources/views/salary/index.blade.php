@@ -51,9 +51,15 @@
                         <tr>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
-                                        {{ collect(explode(' ', $employee->full_name))->map(fn($name) => $name[0] ?? '')->join('') }}
-                                    </div>
+                                    @if ($employee->profile_picture)
+                                        <div class="h-8 w-8 overflow-hidden rounded-full bg-slate-100">
+                                            <img src="{{ asset('storage/' . $employee->profile_picture) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
+                                        </div>
+                                    @else
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                                            {{ collect(explode(' ', $employee->full_name))->map(fn($name) => $name[0] ?? '')->join('') }}
+                                        </div>
+                                    @endif
                                     <div>
                                         <p class="font-medium text-slate-900">{{ $employee->full_name }}</p>
                                         <p class="text-xs text-slate-500">{{ $employee->employee_code }}</p>

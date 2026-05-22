@@ -155,12 +155,18 @@
                             @forelse($enrolled as $emp)
                                 <tr class="transition hover:bg-slate-50">
                                     <td class="px-5 py-3.5 flex items-center gap-3">
-                                        @php
-                                            $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
-                                        @endphp
-                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-xs">
-                                            {{ $initials }}
-                                        </div>
+                                        @if ($emp->profile_picture)
+                                            <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100">
+                                                <img src="{{ asset('storage/' . $emp->profile_picture) }}" alt="{{ $emp->full_name }}" class="h-8 w-8 object-cover">
+                                            </div>
+                                        @else
+                                            @php
+                                                $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
+                                            @endphp
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-xs">
+                                                {{ $initials }}
+                                            </div>
+                                        @endif
                                         <div>
                                             <p class="font-bold text-[#06112e]">{{ $emp->full_name }}</p>
                                             <p class="text-[0.7rem] text-slate-400 mt-0.5">{{ $emp->employee_code }}</p>

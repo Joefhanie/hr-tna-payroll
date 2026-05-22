@@ -15,6 +15,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -59,6 +61,7 @@ class SelfServiceController extends Controller
                     'code' => $employee->employee_code ?? 'EMP-' . str_pad((string) $employee->id, 4, '0', STR_PAD_LEFT),
                     'id' => $employee->id,
                     'employee' => $employee->full_name,
+                    'profile_picture' => $employee->profile_picture ?? null,
                     'email' => $employee->email ?? ($linkedUser ? $linkedUser->email : 'N/A'),
                     'type' => $this->roleLabel($role),
                     'date' => optional($employee->hire_date)->format('Y-m-d') ?? 'N/A',
@@ -421,6 +424,49 @@ class SelfServiceController extends Controller
         return redirect()
             ->route('self-service.profile', $employee)
             ->with('success', 'Document uploaded successfully.');
+    }
+
+    public function storeProfilePicture(Request $request, Employee $employee): RedirectResponse
+    {
+        $this->authorizeEmployeeSubmission($employee);
+
+        $validated = $request->validate([
+            'profile_picture' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
+        ]);
+
+        $file = $request->file('profile_picture');
+
+        // Delete old profile picture if exists
+        if ($employee->profile_picture) {
+            Storage::disk('public')->delete($employee->profile_picture);
+        }
+
+        // Build filename: employeeCode_Lastname, Firstname M._Date_time
+        $code = $employee->employee_code ?? $employee->id;
+        $last = $employee->last_name ?? '';
+        $first = $employee->first_name ?? '';
+        $middle = $employee->middle_name ? strtoupper(substr($employee->middle_name, 0, 1)) . '.' : '';
+        $datetime = now()->format('Ymd_His');
+        $base = sprintf('%s_%s, %s %s_%s', $code, $last, $first, $middle, $datetime);
+
+        $safeBase = preg_replace('/[<>:\\"\/\\|?\*\x00-\x1F]/', '', $base);
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $filename = $safeBase . '.' . $extension;
+
+        // Ensure target folder exists under external public root (micro)
+        $publicRoot = config('filesystems.disks.public.root');
+        if ($publicRoot) {
+            File::ensureDirectoryExists(rtrim($publicRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'profile_pictures');
+        }
+
+        $storedPath = $file->storeAs('profile_pictures', $filename, 'public');
+
+        $employee->profile_picture = $storedPath;
+        $employee->save();
+
+        return redirect()
+            ->route('self-service.profile', $employee)
+            ->with('success', 'Profile picture updated successfully.');
     }
 
     private function buildRequestFeed(): Collection

@@ -9,6 +9,7 @@ use App\Models\Payslip;
 use App\Models\Attendance;
 use App\Support\UploadFilename;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
@@ -214,8 +215,27 @@ class ProfileController extends Controller
                     Storage::disk('public')->delete($employee->profile_picture);
                 }
 
-                // Store the new picture
-                $storedPath = $file->storeAs('profile_pictures', UploadFilename::build($file, null, 'profile_pictures'), 'public');
+                // Build filename: employeeCode_Lastname, Firstname M._Date_time
+                $code = $employee->employee_code ?? $employee->id;
+                $last = $employee->last_name ?? '';
+                $first = $employee->first_name ?? '';
+                $middle = $employee->middle_name ? strtoupper(substr($employee->middle_name, 0, 1)) . '.' : '';
+                $datetime = now()->format('Ymd_His');
+                $base = sprintf('%s_%s, %s %s_%s', $code, $last, $first, $middle, $datetime);
+
+                // Remove characters invalid in filenames but preserve comma and spaces
+                $safeBase = preg_replace('/[<>:\"\/\\|?\*\x00-\x1F]/', '', $base);
+                $extension = strtolower((string) $file->getClientOriginalExtension());
+                $filename = $safeBase . '.' . $extension;
+
+                // Ensure target folder exists under external public root (micro)
+                $publicRoot = config('filesystems.disks.public.root');
+                if ($publicRoot) {
+                    File::ensureDirectoryExists(rtrim($publicRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'profile_pictures');
+                }
+
+                // Store with the custom filename
+                $storedPath = $file->storeAs('profile_pictures', $filename, 'public');
                 $employee->profile_picture = $storedPath;
             }
 

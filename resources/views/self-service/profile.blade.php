@@ -50,8 +50,27 @@
     <div class="mb-4 rounded-lg bg-white p-4 shadow-sm">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-center gap-3">
-                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
-                    {{ $initials }}
+                <div class="group relative">
+                    <form id="profilePictureForm" method="POST" action="{{ route('self-service.profile-picture.store', $employee) }}" enctype="multipart/form-data" class="m-0 p-0">
+                        @csrf
+                        <input type="file" name="profile_picture" id="profilePictureInput" accept="image/*" class="sr-only">
+                    </form>
+
+                    <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-lg font-bold text-white">
+                        @if ($employee->profile_picture)
+                            <img id="profilePicturePreview" src="{{ asset('storage/' . $employee->profile_picture) }}" alt="profile" class="h-full w-full object-cover">
+                        @else
+                            <div id="profileInitials" class="h-full w-full flex items-center justify-center">{{ $initials }}</div>
+                        @endif
+                    </div>
+
+                    @if($canSubmitRequests)
+                        <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100">
+                            <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    @endif
                 </div>
                 <div>
                     <h1 class="text-lg font-semibold text-slate-900">{{ $employee->full_name_with_middle_name }}</h1>
@@ -531,6 +550,25 @@
     </div>
 
     <script>
+        document.getElementById('profilePictureInput')?.addEventListener('change', function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            // Preview
+            const url = URL.createObjectURL(file);
+            const preview = document.getElementById('profilePicturePreview');
+            const initials = document.getElementById('profileInitials');
+            if (preview) {
+                preview.src = url;
+            } else if (initials) {
+                initials.outerHTML = `<img id="profilePicturePreview" src="${url}" alt="profile" class="h-full w-full object-cover">`;
+            }
+
+            // Submit form
+            const form = document.getElementById('profilePictureForm');
+            if (form) form.submit();
+        });
+
         function openRequestModal(modalId) {
             const modal = document.getElementById(modalId);
 
