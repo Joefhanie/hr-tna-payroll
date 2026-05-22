@@ -129,6 +129,43 @@
 
     <div class="flex h-screen bg-transparent">
         <aside class="sidebar fixed left-0 top-0 z-40 flex h-full flex-col border-r border-slate-200 bg-white px-3 py-3 text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
+            @php
+                $companySetting = \App\Models\CompanySetting::current();
+                $hasLogo = !empty($companySetting->logo_path);
+                $settingsRouteExists = \Illuminate\Support\Facades\Route::has('organization.settings');
+                $settingsHref = $settingsRouteExists ? route('organization.settings') : '#';
+                $canAccessSettings = $user && $user->role === 4;
+            @endphp
+            @if ($canAccessSettings)
+                <a href="{{ $settingsHref }}" class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0 hover:bg-slate-50 border border-transparent hover:border-slate-100/80 rounded-2xl transition duration-150 group">
+            @else
+                <div class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0">
+            @endif
+                @if ($hasLogo)
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
+                        <img src="{{ asset('storage/' . $companySetting->logo_path) }}" alt="Company Logo" class="h-full w-full object-cover">
+                    </div>
+                @else
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-slate-100 to-slate-50 border border-slate-200/80 text-slate-400 shadow-sm transition duration-150 group-hover:border-slate-300">
+                        <i class="ti ti-building text-lg"></i>
+                    </div>
+                @endif
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-sm font-bold text-slate-800 truncate tracking-tight transition duration-150 group-hover:text-slate-950" title="{{ $companySetting->company_name ?: 'Company Name' }}">
+                        {{ $companySetting->company_name ?: 'Company Name' }}
+                    </h2>
+                    @if ($companySetting->tagline)
+                        <p class="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                            {{ $companySetting->tagline }}
+                        </p>
+                    @endif
+                </div>
+            @if ($canAccessSettings)
+                </a>
+            @else
+                </div>
+            @endif
+
             <div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto pb-3">
                 <nav class="space-y-1">
                     @foreach ($navGroups as $groupName => $items)

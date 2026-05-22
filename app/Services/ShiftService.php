@@ -18,18 +18,7 @@ class ShiftService
      */
     public function getEmployeeShiftForDate(Employee $employee, $date)
     {
-        $date = $date instanceof Carbon ? $date : Carbon::parse($date);
-
-        $assignment = ShiftAssignment::where('employee_id', $employee->id)
-            ->where('effective_from', '<=', $date)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('effective_to')
-                      ->orWhere('effective_to', '>=', $date);
-            })
-            ->orderBy('effective_from', 'desc')
-            ->first();
-
-        return $assignment?->shift;
+        return $employee->getActiveShiftForDate($date);
     }
 
     /**

@@ -13,7 +13,13 @@ use App\Http\Controllers\PreviousClaimController;
 use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
+use App\Models\Employee;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
+use App\Services\TapRecordAttendanceService;
 
 Route::redirect('/', '/dashboard');
 
@@ -54,6 +60,130 @@ Route::middleware('auth')->group(function () {
         Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
         Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
     });
+    Route::get('/tap-records', function () {
+        abort_unless(Schema::hasTable('tap_records'), 404);
+
+        $employees = Employee::query()
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'employee_code', 'first_name', 'middle_name', 'last_name', 'masterlist_id']);
+
+        $tapRecords = DB::table('tap_records as tap')
+            ->leftJoin('employees as employee_by_id', 'tap.employee_id', '=', 'employee_by_id.id')
+            ->leftJoin('employees as employee_by_masterlist', 'tap.masterlist_id', '=', 'employee_by_masterlist.id')
+            ->leftJoin('users as creator', 'tap.created_by', '=', 'creator.id')
+            ->leftJoin('users as updater', 'tap.updated_by', '=', 'updater.id')
+            ->leftJoin('users as deleter', 'tap.deleted_by', '=', 'deleter.id')
+            ->select([
+                'tap.id',
+                'tap.employee_id',
+                'tap.masterlist_id',
+                'tap.machine_id',
+                'tap.company_id',
+                'tap.time',
+                'tap.function',
+                'tap.status',
+                'tap.created_at',
+                'tap.created_by',
+                'tap.updated_at',
+                'tap.updated_by',
+                'tap.deleted_at',
+                'tap.deleted_by',
+                'employee_by_id.employee_code as employee_code_by_id',
+                'employee_by_id.first_name as employee_first_name_by_id',
+                'employee_by_id.middle_name as employee_middle_name_by_id',
+                'employee_by_id.last_name as employee_last_name_by_id',
+                'employee_by_masterlist.employee_code as employee_code_by_masterlist',
+                'employee_by_masterlist.first_name as employee_first_name_by_masterlist',
+                'employee_by_masterlist.middle_name as employee_middle_name_by_masterlist',
+                'employee_by_masterlist.last_name as employee_last_name_by_masterlist',
+                'creator.name as created_by_name',
+                'updater.name as updated_by_name',
+                'deleter.name as deleted_by_name',
+            ])
+            ->orderByDesc('tap.id')
+            ->paginate(25);
+
+        $tapRecords->getCollection()->transform(function ($record) {
+            $employeeFirst = $record->employee_first_name_by_id ?? $record->employee_first_name_by_masterlist;
+            $employeeMiddle = $record->employee_middle_name_by_id ?? $record->employee_middle_name_by_masterlist;
+            $employeeLast = $record->employee_last_name_by_id ?? $record->employee_last_name_by_masterlist;
+
+            $employeeParts = array_filter([
+                $employeeFirst,
+                $employeeMiddle ? strtoupper(substr((string) $employeeMiddle, 0, 1)) . '.' : null,
+                $employeeLast,
+            ]);
+
+            $record->employee_label = $employeeParts
+                ? trim(implode(' ', $employeeParts))
+                : ($record->employee_id ? 'Employee #' . $record->employee_id : 'Unlinked record');
+
+            $record->employee_code_label = $record->employee_code_by_id
+                ?? $record->employee_code_by_masterlist
+                ?? 'N/A';
+
+            $record->created_by_label = $record->created_by_name
+                ?? ($record->created_by ? 'User #' . $record->created_by : 'System');
+
+            $record->updated_by_label = $record->updated_by_name
+                ?? ($record->updated_by ? 'User #' . $record->updated_by : '—');
+
+            $record->deleted_by_label = $record->deleted_by_name
+                ?? ($record->deleted_by ? 'User #' . $record->deleted_by : '—');
+
+            $record->time_label = $record->time ? Carbon::parse($record->time)->format('Y-m-d H:i:s') : 'N/A';
+
+            $record->function_label = 'Function #' . (string) $record->function;
+            $record->status_label = 'Status #' . (string) $record->status;
+
+            return $record;
+        });
+
+        return view('tap-records.index', compact('employees', 'tapRecords'));
+    })->name('tap-records.index');
+    Route::post('/tap-records', function (Request $request) {
+        abort_unless(Schema::hasTable('tap_records'), 404);
+
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'machine_id' => 'required|integer|min:1',
+            'company_id' => 'required|integer|min:1',
+            'tap_time' => 'required|date',
+            'function' => 'required|integer|min:0',
+            'status' => 'required|integer|min:0',
+        ]);
+
+        $employee = Employee::findOrFail($validated['employee_id']);
+        $tapTime = Carbon::parse($validated['tap_time']);
+
+        DB::table('tap_records')->insert([
+            'employee_id' => $employee->id,
+            'masterlist_id' => $employee->id,
+            'machine_id' => $validated['machine_id'],
+            'company_id' => $validated['company_id'],
+            'time' => $tapTime->toDateTimeString(),
+            'function' => $validated['function'],
+            'status' => $validated['status'],
+            'created_by' => auth()->id(),
+            'created_at' => now(),
+            'updated_at' => null,
+            'updated_by' => null,
+            'deleted_at' => null,
+            'deleted_by' => null,
+        ]);
+
+        app(TapRecordAttendanceService::class)->syncForEmployeeDate($employee, $tapTime);
+
+        return redirect()->route('tap-records.index')->with('success', 'Tap record added successfully.');
+    })->name('tap-records.store');
+    Route::post('/tap-records/sync', function () {
+        abort_unless(Schema::hasTable('tap_records'), 404);
+
+        $synced = app(TapRecordAttendanceService::class)->syncAll();
+
+        return redirect()->route('tap-records.index')->with('success', $synced . ' attendance record(s) synced from tap records.');
+    })->name('tap-records.sync');
     Route::middleware('permission:timekeeping.create,timekeeping.edit')->group(function () {
         Route::post('/timekeeping/manual', [TimekeepingController::class, 'storeManual'])->name('timekeeping.manual.store');
         Route::post('/timekeeping/shift-schedule/save', [TimekeepingController::class, 'saveShiftSchedule'])->name('timekeeping.shift-schedule.save');

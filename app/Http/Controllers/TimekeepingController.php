@@ -506,6 +506,39 @@ class TimekeepingController extends Controller
             ['effective_from' => now()->toDateString()]
         );
 
+        // Update any current/future attendance records to reflect the new shift schedule
+        $employee = Employee::with('user')->find($validated['employee_id']);
+        if ($employee && $employee->user) {
+            $shiftService = app(\App\Services\ShiftService::class);
+            $lateDeductionService = app(LateDeductionService::class);
+            $todayStr = now()->toDateString();
+            $attendances = Attendance::where('user_id', $employee->user->id)
+                ->where('attendance_date', '>=', $todayStr)
+                ->get();
+
+            foreach ($attendances as $att) {
+                $correctShift = $employee->getActiveShiftForDate($att->attendance_date);
+                $correctShiftId = $correctShift ? $correctShift->id : null;
+
+                if ($att->shift_id != $correctShiftId) {
+                    $att->shift_id = $correctShiftId;
+
+                    if ($att->check_in && $correctShift) {
+                        $attendanceStatus = $shiftService->calculateAttendanceStatus($correctShift, $att->check_in, $att->check_out);
+                        $att->status = $attendanceStatus['status'] === 'late' ? 2 : 1;
+                    } else {
+                        $att->status = 1;
+                    }
+
+                    $att->save();
+
+                    if ($att->check_in && $correctShift) {
+                        $lateDeductionService->recordAttendanceLateDeduction($att, $correctShift, $att->check_in, true);
+                    }
+                }
+            }
+        }
+
         return response()->json(['success' => true]);
     }
 
