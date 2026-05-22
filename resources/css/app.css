@@ -30,9 +30,13 @@ body {
     color: var(--nw-text);
 }
 
+body.sidebar-open {
+    overflow: hidden;
+}
+
 .sidebar {
     width: var(--sidebar-width);
-    transition: transform 100ms ease-in-out;
+    transition: transform 180ms ease-in-out;
 }
 
 .main-content {
@@ -45,6 +49,17 @@ body.sidebar-collapsed .sidebar {
 
 body.sidebar-collapsed .main-content {
     padding-left: 0;
+}
+
+.sidebar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease-in-out;
+}
+
+body.sidebar-open .sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .sidebar-scroll {
@@ -226,6 +241,26 @@ details>summary::-webkit-details-marker {
 .badge-indigo {
     background: #e0e7ff;
     color: #3730a3;
+}
+
+@media (max-width: 1023px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: min(18rem, calc(100vw - 2rem));
+        max-width: calc(100vw - 1rem);
+    }
+
+    .main-content {
+        padding-left: 0;
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    body.sidebar-collapsed .sidebar {
+        transform: translateX(-100%);
+    }
 }
 
 /* Toast Notifications */

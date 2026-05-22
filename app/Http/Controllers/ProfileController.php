@@ -71,6 +71,13 @@ class ProfileController extends Controller
             $payslips = Payslip::query()
                 ->with(['payRun', 'lineItems'])
                 ->where('employee_id', $employee->id)
+                ->where(function ($query) {
+                    $query->where('status', 2)
+                        ->orWhere('status', 'approved')
+                        ->orWhere('status', 3)
+                        ->orWhere('status', 'completed')
+                        ->orWhere('status', 'released');
+                })
                 ->latest('released_at')
                 ->latest('created_at')
                 ->limit(12)

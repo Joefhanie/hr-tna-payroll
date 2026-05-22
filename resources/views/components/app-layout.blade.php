@@ -127,7 +127,9 @@
         $workspaceLabel = $header ?? ($title ?? 'Workspace');
     @endphp
 
-    <div class="flex h-screen bg-transparent">
+    <div class="flex min-h-screen bg-transparent">
+        <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 z-30 bg-slate-950/35 lg:hidden"></div>
+
         <aside class="sidebar fixed left-0 top-0 z-40 flex h-full flex-col border-r border-slate-200 bg-white px-3 py-3 text-slate-700 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
             @php
                 $companySetting = \App\Models\CompanySetting::current();
@@ -292,21 +294,21 @@
             </div>
         </aside>
 
-        <main class="main-content relative flex-1 h-screen overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
-            <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pl-4 pr-5 py-3.5 backdrop-blur-md sm:pl-5 sm:pr-8">
-                <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="flex items-center gap-2 text-slate-500">
+        <main class="main-content relative flex-1 min-h-screen overflow-y-auto transition-[padding-left] duration-300 ease-in-out">
+            <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pl-4 pr-5 py-3 backdrop-blur-md sm:pl-5 sm:pr-6 sm:py-3.5 lg:pr-8">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-center gap-2 text-slate-500">
                         <button id="sidebar-toggle" type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200" aria-label="Toggle Sidebar">
                             <i class="ti ti-layout-sidebar text-[1.15rem]"></i>
                         </button>
-                        <h1 class="text-[1.05rem] font-medium text-slate-700">{{ $workspaceLabel }}</h1>
+                        <h1 class="truncate text-[1.05rem] font-medium text-slate-700">{{ $workspaceLabel }}</h1>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <button class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50" type="button" aria-label="Notifications">
+                    <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications">
                             <i class="ti ti-bell text-xl"></i>
                         </button>
-                        <a href="{{ route('profile.show') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-blue-600 text-sm font-bold text-white shadow-sm transition hover:opacity-90 hover:scale-105" title="View Profile">
+                        <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 bg-blue-600 text-sm font-bold text-white shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" title="View Profile">
                             @if ($user && $user->employee && $user->employee->profile_picture)
                                 <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
                             @else
@@ -401,11 +403,47 @@
             });
 
             const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            const isMobileViewport = function () {
+                return window.innerWidth < 1024;
+            };
+
+            const closeMobileSidebar = function () {
+                document.body.classList.remove('sidebar-open');
+            };
+
+            const syncResponsiveSidebarState = function () {
+                if (isMobileViewport()) {
+                    document.body.classList.remove('sidebar-collapsed');
+                } else {
+                    document.body.classList.remove('sidebar-open');
+                }
+            };
+
+            syncResponsiveSidebarState();
+
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
-                    document.body.classList.toggle('sidebar-collapsed');
+                    if (isMobileViewport()) {
+                        document.body.classList.toggle('sidebar-open');
+                    } else {
+                        document.body.classList.toggle('sidebar-collapsed');
+                    }
                 });
             }
+
+            sidebarOverlay?.addEventListener('click', closeMobileSidebar);
+
+            window.addEventListener('resize', syncResponsiveSidebarState);
+
+            sidebar.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    if (isMobileViewport()) {
+                        closeMobileSidebar();
+                    }
+                });
+            });
 
             const logoutForm = document.getElementById('logoutForm');
             const logoutTrigger = document.getElementById('logoutTrigger');
@@ -452,6 +490,10 @@
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && logoutModal && logoutModal.classList.contains('flex')) {
                     closeLogoutModal();
+                }
+
+                if (event.key === 'Escape') {
+                    closeMobileSidebar();
                 }
             });
 
