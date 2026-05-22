@@ -218,13 +218,6 @@ class Employee extends Model
         return $this->belongsToMany(TaxBracket::class, 'employee_tax_bracket')->withTimestamps();
     }
 
-    /**
-     * Government contributions assigned to this employee.
-     */
-    public function governmentContributionRates(): BelongsToMany
-    {
-        return $this->belongsToMany(GovernmentContributionRate::class, 'employee_government_contribution')->withTimestamps();
-    }
 
     /**
      * Deduction rules assigned to this employee.
