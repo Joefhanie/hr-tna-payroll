@@ -361,8 +361,8 @@
         </div>
 
         @if ($employeeCode)
-            <div id="employeeQrModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/45 p-4">
-                <div class="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+            <div id="employeeQrModal" class="fixed inset-0 z-50 hidden bg-slate-950/45 p-4 justify-center items-start sm:items-center overflow-y-auto">
+                <div class="my-auto w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Employee QR</p>

@@ -344,9 +344,9 @@
         </div>
     </div>
 
-    <div id="company-file-modal" data-modal class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" data-modal-panel>
-            <div class="max-h-[90vh] overflow-y-auto p-6">
+    <div id="company-file-modal" data-modal class="fixed inset-0 z-50 hidden justify-center items-start sm:items-center bg-black/40 p-4 overflow-y-auto">
+        <div class="my-auto w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden" data-modal-panel>
+            <div class="max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-slate-900">Upload Company File</h2>

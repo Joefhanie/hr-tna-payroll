@@ -607,9 +607,8 @@
         </form>
     </div>
 
-    <!-- Payslip Breakdown Modal -->
-    <div id="payslipModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4">
-        <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="payslipModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
                 <div class="flex items-center gap-6">
                     <div>
@@ -628,7 +627,7 @@
                     </svg>
                 </button>
             </div>
-            <div class="overflow-y-auto px-6 py-5">
+            <div class="flex-1 overflow-y-auto px-6 py-5">
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div class="rounded-lg border border-slate-200 bg-white p-4">
                         <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Earnings</h4>

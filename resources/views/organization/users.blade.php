@@ -86,8 +86,8 @@
     </section>
 
     <!-- Add User Modal -->
-    <div id="userFormModal" class="{{ $errors->any() && ! isset($editingUser) ? 'flex' : 'hidden' }} fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="userFormModal" class="{{ $errors->any() && ! isset($editingUser) ? 'flex' : 'hidden' }} fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                 <h3 class="text-base font-bold text-[#06112e]">Add User</h3>
                 <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
@@ -158,8 +158,8 @@
     </div>
 
     @if (isset($editingUser))
-        <div id="editUserModal" class="flex fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-            <div class="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+        <div id="editUserModal" class="flex fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+            <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
                 <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                     <h3 class="text-base font-bold text-[#06112e]">Edit User</h3>
                     <button type="button" onclick="document.getElementById('editUserModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
@@ -230,8 +230,8 @@
     @endif
 
     <!-- User Permissions Modal -->
-    <div id="userPermissionsModal" class="hidden fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
+    <div id="userPermissionsModal" class="hidden fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 class="text-lg font-bold text-[#06112e]">Manage Access & Permissions</h3>

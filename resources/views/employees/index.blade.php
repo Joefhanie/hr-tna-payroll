@@ -198,9 +198,9 @@
     </div>
 
     {{-- ── Termination Modal ── --}}
-    <div id="terminationModal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+    <div id="terminationModal" class="hidden fixed inset-0 z-40 bg-black/50 p-4 justify-center items-start sm:items-center overflow-y-auto"
          style="padding-left: var(--sidebar-width, 0);">
-        <div class="w-full max-w-md rounded-xl bg-white shadow-xl">
+        <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="border-b border-slate-200 px-6 py-4">
                 <h3 class="text-lg font-semibold text-slate-900">Terminate Employee</h3>
                 <p class="text-xs text-slate-500 mt-1">This will mark the employee as terminated</p>

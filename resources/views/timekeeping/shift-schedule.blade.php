@@ -424,8 +424,8 @@
         </div>
     </div>
     <!-- Add Shift Modal -->
-    <div id="addShiftModal" class="hidden fixed inset-0 z-30 items-center justify-center bg-black/40 p-4 transition-opacity" style="padding-left: var(--sidebar-width);">
-        <div class="w-full max-w-md rounded-xl bg-white shadow-xl relative">
+    <div id="addShiftModal" class="hidden fixed inset-0 z-30 justify-center items-start sm:items-center bg-black/40 p-4 transition-opacity overflow-y-auto" style="padding-left: var(--sidebar-width);">
+        <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl relative max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <h3 class="text-lg font-semibold text-slate-900">Add Shift Schedule</h3>
                 <button onclick="const m = document.getElementById('addShiftModal'); m.classList.add('hidden'); m.classList.remove('flex'); resetModalShifts();" class="text-slate-400 hover:text-slate-600 transition">

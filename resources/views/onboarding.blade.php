@@ -420,15 +420,13 @@
 
             </div>
         </div>
-    @endif
-
     @if (!$isEmployeeView && $selectedEmployee && $canCreateTasks && $selectedEmployee['has_assignment'])
         <div
             id="add-task-modal"
-            class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/45 p-4"
+            class="fixed inset-0 z-50 hidden bg-slate-950/45 p-4 overflow-y-auto justify-center items-start sm:items-center"
             data-modal-backdrop="add-task-modal"
         >
-            <div class="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[1.1rem] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
+            <div class="my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[1.1rem] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
                 <div class="mb-4 flex items-start justify-between gap-4">
                     <div>
                         <h3 id="task-modal-title" class="text-lg font-bold text-[#06112e]">{{ $taskFormMode === 'edit' ? 'Edit Task' : 'Add Task' }}</h3>

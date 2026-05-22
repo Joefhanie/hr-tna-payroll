@@ -211,8 +211,8 @@
          ENROLL EMPLOYEE MODAL
     ========================================================= --}}
     @if(auth()->user()->hasPermission('benefits.edit') && $plan->is_active)
-    <div id="enrollModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
+    <div id="enrollModal" class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm justify-center items-start sm:items-center overflow-y-auto">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <div>
                     <h3 class="text-base font-semibold text-slate-900">Enroll Employee</h3>

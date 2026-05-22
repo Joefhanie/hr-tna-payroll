@@ -254,9 +254,9 @@
     </div>
 
     {{-- ── No User Account Warning Modal ── --}}
-    <div id="noUserWarningModal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+    <div id="noUserWarningModal" class="hidden fixed inset-0 z-40 bg-black/50 p-4 justify-center items-start sm:items-center overflow-y-auto"
          style="padding-left: var(--sidebar-width, 0);">
-        <div class="w-full max-w-md rounded-xl bg-white shadow-xl">
+        <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="border-b border-slate-200 px-6 py-4">
                 <h3 class="text-lg font-semibold text-slate-900">User Account Required</h3>
             </div>
@@ -283,10 +283,10 @@
 
     {{-- ── Grant Temporary Access Modal ── --}}
     <div id="grantRoleModal"
-         class="hidden fixed inset-0 z-35 items-center justify-center bg-black/40 p-4"
+         class="hidden fixed inset-0 z-35 bg-black/40 p-4 justify-center items-start sm:items-center overflow-y-auto"
          style="padding-left: var(--sidebar-width, 0);">
 
-        <div class="w-full max-w-md rounded-xl bg-white shadow-xl">
+        <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             {{-- Header --}}
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div>

@@ -191,9 +191,9 @@
 
     <!-- Discard Changes Modal -->
     <div id="discard-modal" style="display: none;"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm justify-center items-start sm:items-center p-4 overflow-y-auto">
         <div
-            class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-100 transition-all transform scale-95 duration-200">
+            class="my-auto w-full max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-100 transition-all transform scale-95 duration-200 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="flex items-center gap-3 text-amber-600">
                 <span
                     class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
