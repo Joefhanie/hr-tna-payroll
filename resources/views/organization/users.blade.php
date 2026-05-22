@@ -578,7 +578,8 @@
             2: [
                 'employees.view', 'onboarding.view', 'onboarding.edit',
                 'timekeeping.view',
-                'leaves.view', 'leaves.create'
+                'leaves.view', 'leaves.create',
+                'self-service.view', 'self-service.create'
             ], // Supervisor
             3: [
                 'timekeeping.view', 'timekeeping.create', 'timekeeping.edit', 'timekeeping.delete',
@@ -588,7 +589,8 @@
             1: [
                 'onboarding.view',
                 'timekeeping.view',
-                'leaves.view', 'leaves.create'
+                'leaves.view', 'leaves.create',
+                'self-service.view', 'self-service.create'
             ], // Employee
             4: [] // HR gets everything via backend, no defaults needed
         };
