@@ -167,10 +167,11 @@
                                             @if ($task['action_type'] === 'document_upload')
                                                 <form method="POST" action="{{ route('onboarding.tasks.submit', $task['id']) }}" enctype="multipart/form-data" class="space-y-3">
                                                     @csrf
-                                                    <div>
-                                                        <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Upload file</label>
-                                                        <input type="file" name="document_file" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                                                    </div>
+                                                      <div>
+                                                          <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Upload file</label>
+                                                          <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                                              class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-blue-100 transition focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                                                      </div>
                                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <div>
                                                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Expiry date</label>

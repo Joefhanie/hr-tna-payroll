@@ -285,7 +285,7 @@ class OnboardingController extends Controller
 
         if ($task->action_type === OnboardingTask::ACTION_DOCUMENT_UPLOAD) {
             $validated = $request->validate([
-                'document_file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx'],
+                'document_file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
                 'submission_notes' => ['nullable', 'string', 'max:2000'],
                 'expiry_date' => ['nullable', 'date'],
             ]);
@@ -581,14 +581,19 @@ class OnboardingController extends Controller
     private function storeTaskDocument(Employee $employee, OnboardingTask $task, array $validated): void
     {
         $file = $validated['document_file'];
-        $storedFileName = UploadFilename::build($file, null, 'onboarding-documents/' . $employee->id);
-        $storedPath = $file->storeAs('onboarding-documents/' . $employee->id, $storedFileName, 'public');
+        $folderName = 'employee-documents/' . ($employee->employee_code ?: $employee->id);
+        $storedFileName = UploadFilename::build($file, null, $folderName);
+        $storedPath = $file->storeAs($folderName, $storedFileName, 'public');
 
         $attributes = [
             'employee_id' => $employee->id,
             'file_name' => $storedFileName,
             'expiry_date' => $validated['expiry_date'] ?? null,
         ];
+
+        if (Schema::hasColumn('employee_documents', 'display_name')) {
+            $attributes['display_name'] = $task->title;
+        }
 
         if (Schema::hasColumn('employee_documents', 'document_type')) {
             $attributes['document_type'] = $task->document_type ?: $task->category;

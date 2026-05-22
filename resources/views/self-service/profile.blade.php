@@ -323,12 +323,17 @@
                 <form method="POST" action="{{ route('self-service.documents.store', $employee) }}" enctype="multipart/form-data" class="space-y-3">
                     @csrf
                     <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Document Name</label>
+                        <input type="text" name="display_name" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="e.g. My Passport, HMO Form" value="{{ old('display_name') }}">
+                    </div>
+                    <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Document Type</label>
                         <input type="text" name="document_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Government ID, Contract, Tax Form" value="{{ old('document_type') }}">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">File</label>
-                        <input type="file" name="document_file" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                            class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-emerald-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-emerald-100 transition focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Expiry Date</label>
