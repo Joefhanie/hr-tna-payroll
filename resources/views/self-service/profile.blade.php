@@ -38,6 +38,18 @@
         }
     @endphp
 
+    <style>
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .scrollbar-none {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+
     <div class="mb-4 flex items-center justify-between">
         <a href="{{ route('self-service') }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +101,7 @@
     </div>
 
     <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $leaveRequestTarget }}">
+        <button type="button" onclick="switchProfileTab('leaves')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $leaveRequestTarget }}">
             <div class="flex items-center gap-2">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +116,7 @@
             <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{{ $canSubmitRequests ? 'Submit' : 'View' }}</span>
         </button>
 
-        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $profileUpdateTarget }}">
+        <button type="button" onclick="switchProfileTab('updates')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $profileUpdateTarget }}">
             <div class="flex items-center gap-2">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,19 +131,22 @@
             <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $canSubmitRequests ? 'Request' : 'View' }}</span>
         </button>
 
-        <a href="#payslips" class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:bg-slate-50">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+        <button type="button" onclick="switchProfileTab('payslips')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Payslips</p>
+                    <p class="text-xs text-slate-500">{{ $payslips->count() }} record(s)</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-medium text-slate-900">Payslips</p>
-                <p class="text-xs text-slate-500">{{ $payslips->count() }} record(s)</p>
-            </div>
-        </a>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">View</span>
+        </button>
 
-        <button type="button" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $documentUploadTarget }}">
+        <button type="button" onclick="switchProfileTab('documents')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $documentUploadTarget }}">
             <div class="flex items-center gap-2">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,9 +345,22 @@
                 </form>
             </div>
         </div>
-    @endif
+    @endif    {{-- Tabs --}}
+    <div class="mb-4">
+        <div class="border-b border-slate-200">
+            <div class="overflow-x-auto scrollbar-none">
+                <nav class="-mb-px flex gap-6 min-w-max pb-px" aria-label="Tabs">
+                    <button type="button" onclick="switchProfileTab('timelogs')" id="tab-timelogs" class="border-[#1a56db] text-[#1a56db] whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Time Logs</button>
+                    <button type="button" onclick="switchProfileTab('leaves')" id="tab-leaves" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Leave Requests</button>
+                    <button type="button" onclick="switchProfileTab('updates')" id="tab-updates" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Profile Updates</button>
+                    <button type="button" onclick="switchProfileTab('payslips')" id="tab-payslips" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Payslips</button>
+                    <button type="button" onclick="switchProfileTab('documents')" id="tab-documents" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Documents</button>
+                </nav>
+            </div>
+        </div>
+    </div>
 
-    <div id="leave-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm">
+    <div id="leave-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Leave Requests</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -364,7 +392,7 @@
         </div>
     </div>
 
-    <div id="profile-update-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm">
+    <div id="profile-update-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Profile Update Requests</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -394,7 +422,7 @@
         </div>
     </div>
 
-    <div id="payslips" class="mb-4 rounded-lg bg-white p-4 shadow-sm">
+    <div id="payslips" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Payslips</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -499,53 +527,51 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div id="attendance-logs" class="rounded-lg bg-white p-4 shadow-sm">
-            <h2 class="mb-4 text-base font-semibold text-slate-900">Recent Time Logs</h2>
-            <div class="space-y-2">
-                @forelse ($attendanceLogs as $attendance)
-                    <div class="rounded-lg border border-slate-200 p-3">
-                        <div class="flex items-center justify-between gap-3">
-                            <div>
-                                <p class="text-sm font-medium text-slate-900">{{ $attendance['date'] }}</p>
-                                <p class="text-xs text-slate-500">IN {{ $attendance['check_in'] }} | OUT {{ $attendance['check_out'] }}</p>
-                            </div>
-                            <span class="badge {{ $badge($attendance['status']) }}">{{ $attendance['status'] }}</span>
+    <div id="attendance-logs" class="mb-4 rounded-lg bg-white p-4 shadow-sm">
+        <h2 class="mb-4 text-base font-semibold text-slate-900">Recent Time Logs</h2>
+        <div class="space-y-2">
+            @forelse ($attendanceLogs as $attendance)
+                <div class="rounded-lg border border-slate-200 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-medium text-slate-900">{{ $attendance['date'] }}</p>
+                            <p class="text-xs text-slate-500">IN {{ $attendance['check_in'] }} | OUT {{ $attendance['check_out'] }}</p>
                         </div>
-                        @if ($attendance['notes'])
-                            <p class="mt-2 text-xs text-slate-500">{{ $attendance['notes'] }}</p>
-                        @endif
+                        <span class="badge {{ $badge($attendance['status']) }}">{{ $attendance['status'] }}</span>
                     </div>
-                @empty
-                    <p class="text-sm text-slate-500">No attendance logs found.</p>
-                @endforelse
-            </div>
+                    @if ($attendance['notes'])
+                        <p class="mt-2 text-xs text-slate-500">{{ $attendance['notes'] }}</p>
+                    @endif
+                </div>
+            @empty
+                <p class="text-sm text-slate-500">No attendance logs found.</p>
+            @endforelse
         </div>
+    </div>
 
-        <div id="documents" class="rounded-lg bg-white p-4 shadow-sm">
-            <h2 class="mb-4 text-base font-semibold text-slate-900">My Documents</h2>
-            <div class="space-y-2">
-                @forelse ($documents as $document)
-                    <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                        <div class="flex items-center gap-2">
-                            <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <div>
-                                <p class="text-sm font-medium text-slate-900">{{ $document['name'] }}</p>
-                                <p class="text-xs text-slate-500">{{ $document['type'] }} | {{ $document['date'] ?? 'N/A' }}{{ $document['file_size'] ? ' | ' . $document['file_size'] : '' }}</p>
-                            </div>
+    <div id="documents" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
+        <h2 class="mb-4 text-base font-semibold text-slate-900">My Documents</h2>
+        <div class="space-y-2">
+            @forelse ($documents as $document)
+                <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-slate-900">{{ $document['name'] }}</p>
+                            <p class="text-xs text-slate-500">{{ $document['type'] }} | {{ $document['date'] ?? 'N/A' }}{{ $document['file_size'] ? ' | ' . $document['file_size'] : '' }}</p>
                         </div>
-                        @if ($document['file_path'])
-                            <span class="text-xs font-medium text-slate-500">Stored</span>
-                        @else
-                            <span class="text-xs font-medium text-slate-400">No file path</span>
-                        @endif
                     </div>
-                @empty
-                    <p class="text-sm text-slate-500">No documents found.</p>
-                @endforelse
-            </div>
+                    @if ($document['file_path'])
+                        <span class="text-xs font-medium text-slate-500">Stored</span>
+                    @else
+                        <span class="text-xs font-medium text-slate-400">No file path</span>
+                    @endif
+                </div>
+            @empty
+                <p class="text-sm text-slate-500">No documents found.</p>
+            @endforelse
         </div>
     </div>
 
@@ -827,5 +853,73 @@
         if (initialRequestModal) {
             openRequestModal(initialRequestModal);
         }
+
+        // Switch profile tabs client-side
+        function switchProfileTab(tabName) {
+            const tabs = ['leaves', 'updates', 'payslips', 'timelogs', 'documents'];
+            const elements = {
+                leaves: document.getElementById('leave-requests'),
+                updates: document.getElementById('profile-update-requests'),
+                payslips: document.getElementById('payslips'),
+                timelogs: document.getElementById('attendance-logs'),
+                documents: document.getElementById('documents')
+            };
+            const buttons = {
+                leaves: document.getElementById('tab-leaves'),
+                updates: document.getElementById('tab-updates'),
+                payslips: document.getElementById('tab-payslips'),
+                timelogs: document.getElementById('tab-timelogs'),
+                documents: document.getElementById('tab-documents')
+            };
+
+            tabs.forEach(tab => {
+                const el = elements[tab];
+                const btn = buttons[tab];
+                if (tab === tabName) {
+                    el?.classList.remove('hidden');
+                    btn?.classList.add('border-[#1a56db]', 'text-[#1a56db]');
+                    btn?.classList.remove('border-transparent', 'text-slate-500', 'hover:border-slate-300', 'hover:text-slate-700');
+                } else {
+                    el?.classList.add('hidden');
+                    btn?.classList.remove('border-[#1a56db]', 'text-[#1a56db]');
+                    btn?.classList.add('border-transparent', 'text-slate-500', 'hover:border-slate-300', 'hover:text-slate-700');
+                }
+            });
+
+            // Update URL hash without scrolling the page
+            if (history.pushState) {
+                history.pushState(null, null, '#' + tabName);
+            } else {
+                location.hash = tabName;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let initialTab = 'timelogs';
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            const validTabs = ['leaves', 'updates', 'payslips', 'timelogs', 'documents'];
+            
+            if (tabParam && validTabs.includes(tabParam)) {
+                initialTab = tabParam;
+            } else {
+                const hash = window.location.hash.replace('#', '');
+                if (hash && validTabs.includes(hash)) {
+                    initialTab = hash;
+                } else if (hash === 'leave-requests') {
+                    initialTab = 'leaves';
+                } else if (hash === 'profile-update-requests') {
+                    initialTab = 'updates';
+                } else if (hash === 'payslips') {
+                    initialTab = 'payslips';
+                } else if (hash === 'attendance-logs' || hash === 'recent-time-logs') {
+                    initialTab = 'timelogs';
+                } else if (hash === 'documents') {
+                    initialTab = 'documents';
+                }
+            }
+            
+            switchProfileTab(initialTab);
+        });
     </script>
 </x-app-layout>

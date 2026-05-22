@@ -34,7 +34,7 @@ class SelfServiceController extends Controller
         /** @var User|null $user */
         $user = Auth::user();
 
-        if ($user instanceof User && (int) ($user->role ?? 0) !== 4 && !empty($user->employee_id)) {
+        if ($user instanceof User && (int) ($user->role ?? 0) === 1 && !empty($user->employee_id)) {
             return redirect()->route('self-service.profile', $user->employee_id);
         }
 
@@ -44,8 +44,17 @@ class SelfServiceController extends Controller
             'status' => trim((string) $request->string('status')),
         ];
 
-        $feed = Employee::query()
-            ->with('user')
+        $feedQuery = Employee::query()
+            ->with('user');
+
+        if ($user instanceof User && (int) ($user->role ?? 0) === 2) {
+            $feedQuery->where(function ($query) use ($user) {
+                $query->where('id', $user->employee_id)
+                      ->orWhere('manager_id', $user->employee_id);
+            });
+        }
+
+        $feed = $feedQuery
             ->whereHas('user', function ($query) {
                 $query->whereIn('role', [1, 2]);
             })
@@ -98,6 +107,30 @@ class SelfServiceController extends Controller
 
     public function profile(Employee $employee)
     {
+        /** @var User|null $currentUser */
+        $currentUser = Auth::user();
+        if (!$currentUser) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $role = (int) ($currentUser->role ?? 0);
+
+        if ($role === 4 || $role === 3) {
+            // HR (4) and OIC (3) are allowed to view any self-service profile
+        } elseif ($role === 2) {
+            // Supervisor (2) can view their own record and subordinates under them
+            if ((int) $employee->id !== (int) $currentUser->employee_id && (int) $employee->manager_id !== (int) $currentUser->employee_id) {
+                abort(403, 'Unauthorized action.');
+            }
+        } elseif ($role === 1) {
+            // Employee (1) can only view their own profile
+            if ((int) $employee->id !== (int) $currentUser->employee_id) {
+                abort(403, 'Unauthorized action.');
+            }
+        } else {
+            abort(403, 'Unauthorized action.');
+        }
+
         $employee->load([
             'department',
             'position',

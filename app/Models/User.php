@@ -63,6 +63,8 @@ class User extends Authenticatable
                 'timekeeping.view',
                 'leaves.view',
                 'leaves.create',
+                'self-service.view',
+                'self-service.create',
             ],
             3 => [ // OIC
                 'onboarding.view',
@@ -84,6 +86,8 @@ class User extends Authenticatable
                 'timekeeping.view',
                 'leaves.view',
                 'leaves.create',
+                'self-service.view',
+                'self-service.create',
             ],
         ];
 
