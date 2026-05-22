@@ -35,12 +35,12 @@
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        
+
         {{-- LEFT COLUMN: Plan Details & Edit Form --}}
         <div class="lg:col-span-1 space-y-6">
             <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                 <h3 class="text-sm font-bold text-[#06112e] uppercase tracking-wide mb-4">Edit Plan Details</h3>
-                
+
                 <form method="POST" action="{{ route('benefits.update', $plan->id) }}" class="space-y-4">
                     @csrf
                     @method('PUT')
@@ -126,7 +126,7 @@
 
         {{-- RIGHT COLUMN: Enrollment Management --}}
         <div class="lg:col-span-2 space-y-6">
-            
+
             {{-- Enrolled List --}}
             <div class="rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
                 <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
@@ -155,12 +155,18 @@
                             @forelse($enrolled as $emp)
                                 <tr class="transition hover:bg-slate-50">
                                     <td class="px-5 py-3.5 flex items-center gap-3">
-                                        @php
-                                            $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
-                                        @endphp
-                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-xs">
-                                            {{ $initials }}
-                                        </div>
+                                        @if ($emp->profile_picture)
+                                            <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100">
+                                                <img src="{{ asset('storage/' . $emp->profile_picture) }}" alt="{{ $emp->full_name }}" class="h-8 w-8 object-cover">
+                                            </div>
+                                        @else
+                                            @php
+                                                $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
+                                            @endphp
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-xs">
+                                                {{ $initials }}
+                                            </div>
+                                        @endif
                                         <div>
                                             <p class="font-bold text-[#06112e]">{{ $emp->full_name }}</p>
                                             <p class="text-[0.7rem] text-slate-400 mt-0.5">{{ $emp->employee_code }}</p>

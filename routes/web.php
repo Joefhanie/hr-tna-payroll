@@ -31,19 +31,20 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-    
+
     // User Profile
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-    
+
     Route::middleware('permission:self-service.view')->group(function () {
         Route::get('/self-service', [SelfServiceController::class, 'index'])->name('self-service');
         Route::get('/self-service/profile/{employee}', [SelfServiceController::class, 'profile'])->name('self-service.profile');
     });
-    
+
     Route::middleware('permission:self-service.create')->group(function () {
         Route::post('/self-service/profile/{employee}/leave-requests', [SelfServiceController::class, 'storeLeaveRequest'])->name('self-service.leave-requests.store');
         Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
+        Route::post('/self-service/profile/{employee}/profile-picture', [SelfServiceController::class, 'storeProfilePicture'])->name('self-service.profile-picture.store');
         Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
     });
 
@@ -165,7 +166,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:payroll.view,payroll.create,payroll.edit,payroll.delete')->group(function () {
         Route::get('/salaries', [SalaryController::class, 'index'])->name('salary.index');
         Route::get('/employees/{employee}/salary', [SalaryController::class, 'show'])->name('salary.show');
-        
+
         Route::get('/salaries/settings', [SalaryController::class, 'settings'])->name('salary.settings');
         Route::get('/salaries/government-premiums', [SalaryController::class, 'governmentPremiums'])->name('salary.government-premiums');
         Route::get('/salaries/contribution-tables', [SalaryController::class, 'contributionTables'])->name('salary.contribution-tables');
@@ -195,7 +196,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:payroll.edit')->group(function () {
         Route::post('/payroll/previous-claims/{previousClaim}/approve', [PreviousClaimController::class, 'approve'])->name('payroll.previous-claims.approve');
         Route::post('/payroll/previous-claims/{previousClaim}/decline', [PreviousClaimController::class, 'decline'])->name('payroll.previous-claims.decline');
-        
+
         // Disputes — HR resolve / reject
         Route::post('/payroll/disputes/{dispute}/resolve', [PayslipDisputeController::class, 'resolve'])->name('payroll.disputes.resolve');
         Route::post('/payroll/disputes/{dispute}/reject', [PayslipDisputeController::class, 'reject'])->name('payroll.disputes.reject');

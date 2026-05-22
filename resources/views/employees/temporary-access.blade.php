@@ -128,9 +128,15 @@
 
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
-                                        {{ collect(explode(' ', $employee->full_name))->map(fn($n) => $n[0] ?? '')->join('') }}
-                                    </div>
+                                    @if ($employee->profile_picture)
+                                        <div class="h-8 w-8 overflow-hidden rounded-full bg-slate-100">
+                                            <img src="{{ asset('storage/' . $employee->profile_picture) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
+                                        </div>
+                                    @else
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                                            {{ collect(explode(' ', $employee->full_name))->map(fn($n) => $n[0] ?? '')->join('') }}
+                                        </div>
+                                    @endif
                                     <div>
                                         <p class="font-medium text-slate-900 ta-name">{{ $employee->full_name }}</p>
                                         <p class="text-xs text-slate-500">{{ $employee->email }}</p>
@@ -398,7 +404,7 @@
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            
+
             if (isDateTime) {
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -506,17 +512,17 @@
 
             const fromInput = document.getElementById('fromDate');
             const toInput = document.getElementById('toDate');
-            
+
             const isDateTime = fromInput.type === 'datetime-local';
             const todayStr = getFormattedToday(isDateTime);
-            
+
             fromInput.value = todayStr;
             toInput.value = todayStr;
-            
+
             // Limit date pickers to disable past dates by default
             fromInput.min = todayStr;
             toInput.min = todayStr;
-            
+
             document.getElementById('grantRoleForm').action = '';
             document.getElementById('roleEmpSuggestions').classList.add('hidden');
 
