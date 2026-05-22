@@ -87,6 +87,12 @@ class SalaryController extends Controller
      */
     public function export(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
         $request->validate([
             'q'             => ['nullable', 'string', 'max:255'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],

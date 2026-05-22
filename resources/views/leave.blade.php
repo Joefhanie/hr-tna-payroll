@@ -9,6 +9,7 @@
             <p class="mt-1 text-sm text-slate-500">Leave requests, approvals, and balances.</p>
         </div>
         <div class="flex items-center gap-2">
+            @if(auth()->user()->role === 4)
             <a href="{{ route('leave.export') }}" id="btnExport"
                 class="inline-flex items-center gap-1.5 rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,6 +17,7 @@
                 </svg>
                 Export CSV
             </a>
+            @endif
             @if(auth()->user()->hasPermission('leaves.create'))
             <button type="button" id="openRequestLeaveModal"
                 class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">

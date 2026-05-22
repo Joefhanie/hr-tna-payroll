@@ -14,21 +14,57 @@ use Illuminate\Support\Facades\Schema;
 class TimekeepingController extends Controller
 {
     /**
+     * Get the list of employee IDs the current user is authorized to view.
+     */
+    private function getAllowedEmployeeIds(User $user): ?array
+    {
+        if ($user->role === 4) {
+            return null; // HR can view all
+        }
+
+        $employeeIds = [];
+        if ($user->employee_id) {
+            $employeeIds[] = (int) $user->employee_id;
+        }
+
+        if (($user->role === 2 || $user->role === 3) && $user->employee_id) {
+            $subordinateIds = Employee::where('manager_id', $user->employee_id)->pluck('id')->map(fn($id) => (int) $id)->toArray();
+            $employeeIds = array_merge($employeeIds, $subordinateIds);
+        }
+
+        return $employeeIds;
+    }
+
+    /**
      * Build the attendance list for the selected date, including actual and virtual records.
      */
     private function buildTodayAttendance(Request $request)
     {
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
 
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($user);
+
+        $employeesQuery = Employee::with(['user', 'currentShift.shift', 'currentShifts.shift']);
+        if ($allowedEmployeeIds !== null) {
+            $employeesQuery->whereIn('id', $allowedEmployeeIds);
+        }
+
         $employees = Schema::hasTable('employees')
-            ? Employee::with(['user', 'currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            ? $employeesQuery->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
             : collect();
 
+        $attendanceQuery = Attendance::with(['user.employee.currentShift.shift', 'shift'])
+            ->where('attendance_date', $selectedDate);
+
+        if ($allowedEmployeeIds !== null) {
+            $allowedUserIds = User::whereIn('employee_id', $allowedEmployeeIds)->pluck('id')->toArray();
+            $attendanceQuery->whereIn('user_id', $allowedUserIds);
+        }
+
         $todayAttendance = Schema::hasTable('attendance')
-            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->where('attendance_date', $selectedDate)
-                ->orderBy('check_in')
-                ->get()
+            ? $attendanceQuery->orderBy('check_in')->get()
             : collect();
 
         // Helper function to insert virtual "Shift Not Started" records
@@ -205,18 +241,32 @@ class TimekeepingController extends Controller
             });
         }
 
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($user);
+
+        $employeesQuery = Employee::with(['user', 'currentShift.shift', 'currentShifts.shift']);
+        if ($allowedEmployeeIds !== null) {
+            $employeesQuery->whereIn('id', $allowedEmployeeIds);
+        }
+
         $employees = Schema::hasTable('employees')
-            ? Employee::with(['user', 'currentShift.shift', 'currentShifts.shift'])->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
+            ? $employeesQuery->orderBy('first_name')->orderBy('middle_name')->orderBy('last_name')->get()
             : collect();
 
+        $calendarDataRecordsQuery = Attendance::with(['user.employee.currentShift.shift', 'shift'])
+            ->whereBetween('attendance_date', [
+                $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
+                $selectedDateCarbon->copy()->endOfMonth()->toDateString()
+            ]);
+
+        if ($allowedEmployeeIds !== null) {
+            $allowedUserIds = User::whereIn('employee_id', $allowedEmployeeIds)->pluck('id')->toArray();
+            $calendarDataRecordsQuery->whereIn('user_id', $allowedUserIds);
+        }
+
         $calendarDataRecords = Schema::hasTable('attendance')
-            ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->whereBetween('attendance_date', [
-                    $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
-                    $selectedDateCarbon->copy()->endOfMonth()->toDateString()
-                ])
-                ->orderBy('check_in')
-                ->get()
+            ? $calendarDataRecordsQuery->orderBy('check_in')->get()
             : collect();
 
         // Helper function to insert virtual "Shift Not Started" records for calendar
@@ -447,6 +497,12 @@ class TimekeepingController extends Controller
      */
     public function export(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
         $request->validate([
             'date'   => ['nullable', 'date'],
             'q'      => ['nullable', 'string', 'max:255'],
@@ -544,6 +600,13 @@ class TimekeepingController extends Controller
             'status'          => 'nullable|integer|in:1,2,3,4',
             'notes'           => 'nullable|string|max:500',
         ]);
+
+        /** @var \App\Models\User $currentUser */
+        $currentUser = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($currentUser);
+        if ($allowedEmployeeIds !== null && !in_array((int)$validated['employee_id'], $allowedEmployeeIds)) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $employee = Employee::with('user', 'shiftAssignments.shift')->findOrFail($validated['employee_id']);
         $user = $employee->user;
@@ -644,7 +707,16 @@ class TimekeepingController extends Controller
 
     public function shiftSchedule()
     {
-        $employees = \App\Models\Employee::with(['department', 'currentShifts.shift'])->get();
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($user);
+
+        $employeesQuery = \App\Models\Employee::with(['department', 'currentShifts.shift']);
+        if ($allowedEmployeeIds !== null) {
+            $employeesQuery->whereIn('id', $allowedEmployeeIds);
+        }
+        $employees = $employeesQuery->get();
+
         return view('timekeeping.shift-schedule', compact('employees'));
     }
 
@@ -661,6 +733,13 @@ class TimekeepingController extends Controller
             'flexible_until_time' => 'nullable',
             'assignment_id' => 'nullable|integer|exists:shift_assignments,id',
         ]);
+
+        /** @var \App\Models\User $currentUser */
+        $currentUser = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($currentUser);
+        if ($allowedEmployeeIds !== null && !in_array((int)$validated['employee_id'], $allowedEmployeeIds)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
 
         $days = $validated['days'] ?? [];
         $breakMinutes = (int) ($validated['break_minutes'] ?? 60);
@@ -809,6 +888,16 @@ class TimekeepingController extends Controller
 
     public function show(User $user)
     {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = auth()->user();
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($currentUser);
+
+        if ($allowedEmployeeIds !== null) {
+            if (!$user->employee_id || !in_array((int) $user->employee_id, $allowedEmployeeIds)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $attendances = Attendance::with(['shift', 'user.employee.currentShift.shift'])
             ->where('user_id', $user->id)
             ->orderByDesc('attendance_date')

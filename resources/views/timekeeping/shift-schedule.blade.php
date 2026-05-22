@@ -25,23 +25,32 @@
             pointer-events: none !important;
             opacity: 0.95;
         }
+
+        /* Reset modal sidebar offset on mobile/tablet (sidebar is collapsed < 1024px) */
+        @media (max-width: 1023px) {
+            #addShiftModal,
+            #editShiftModal {
+                padding-left: 0 !important;
+            }
+        }
     </style>
 
     <div class="space-y-6">
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Shift Schedule</h1>
                 <p class="mt-1 text-sm text-slate-600">Manage employee shift schedules.</p>
             </div>
             @if($canCreateShifts)
-                <button type="button" onclick="openAddShiftModal()" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                <button type="button" onclick="openAddShiftModal()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                     <i class="ti ti-plus"></i>
                     Add Shift
                 </button>
             @endif
         </div>
 
-        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <!-- Desktop View -->
+        <div class="hidden lg:block overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
@@ -231,6 +240,187 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Mobile View (Cards) -->
+        <div class="block lg:hidden space-y-4">
+            @forelse($employees as $employee)
+                @php
+                    $activeShifts = $employee->currentShifts ?? collect();
+                    if ($activeShifts->isEmpty() && $employee->currentShift) {
+                        $activeShifts = collect([$employee->currentShift]);
+                    }
+                    $allActiveDays = [];
+                    foreach($activeShifts as $assignment) {
+                        if ($assignment->shift && is_array($assignment->shift->days_of_week)) {
+                            $allActiveDays = array_merge($allActiveDays, $assignment->shift->days_of_week);
+                        }
+                    }
+                    $allActiveDays = array_unique($allActiveDays);
+                @endphp
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="card-{{ $employee->id }}">
+                    <!-- Card Header -->
+                    <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                        <div>
+                            <div class="font-semibold text-slate-900 text-base">{{ $employee->full_name }}</div>
+                            <div class="flex flex-wrap gap-2 items-center mt-1.5">
+                                <span class="font-mono text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                                    {{ $employee->employee_code }}
+                                </span>
+                                <span class="text-xs text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                                    {{ $employee->department->name ?? 'Unassigned' }}
+                                </span>
+                            </div>
+                        </div>
+                        @if($canCreateShifts)
+                            @php
+                                $displayParts = [];
+                                foreach($activeShifts as $assignment) {
+                                    if ($assignment->shift) {
+                                        if ($assignment->shift->is_flexible && $assignment->shift->flexible_until_time) {
+                                            $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->flexible_until_time)->format('g:i A') . ' to ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('g:i A');
+                                        } else {
+                                            $flex = $assignment->shift->is_flexible ? ' [Flex]' : '';
+                                            $timeStr = \Carbon\Carbon::parse($assignment->shift->start_time)->format('h:i A') . ' - ' . \Carbon\Carbon::parse($assignment->shift->end_time)->format('h:i A') . $flex;
+                                        }
+                                        $displayParts[] = $timeStr . ' (' . implode(', ', array_map(function($d) { return substr($d, 0, 3); }, $assignment->shift->days_of_week ?? [])) . ')';
+                                    }
+                                }
+                            @endphp
+                            <button type="button" onclick="openAddModalPreselected({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', '{{ implode('; ', $displayParts) }}', {{ json_encode(array_values($allActiveDays)) }})" class="inline-flex items-center justify-center rounded-lg bg-slate-50 p-2 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors" title="Add another shift segment">
+                                <i class="ti ti-plus text-lg"></i>
+                            </button>
+                        @endif
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="space-y-4">
+                        <!-- Shifts List -->
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Shift Schedules</div>
+                            <div class="shift-container flex flex-col gap-2">
+                                @php
+                                    // Predefined premium translucent color palettes
+                                    $palettes = [
+                                        [
+                                            'time_bg' => 'bg-blue-100 text-blue-800 border-blue-200',
+                                            'time_icon' => 'text-blue-600',
+                                            'day_pill' => 'bg-blue-50 text-blue-700 border-blue-200 font-semibold'
+                                        ],
+                                        [
+                                            'time_bg' => 'bg-rose-100 text-rose-800 border-rose-200',
+                                            'time_icon' => 'text-rose-600',
+                                            'day_pill' => 'bg-rose-50 text-rose-700 border-rose-200 font-semibold'
+                                        ],
+                                        [
+                                            'time_bg' => 'bg-amber-100 text-amber-900 border-amber-200',
+                                            'time_icon' => 'text-amber-600',
+                                            'day_pill' => 'bg-amber-50 text-amber-700 border-amber-200 font-semibold'
+                                        ],
+                                        [
+                                            'time_bg' => 'bg-violet-100 text-violet-800 border-violet-200',
+                                            'time_icon' => 'text-violet-600',
+                                            'day_pill' => 'bg-violet-50 text-violet-700 border-violet-200 font-semibold'
+                                        ],
+                                        [
+                                            'time_bg' => 'bg-rose-100 text-rose-800 border-rose-200',
+                                            'time_icon' => 'text-rose-600',
+                                            'day_pill' => 'bg-rose-50 text-rose-700 border-rose-200 font-semibold'
+                                        ],
+                                        [
+                                            'time_bg' => 'bg-sky-100 text-sky-800 border-sky-200',
+                                            'time_icon' => 'text-sky-600',
+                                            'day_pill' => 'bg-sky-50 text-sky-700 border-sky-200 font-semibold'
+                                        ],
+                                    ];
+
+                                    $dayColorMap = [];
+                                    $shiftIndex = 0;
+                                @endphp
+                                @forelse($activeShifts as $assignment)
+                                    @if($assignment->shift)
+                                        @php
+                                            if ($assignment->shift->crosses_midnight) {
+                                                $palette = [
+                                                    'time_bg' => 'bg-purple-100 text-purple-800 border-purple-200',
+                                                    'time_icon' => 'text-purple-600',
+                                                    'day_pill' => 'bg-purple-50 text-purple-700 border-purple-200 font-semibold'
+                                                ];
+                                            } else {
+                                                $palette = $palettes[$shiftIndex % count($palettes)];
+                                                $shiftIndex++;
+                                            }
+                                            foreach ($assignment->shift->days_of_week ?? [] as $d) {
+                                                $dayColorMap[$d] = $palette['day_pill'];
+                                            }
+                                        @endphp
+                                        <div class="flex items-center gap-1.5 flex-wrap bg-slate-50/50 rounded-lg p-2 border border-slate-100">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border time-badge {{ $palette['time_bg'] }}">
+                                                @if($assignment->shift->crosses_midnight)
+                                                    <i class="ti ti-moon {{ $palette['time_icon'] }}"></i>
+                                                @else
+                                                    <i class="ti ti-clock {{ $palette['time_icon'] }}"></i>
+                                                @endif
+                                                <span class="time-display">
+                                                    @if($assignment->shift->is_flexible && $assignment->shift->flexible_until_time)
+                                                        {{ \Carbon\Carbon::parse($assignment->shift->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($assignment->shift->flexible_until_time)->format('g:i A') }} to {{ \Carbon\Carbon::parse($assignment->shift->end_time)->format('g:i A') }}
+                                                    @else
+                                                        {{ \Carbon\Carbon::parse($assignment->shift->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($assignment->shift->end_time)->format('h:i A') }}
+                                                    @endif
+                                                </span>
+                                            </span>
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-100 break-badge">
+                                                <i class="ti ti-coffee text-amber-500"></i>
+                                                <span class="break-display">
+                                                    {{ $assignment->shift->break_minutes }}m
+                                                </span>
+                                            </span>
+                                            @if($assignment->shift->is_flexible)
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 border border-emerald-100" title="Flexible Shift">
+                                                    <i class="ti ti-infinity text-emerald-500"></i>
+                                                    <span>Flex</span>
+                                                </span>
+                                            @endif
+                                            @if($canEditShifts)
+                                                <button type="button" onclick="openEditModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', {{ $assignment->id }}, '{{ $assignment->shift->start_time }}', '{{ $assignment->shift->end_time }}', {{ $assignment->shift->break_minutes }}, {{ json_encode($assignment->shift->days_of_week ?? []) }}, {{ $assignment->shift->is_flexible ? 'true' : 'false' }}, {{ $assignment->shift->flexible_until_time ? "'".substr($assignment->shift->flexible_until_time, 0, 5)."'" : 'null' }})" class="ml-auto inline-flex items-center justify-center rounded-lg bg-white border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-xs" title="Edit this shift segment">
+                                                    <i class="ti ti-pencil text-sm"></i>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @empty
+                                    <span class="text-slate-400 italic text-xs no-shift">Not assigned</span>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <!-- Working Days -->
+                        <div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Working Days</div>
+                            <div class="flex gap-1.5 days-display">
+                                @if(count($allActiveDays) > 0)
+                                    @foreach(['Mon'=>'M', 'Tue'=>'T', 'Wed'=>'W', 'Thu'=>'T', 'Fri'=>'F', 'Sat'=>'S', 'Sun'=>'S'] as $day => $label)
+                                        @if(in_array($day, $allActiveDays))
+                                            @php
+                                                $dayClass = $dayColorMap[$day] ?? 'bg-blue-100 text-blue-700 border-blue-200';
+                                            @endphp
+                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg text-xs border {{ $dayClass }}">{{ $label }}</span>
+                                        @else
+                                            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-400 border border-slate-200/50">{{ $label }}</span>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <span class="text-slate-400 italic text-xs no-days">Not assigned</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
+                    No employees found.
+                </div>
+            @endforelse
         </div>
     </div>
     <!-- Add Shift Modal -->

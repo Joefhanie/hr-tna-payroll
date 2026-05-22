@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PayslipDispute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class PayslipDisputeController extends Controller
 {
@@ -122,6 +123,12 @@ class PayslipDisputeController extends Controller
      */
     public function export(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
         $request->validate([
             'q'          => ['nullable', 'string', 'max:255'],
             'status'     => ['nullable', 'string', 'in:pending,resolved,rejected'],

@@ -98,6 +98,12 @@ class PayrollController extends Controller
      */
     public function export(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
         $request->validate([
             'start_date' => ['nullable', 'date'],
             'end_date'   => ['nullable', 'date'],
