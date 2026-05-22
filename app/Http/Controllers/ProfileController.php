@@ -192,7 +192,7 @@ class ProfileController extends Controller
                 'postal_code' => ['nullable', 'string', 'max:20'],
                 'country' => ['nullable', 'string', 'max:100'],
             ]);
-            
+
             $rules['email'][] = Rule::unique('employees', 'email')->ignore($employee->id);
         }
 
@@ -208,7 +208,7 @@ class ProfileController extends Controller
             // Handle Profile Picture upload
             if ($request->hasFile('profile_picture')) {
                 $file = $request->file('profile_picture');
-                
+
                 // Delete old profile picture if exists
                 if ($employee->profile_picture) {
                     Storage::disk('public')->delete($employee->profile_picture);
