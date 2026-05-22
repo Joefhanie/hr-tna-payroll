@@ -113,7 +113,7 @@ class PreviousClaimController extends Controller
         $docPath = null;
         if ($request->hasFile('supporting_document')) {
             $file = $request->file('supporting_document');
-            $docPath = $file->storeAs('previous-claims', UploadFilename::build($file), 'public');
+            $docPath = $file->storeAs('previous-claims', UploadFilename::build($file, null, 'previous-claims'), 'public');
         }
 
         PreviousClaim::create([

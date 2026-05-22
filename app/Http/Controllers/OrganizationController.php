@@ -427,13 +427,13 @@ class OrganizationController extends Controller
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $path = $file->storeAs('company-images', UploadFilename::build($file), 'public');
+            $path = $file->storeAs('company-images', UploadFilename::build($file, null, 'company-images'), 'public');
             $settings->logo_path = $path;
         }
 
         if ($request->hasFile('logo_dark')) {
             $file = $request->file('logo_dark');
-            $path = $file->storeAs('company-images', UploadFilename::build($file), 'public');
+            $path = $file->storeAs('company-images', UploadFilename::build($file, null, 'company-images'), 'public');
             $settings->logo_dark_path = $path;
         }
 
@@ -454,7 +454,7 @@ class OrganizationController extends Controller
 
         $file = $validated['document_file'];
         $displayName = trim((string) ($validated['document_name'] ?? $file->getClientOriginalName()));
-        $storedFileName = UploadFilename::build($file, $displayName);
+        $storedFileName = UploadFilename::build($file, $displayName, 'company-documents');
         $storedPath = $file->storeAs('company-documents', $storedFileName, 'public');
 
         CompanyDocument::create([

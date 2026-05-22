@@ -215,7 +215,7 @@ class ProfileController extends Controller
                 }
 
                 // Store the new picture
-                $storedPath = $file->storeAs('profile_pictures', UploadFilename::build($file), 'public');
+                $storedPath = $file->storeAs('profile_pictures', UploadFilename::build($file, null, 'profile_pictures'), 'public');
                 $employee->profile_picture = $storedPath;
             }
 

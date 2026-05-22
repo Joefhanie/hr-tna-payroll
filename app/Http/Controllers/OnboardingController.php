@@ -548,7 +548,7 @@ class OnboardingController extends Controller
     private function storeTaskDocument(Employee $employee, OnboardingTask $task, array $validated): void
     {
         $file = $validated['document_file'];
-        $storedFileName = UploadFilename::build($file);
+        $storedFileName = UploadFilename::build($file, null, 'onboarding-documents/' . $employee->id);
         $storedPath = $file->storeAs('onboarding-documents/' . $employee->id, $storedFileName, 'public');
 
         $attributes = [

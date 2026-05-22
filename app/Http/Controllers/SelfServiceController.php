@@ -359,7 +359,7 @@ class SelfServiceController extends Controller
         ]);
 
         $file = $validated['document_file'];
-        $storedFileName = UploadFilename::build($file);
+        $storedFileName = UploadFilename::build($file, null, 'self-service-documents/' . $employee->id);
         $storedPath = $file->storeAs('self-service-documents/' . $employee->id, $storedFileName, 'public');
 
         $attributes = [
