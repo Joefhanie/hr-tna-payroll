@@ -421,6 +421,8 @@
 
             </div>
         </div>
+    @endif
+
     @if (!$isEmployeeView && $selectedEmployee && $canCreateTasks && $selectedEmployee['has_assignment'])
         <div
             id="add-task-modal"

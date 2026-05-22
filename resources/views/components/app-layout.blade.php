@@ -11,8 +11,12 @@
     @php
         $themeSettings = \App\Models\CompanySetting::current();
         $brandPalette = $themeSettings->brand_palette;
+        $faviconUrl = $themeSettings && $themeSettings->logo_path 
+            ? asset('storage/' . $themeSettings->logo_path) 
+            : asset('favicon.ico');
     @endphp
     <title>{{ $title ?? 'HR System' }}</title>
+    <link rel="icon" href="{{ $faviconUrl }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
