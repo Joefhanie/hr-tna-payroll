@@ -54,6 +54,29 @@ class LateDeduction extends Model
     }
 
     /**
+     * Mutator to map any custom deduction type names (e.g. from late_deduction_rules table)
+     * to the strict database enum values.
+     *
+     * @param string $value
+     * @return void
+     */
+    public function setDeductionTypeAttribute($value)
+    {
+        $valueLower = strtolower((string)$value);
+        if (str_contains($valueLower, 'grace')) {
+            $this->attributes['deduction_type'] = 'grace_period';
+        } elseif (str_contains($valueLower, 'tier 1') || str_contains($valueLower, 'thirty') || str_contains($valueLower, 'tier 2') || str_contains($valueLower, 'one')) {
+            $this->attributes['deduction_type'] = 'one_hour';
+        } elseif (str_contains($valueLower, 'tier 3') || str_contains($valueLower, 'half')) {
+            $this->attributes['deduction_type'] = 'half_day';
+        } elseif (str_contains($valueLower, 'tier 4') || str_contains($valueLower, 'absent')) {
+            $this->attributes['deduction_type'] = 'absent';
+        } else {
+            $this->attributes['deduction_type'] = in_array($valueLower, ['none', 'grace_period', 'one_hour', 'half_day', 'absent']) ? $valueLower : 'none';
+        }
+    }
+
+    /**
      * Check if deduction is actually applied (not excused)
      *
      * @return bool
