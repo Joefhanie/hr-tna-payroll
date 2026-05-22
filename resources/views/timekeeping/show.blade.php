@@ -2,13 +2,13 @@
     <x-slot:title>{{ $user->display_name }} - Attendance Records</x-slot:title>
     <x-slot:header>Attendance Records</x-slot:header>
 
-    <div class="mb-8 flex items-center justify-between">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ $user->display_name }}</h1>
             <p class="text-sm text-slate-500">Attendance history and timekeeping records</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('timekeeping.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back to Timekeeping</a>
+            <a href="{{ route('timekeeping.index') }}" class="w-full sm:w-auto text-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back to Timekeeping</a>
         </div>
     </div>
 

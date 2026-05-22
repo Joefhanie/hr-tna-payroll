@@ -15,6 +15,26 @@
         $todayStr  = \Carbon\Carbon::now()->toDateString();
     @endphp
 
+    <style>
+        /* Mobile vs Desktop Display for Badges */
+        @media (max-width: 639px) {
+            .lc-mobile-dots {
+                display: flex !important;
+            }
+            .lc-desktop-badges {
+                display: none !important;
+            }
+        }
+        @media (min-width: 640px) {
+            .lc-mobile-dots {
+                display: none !important;
+            }
+            .lc-desktop-badges {
+                display: flex !important;
+            }
+        }
+    </style>
+
     {{-- Page Header --}}
     <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -50,10 +70,11 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
 
         {{-- ── Left Sidebar (Day Detail Panel) ── --}}
-        <div class="lg:col-span-1 bg-[#f8f9fc] border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[700px] overflow-hidden">
+        {{-- order-2 on mobile so calendar shows first; order-1 on desktop for left-column position --}}
+        <div class="order-2 lg:order-1 lg:col-span-1 bg-[#f8f9fc] border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden lg:h-[700px]">
             {{-- Date Header --}}
-            <div class="p-8 border-b border-slate-200 bg-white text-center">
-                <h2 id="lc-dayNumber" class="text-7xl font-black text-[#06112e] tracking-tight">
+            <div class="p-4 lg:p-8 border-b border-slate-200 bg-white text-center">
+                <h2 id="lc-dayNumber" class="text-5xl lg:text-7xl font-black text-[#06112e] tracking-tight">
                     {{ $selectedDateCarbon->format('d') }}
                 </h2>
                 <p id="lc-dayName" class="text-sm font-bold uppercase tracking-widest text-slate-500 mt-2">
@@ -86,11 +107,12 @@
         </div>
 
         {{-- ── Right: Full Calendar ── --}}
-        <div class="lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]">
+        {{-- order-1 on mobile so calendar appears above sidebar --}}
+        <div class="order-1 lg:order-2 lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col lg:h-[700px]">
 
             {{-- Month Nav Header --}}
-            <div class="bg-[#06112e] text-white p-6 flex justify-center items-center">
-                <div class="flex items-center justify-between w-[300px]">
+            <div class="bg-[#06112e] text-white px-4 py-4 lg:p-6 flex justify-center items-center">
+                <div class="flex items-center justify-between w-full max-w-sm lg:w-[300px]">
                     <a href="{{ route('leave.calendar') }}?date={{ $prevMonthDate }}"
                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 shrink-0"
                        title="Previous Month">
@@ -123,8 +145,8 @@
 
                     {{-- Prev-month filler cells --}}
                     @for ($i = 0; $i < $firstDayOfWeek; $i++)
-                        <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[80px] flex items-start justify-center pt-4">
-                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
+                        <div class="bg-slate-50 border-r border-b border-slate-100 p-1 lg:p-2 min-h-[48px] sm:min-h-[70px] lg:min-h-[80px] flex items-start justify-center pt-2 lg:pt-4">
+                            <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold text-slate-300">
                                 {{ $daysInPrevMonth - $firstDayOfWeek + $i + 1 }}
                             </span>
                         </div>
@@ -145,29 +167,47 @@
                         <div data-date="{{ $cellDateStr }}"
                              data-day="{{ $day }}"
                              data-dayname="{{ strtoupper($cellDate->format('l')) }}"
-                             class="lc-day-cell bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[80px]"
+                             class="lc-day-cell bg-white border-r border-b border-slate-100 p-1 lg:p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-2 lg:pt-4 min-h-[48px] sm:min-h-[70px] lg:min-h-[80px]"
                              onclick="lcSelectDate('{{ $cellDateStr }}', {{ $day }}, '{{ strtoupper($cellDate->format('l')) }}', this)">
 
                             {{-- Day number --}}
-                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold
+                            <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold
                                 {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
                                 {{ $day }}
                             </span>
 
-                            {{-- Status dots --}}
+                            {{-- Status indicators --}}
                             @if($total > 0)
-                                <div class="absolute right-2 top-2 flex flex-col gap-0.5">
+                                {{-- Mobile (<sm): tiny colored dots in a row below the day number, no overlap --}}
+                                <div class="lc-mobile-dots items-center justify-center gap-0.5 mt-1">
                                     @if($approved > 0)
-                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.62rem] font-bold text-white shadow-sm"
+                                        <span class="inline-block h-[5px] w-[5px] rounded-full bg-emerald-500"
+                                              title="Approved: {{ $approved }}"></span>
+                                    @endif
+                                    @if($pending > 0)
+                                        <span class="inline-block h-[5px] w-[5px] rounded-full border border-amber-400"
+                                              style="background-color:#fef3c7;"
+                                              title="Pending: {{ $pending }}"></span>
+                                    @endif
+                                    @if($rejected > 0)
+                                        <span class="inline-block h-[5px] w-[5px] rounded-full bg-rose-400"
+                                              title="Rejected: {{ $rejected }}"></span>
+                                    @endif
+                                </div>
+
+                                {{-- Tablet/Desktop (sm+): numbered corner badges, absolutely positioned --}}
+                                <div class="lc-desktop-badges absolute right-1 top-1 lg:right-2 lg:top-2 flex-col gap-0.5">
+                                    @if($approved > 0)
+                                        <span class="inline-flex h-4 w-4 lg:h-5 lg:w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.55rem] lg:text-[0.62rem] font-bold text-white shadow-sm"
                                               title="Approved: {{ $approved }}">{{ $approved }}</span>
                                     @endif
                                     @if($pending > 0)
-                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full text-[0.62rem] font-bold shadow-sm"
+                                        <span class="inline-flex h-4 w-4 lg:h-5 lg:w-5 items-center justify-center rounded-full text-[0.55rem] lg:text-[0.62rem] font-bold shadow-sm"
                                               style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;"
                                               title="Pending: {{ $pending }}">{{ $pending }}</span>
                                     @endif
                                     @if($rejected > 0)
-                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-400 text-[0.62rem] font-bold text-white shadow-sm"
+                                        <span class="inline-flex h-4 w-4 lg:h-5 lg:w-5 items-center justify-center rounded-full bg-rose-400 text-[0.55rem] lg:text-[0.62rem] font-bold text-white shadow-sm"
                                               title="Rejected: {{ $rejected }}">{{ $rejected }}</span>
                                     @endif
                                 </div>
@@ -178,8 +218,8 @@
                     {{-- Next-month filler cells --}}
                     @php $remaining = (7 - (($firstDayOfWeek + $daysInMonth) % 7)) % 7; @endphp
                     @for ($i = 0; $i < $remaining; $i++)
-                        <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[80px] flex items-start justify-center pt-4">
-                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
+                        <div class="bg-slate-50 border-r border-b border-slate-100 p-1 lg:p-2 min-h-[48px] sm:min-h-[70px] lg:min-h-[80px] flex items-start justify-center pt-2 lg:pt-4">
+                            <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold text-slate-300">
                                 {{ $i + 1 }}
                             </span>
                         </div>

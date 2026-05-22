@@ -2,6 +2,33 @@
     <x-slot:title>Timekeeping</x-slot:title>
     <x-slot:header>Timekeeping</x-slot:header>
 
+    <style>
+        /* Mobile vs Desktop Display for Badges */
+        @media (max-width: 639px) {
+            .tk-mobile-dots {
+                display: flex !important;
+            }
+            .tk-desktop-badges {
+                display: none !important;
+            }
+        }
+        @media (min-width: 640px) {
+            .tk-mobile-dots {
+                display: none !important;
+            }
+            .tk-desktop-badges {
+                display: flex !important;
+            }
+        }
+
+        /* Modal offset reset on mobile/tablet */
+        @media (max-width: 1023px) {
+            #manualEntryModal {
+                padding-left: 0 !important;
+            }
+        }
+    </style>
+
     <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="text-[1.65rem] font-bold text-[#06112e]">Timekeeping</h1>
@@ -22,25 +49,25 @@
 
 
     {{-- Summary cards --}}
-    <div class="grid gap-4 md:grid-cols-4">
-        <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
-            <p class="text-sm font-medium text-slate-500">Present today</p>
-            <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $presentToday }}</p>
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div class="nw-panel rounded-2xl p-4 md:p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
+            <p class="text-xs md:text-sm font-medium text-slate-500">Present today</p>
+            <p class="mt-1.5 md:mt-3 text-2xl md:text-3xl font-extrabold text-slate-900">{{ $presentToday }}</p>
         </div>
 
-        <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
-            <p class="text-sm font-medium text-slate-500">Late</p>
-            <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $lateToday }}</p>
+        <div class="nw-panel rounded-2xl p-4 md:p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
+            <p class="text-xs md:text-sm font-medium text-slate-500">Late</p>
+            <p class="mt-1.5 md:mt-3 text-2xl md:text-3xl font-extrabold text-slate-900">{{ $lateToday }}</p>
         </div>
 
-        <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
-            <p class="text-sm font-medium text-slate-500">Absent</p>
-            <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $absentToday }}</p>
+        <div class="nw-panel rounded-2xl p-4 md:p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
+            <p class="text-xs md:text-sm font-medium text-slate-500">Absent</p>
+            <p class="mt-1.5 md:mt-3 text-2xl md:text-3xl font-extrabold text-slate-900">{{ $absentToday }}</p>
         </div>
 
-        <div class="nw-panel rounded-2xl p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
-            <p class="text-sm font-medium text-slate-500">On Leave</p>
-            <p class="mt-3 text-3xl font-extrabold text-slate-900">{{ $onLeaveToday }}</p>
+        <div class="nw-panel rounded-2xl p-4 md:p-6 transition hover:-translate-y-0.5 hover:shadow-xl">
+            <p class="text-xs md:text-sm font-medium text-slate-500">On Leave</p>
+            <p class="mt-1.5 md:mt-3 text-2xl md:text-3xl font-extrabold text-slate-900">{{ $onLeaveToday }}</p>
         </div>
     </div>
 
@@ -74,7 +101,7 @@
         @endphp
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Left Sidebar -->
-            <div class="lg:col-span-1 bg-[#f8f9fc] border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[700px] overflow-hidden">
+            <div class="order-2 lg:order-1 lg:col-span-1 bg-[#f8f9fc] border border-slate-200 rounded-2xl shadow-sm flex flex-col lg:h-[700px] overflow-hidden">
                 <div class="p-8 border-b border-slate-200 bg-white text-center">
                     <h2 id="selectedDateNumber" class="text-7xl font-black text-[#06112e] tracking-tight">{{ $selectedDateCarbon->format('d') }}</h2>
                     <p id="selectedDateDay" class="text-sm font-bold uppercase tracking-widest text-slate-500 mt-2">{{ $selectedDateCarbon->format('l') }}</p>
@@ -88,7 +115,7 @@
             </div>
 
             <!-- Right side Calendar -->
-            <div class="lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[700px]">
+            <div class="order-1 lg:order-2 lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col lg:h-[700px]">
                 <div class="bg-[#06112e] text-white p-6 flex justify-center items-center">
                     <div class="flex items-center justify-between w-[300px]">
                         <a href="{{ route('timekeeping.index') }}?date={{ $prevMonthDate }}&tab=calendar" 
@@ -115,8 +142,8 @@
                             @php
                                 $prevMonthDay = $daysInPrevMonth - $firstDayOfWeek + $i + 1;
                             @endphp
-                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[90px] flex items-start justify-center pt-4">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
+                            <div class="bg-slate-50 border-r border-b border-slate-100 p-1 lg:p-2 min-h-[48px] sm:min-h-[70px] lg:min-h-[90px] flex items-start justify-center pt-2 lg:pt-4">
+                                <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold text-slate-300">
                                     {{ $prevMonthDay }}
                                 </span>
                             </div>
@@ -158,12 +185,29 @@
                                     . ' | A: ' . $calendarDayStatusCounts['absent']
                                     . ' | OL: ' . $calendarDayStatusCounts['excused'];
                             @endphp
-                            <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-4 min-h-[90px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
+                            <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-1 lg:p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-2 lg:pt-4 min-h-[48px] sm:min-h-[70px] lg:min-h-[90px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
+                                <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
                                     {{ $day }}
                                 </span>
                                 @if($hasEvents)
-                                    <div class="absolute bottom-1.5 left-0 right-0 flex flex-wrap justify-center gap-1 px-1">
+                                    {{-- Mobile (<sm): tiny dots below the day number --}}
+                                    <div class="tk-mobile-dots items-center justify-center gap-0.5 mt-1">
+                                        @if($calendarDayStatusCounts['present'] > 0)
+                                            <span class="inline-block h-[5px] w-[5px] rounded-full bg-emerald-500" title="Present: {{ $calendarDayStatusCounts['present'] }}"></span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['late'] > 0)
+                                            <span class="inline-block h-[5px] w-[5px] rounded-full bg-yellow-400" title="Late: {{ $calendarDayStatusCounts['late'] }}"></span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['absent'] > 0)
+                                            <span class="inline-block h-[5px] w-[5px] rounded-full bg-red-400" title="Absent: {{ $calendarDayStatusCounts['absent'] }}"></span>
+                                        @endif
+                                        @if($calendarDayStatusCounts['excused'] > 0)
+                                            <span class="inline-block h-[5px] w-[5px] rounded-full bg-blue-400" title="On Leave: {{ $calendarDayStatusCounts['excused'] }}"></span>
+                                        @endif
+                                    </div>
+
+                                    {{-- Tablet/Desktop (sm+): numbered circular badges, absolutely positioned --}}
+                                    <div class="tk-desktop-badges absolute bottom-1.5 left-0 right-0 flex flex-wrap justify-center gap-1 px-1">
                                         @if($calendarDayStatusCounts['present'] > 0)
                                             <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[0.62rem] font-bold text-white shadow-sm" title="Present: {{ $calendarDayStatusCounts['present'] }}">
                                                 {{ $calendarDayStatusCounts['present'] }}
@@ -196,8 +240,8 @@
                             @php
                                 $nextMonthDay = $i + 1;
                             @endphp
-                            <div class="bg-slate-50 border-r border-b border-slate-100 p-2 min-h-[90px] flex items-start justify-center pt-4">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-slate-300">
+                            <div class="bg-slate-50 border-r border-b border-slate-100 p-1 lg:p-2 min-h-[48px] sm:min-h-[70px] lg:min-h-[90px] flex items-start justify-center pt-2 lg:pt-4">
+                                <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold text-slate-300">
                                     {{ $nextMonthDay }}
                                 </span>
                             </div>
@@ -219,10 +263,10 @@
             </div>
 
             {{-- Filters Form --}}
-            <form id="filterForm" method="GET" action="{{ route('timekeeping.index') }}" class="mb-5 flex flex-wrap gap-3 items-end">
+            <form id="filterForm" method="GET" action="{{ route('timekeeping.index') }}" class="mb-5 grid grid-cols-2 gap-3 items-end sm:flex sm:flex-wrap">
                 <input type="hidden" name="tab" value="list">
                 
-                <div class="flex-1 min-w-[200px]">
+                <div class="col-span-2 sm:flex-1 sm:min-w-[200px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
                     <div class="relative">
                         <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
@@ -232,9 +276,9 @@
                     </div>
                 </div>
 
-                <div class="min-w-[150px]">
+                <div class="col-span-1 sm:min-w-[150px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
-                    <select name="status" id="filterStatus"
+                    <select name="status" id="filterStatus" onchange="this.form.submit()"
                         class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
                         <option value="">All Statuses</option>
                         <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Present</option>
@@ -245,33 +289,59 @@
                     </select>
                 </div>
 
-                <div class="min-w-[150px]">
+                <div class="col-span-1 sm:min-w-[150px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Date</label>
-                    <input type="date" name="date" id="filterDate" value="{{ $selectedDate }}"
+                    <input type="date" name="date" id="filterDate" value="{{ $selectedDate }}" onchange="this.form.submit()"
                         class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
                 </div>
 
-                <button type="submit"
-                    class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
-                    Filter
-                </button>
-
-                @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
-                <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
-                    class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-                    Clear Filters
-                </a>
+                @if(auth()->user()->role === 4)
+                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
+                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
+                            class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                            Clear Filters
+                        </a>
+                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
+                            class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Export CSV
+                        </a>
+                    @else
+                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
+                            class="col-span-2 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Export CSV
+                        </a>
+                    @endif
+                @else
+                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
+                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
+                            class="col-span-2 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                            Clear Filters
+                        </a>
+                    @endif
                 @endif
-
-                <a href="{{ route('timekeeping.export') }}" id="btnExport"
-                    class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 ml-auto flex items-center gap-1.5">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Export CSV
-                </a>
             </form>
-            <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <script>
+                (function() {
+                    let debounceTimer;
+                    const searchInput = document.getElementById('filterSearch');
+                    if (searchInput) {
+                        searchInput.addEventListener('input', function() {
+                            clearTimeout(debounceTimer);
+                            debounceTimer = setTimeout(function() {
+                                document.getElementById('filterForm').submit();
+                            }, 500);
+                        });
+                    }
+                })();
+            </script>
+            <!-- Desktop View -->
+            <div class="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                         <tr>
@@ -383,6 +453,147 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Mobile View -->
+            <div class="block lg:hidden space-y-4">
+                @forelse($todayAttendance as $attendance)
+                    @php
+                        $shift = $attendance->shift ?? $attendance->user?->employee?->currentShift?->shift;
+                        $displayShiftTime = $shift?->getDisplayTimeRange() ?? null;
+                        $workedHours = null;
+
+                        if ($attendance->check_in && $attendance->check_out) {
+                            $timeIn = \Carbon\Carbon::parse($attendance->attendance_date->toDateString() . ' ' . $attendance->check_in->format('H:i:s'));
+                            $timeOut = \Carbon\Carbon::parse($attendance->attendance_date->toDateString() . ' ' . $attendance->check_out->format('H:i:s'));
+
+                            if ($shift?->crosses_midnight && $timeOut->lt($timeIn)) {
+                                $timeOut->addDay();
+                            }
+
+                            if ($timeOut->gte($timeIn)) {
+                                $totalMins = $timeOut->diffInMinutes($timeIn);
+                                $breakMins = $shift ? $shift->break_minutes : 0;
+                                $workedHours = round(max(0, $totalMins - $breakMins) / 60, 2);
+                            } else {
+                                $workedHours = 0;
+                            }
+                        }
+
+                        $computedStatus = $attendance->status;
+
+                        $statusKey = is_numeric($computedStatus) ? (int) $computedStatus : strtolower((string) $computedStatus);
+                        $statusLabel = $attendanceStatusLabels[$statusKey] ?? ucfirst((string) $computedStatus);
+                        $statusClasses = [
+                            1 => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                            2 => 'bg-amber-100 text-amber-700 border-amber-200',
+                            3 => 'bg-rose-100 text-rose-700 border-rose-200',
+                            4 => 'bg-sky-100 text-sky-700 border-sky-200',
+                            5 => 'bg-slate-100 text-slate-500 border-slate-200',
+                            'present' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                            'late' => 'bg-amber-100 text-amber-700 border-amber-200',
+                            'absent' => 'bg-rose-100 text-rose-700 border-rose-200',
+                            'excused' => 'bg-sky-100 text-sky-700 border-sky-200',
+                            'not_started' => 'bg-slate-100 text-slate-500 border-slate-200',
+                        ];
+                        $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
+
+                        $employeeDisplayName = trim((string) ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown'));
+                        $employeeNameParts = preg_split('/\s+/', $employeeDisplayName, -1, PREG_SPLIT_NO_EMPTY);
+                        if (count($employeeNameParts) >= 3) {
+                            $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
+                        }
+                    @endphp
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="attendance-card-{{ $attendance->id ?? $loop->index }}">
+                        <!-- Card Header -->
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                            <span class="font-semibold text-slate-900 text-base">{{ $employeeDisplayName }}</span>
+                            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $pillClass }}">{{ $statusLabel }}</span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="space-y-3 text-sm">
+                            <!-- Date Info -->
+                            <div class="flex justify-between items-center text-slate-600">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Date</span>
+                                <span class="font-medium text-slate-800">
+                                    {{ $attendance->attendance_date->format('M d, Y') }}
+                                    <span class="text-xs text-slate-400 font-normal ml-1">{{ $attendance->attendance_date->format('D') }}</span>
+                                </span>
+                            </div>
+
+                            <!-- Shift Details -->
+                            <div class="flex justify-between items-start text-slate-600">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">Shift</span>
+                                <div class="flex flex-col items-end gap-1">
+                                    <span class="font-medium text-slate-800 text-right">{{ $displayShiftTime ?? '—' }}</span>
+                                    @if($shift)
+                                        <div class="flex flex-wrap gap-1 mt-0.5 justify-end">
+                                            @if($shift->crosses_midnight)
+                                                <span class="inline-flex items-center gap-1 rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wide" title="Cross-day Shift (Crosses Midnight)">
+                                                    <i class="ti ti-moon"></i>
+                                                    CROSS-DAY
+                                                </span>
+                                            @endif
+                                            @if($shift->getWorkingHoursPerDay() <= 4.0)
+                                                <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Half Day Shift (4 hours or less)">
+                                                    <i class="ti ti-circle-half"></i>
+                                                    HALF DAY
+                                                </span>
+                                            @endif
+                                            @if(!is_null($workedHours) && $workedHours > 0 && $workedHours <= 4.0)
+                                                <span class="inline-flex items-center gap-1 rounded bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 text-[9px] font-bold text-cyan-700 uppercase tracking-wide" title="Worked 4 hours or less today">
+                                                    <i class="ti ti-clock-2"></i>
+                                                    WORKED HALF DAY
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Clock-In / Out Times -->
+                            <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-3">
+                                <div>
+                                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time In</span>
+                                    <span class="font-semibold text-slate-800 text-base">
+                                        {{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time Out</span>
+                                    <span class="font-semibold text-slate-800 text-base">
+                                        {{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="flex items-center justify-between border-t border-slate-100 mt-3 pt-3">
+                            <div>
+                                @if(!is_null($workedHours))
+                                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+                                        Worked: {{ $workedHours }} hrs
+                                    </span>
+                                @endif
+                            </div>
+                            <div>
+                                <a href="{{ route('timekeeping.show', $attendance->user) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 bg-slate-50 px-3 py-2 rounded-lg transition" title="View All Records">
+                                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    View Records
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-500">
+                        No attendance records yet.
+                    </div>
+                @endforelse
             </div>
         </section>
     </div>

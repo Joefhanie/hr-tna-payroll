@@ -3,25 +3,36 @@
     <x-slot:header>Leave</x-slot:header>
 
     {{-- Page Header --}}
-    <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <h1 class="text-[1.65rem] font-bold text-[#06112e]">Leave</h1>
             <p class="mt-1 text-sm text-slate-500">Leave requests, approvals, and balances.</p>
         </div>
-        @if(auth()->user()->hasPermission('leaves.create'))
-        <button type="button" id="openRequestLeaveModal"
-            class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
-            <i class="ti ti-plus text-base"></i>
-            Request Leave
-        </button>
-        @endif
+        <div class="flex items-center gap-2">
+            @if(auth()->user()->role === 4)
+            <a href="{{ route('leave.export') }}" id="btnExport"
+                class="inline-flex items-center gap-1.5 rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('leaves.create'))
+            <button type="button" id="openRequestLeaveModal"
+                class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+                <i class="ti ti-plus text-base"></i>
+                Request Leave
+            </button>
+            @endif
+        </div>
     </div>
 
     <div class="mb-4 h-px w-full bg-slate-200"></div>
 
     {{-- Leave Balance Cards --}}
     @if($balances->isNotEmpty())
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         @foreach ($balances as $balance)
             @php
                 $entitled = (float) $balance->entitled_days;
@@ -47,66 +58,68 @@
     @endif
 
     {{-- Filters --}}
-    <form id="filterForm" method="GET" action="{{ route('leave.index') }}" class="mb-4 flex flex-wrap gap-3 items-center">
-        <div class="relative flex-1 min-w-[180px]">
-            <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
-            <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
-                placeholder="Search employee or type…"
-                class="w-full rounded-[0.5rem] border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+    <form id="filterForm" method="GET" action="{{ route('leave.index') }}" class="mb-4">
+        {{--
+            Mobile  : flex-col → each row stacks; grids give 2-col layout for dropdowns/dates
+            Desktop : flex-row flex-wrap → everything inline in one row (sm:contents dissolves grid wrappers)
+        --}}
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
+
+            {{-- Search: full-width on mobile, auto-growing on desktop --}}
+            <div class="relative sm:flex-1 sm:min-w-[180px]">
+                <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
+                <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
+                    placeholder="Search employee or type…"
+                    class="w-full rounded-[0.5rem] border border-slate-200 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+            </div>
+
+            {{-- Status + Type: 2-col on mobile, inline on desktop (sm:contents) --}}
+            <div class="grid grid-cols-2 gap-2 sm:contents">
+                <select name="status" id="filterStatus"
+                    class="w-full sm:w-auto rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                    <option value="">All Statuses</option>
+                    <option value="pending"  {{ ($filters['status'] ?? '') === 'pending'  ? 'selected' : '' }}>Pending</option>
+                    <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>Approved</option>
+                    <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                    <option value="cancelled" {{ ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+
+                <select name="type" id="filterType"
+                    class="w-full sm:w-auto rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                    <option value="">All Types</option>
+                    @foreach($leaveTypes as $lt)
+                        <option value="{{ $lt->id }}" {{ ($filters['type'] ?? '') == $lt->id ? 'selected' : '' }}>{{ $lt->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- From + To: 2-col on mobile, inline on desktop (sm:contents) --}}
+            <div class="grid grid-cols-2 gap-2 sm:contents">
+                <div class="flex items-center gap-1.5 sm:w-auto">
+                    <label class="shrink-0 text-xs font-medium text-slate-500">From</label>
+                    <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
+                        class="flex-1 min-w-0 sm:w-32 rounded-[0.5rem] border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                </div>
+                <div class="flex items-center gap-1.5 sm:w-auto">
+                    <label class="shrink-0 text-xs font-medium text-slate-500">To</label>
+                    <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
+                        class="flex-1 min-w-0 sm:w-32 rounded-[0.5rem] border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                </div>
+            </div>
+
+            {{-- Clear (conditional) --}}
+            @if(($filters['q'] ?? '') || ($filters['status'] ?? '') || ($filters['type'] ?? '') || ($filters['start_date'] ?? '') || ($filters['end_date'] ?? ''))
+            <a href="{{ route('leave.index') }}"
+                class="inline-flex items-center justify-center rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                Clear
+            </a>
+            @endif
         </div>
-
-        <select name="status" id="filterStatus"
-            class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
-            <option value="">All Statuses</option>
-            <option value="pending"  {{ ($filters['status'] ?? '') === 'pending'  ? 'selected' : '' }}>Pending</option>
-            <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>Approved</option>
-            <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-            <option value="cancelled" {{ ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-        </select>
-
-        <select name="type" id="filterType"
-            class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
-            <option value="">All Types</option>
-            @foreach($leaveTypes as $lt)
-                <option value="{{ $lt->id }}" {{ ($filters['type'] ?? '') == $lt->id ? 'selected' : '' }}>{{ $lt->name }}</option>
-            @endforeach
-        </select>
-
-        <div class="flex items-center gap-1.5">
-            <label class="text-xs font-medium text-slate-500">From</label>
-            <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
-                class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
-        </div>
-
-        <div class="flex items-center gap-1.5">
-            <label class="text-xs font-medium text-slate-500">To</label>
-            <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
-                class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
-        </div>
-
-        <button type="submit"
-            class="rounded-[0.5rem] bg-slate-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
-            Filter
-        </button>
-
-        @if(($filters['q'] ?? '') || ($filters['status'] ?? '') || ($filters['type'] ?? '') || ($filters['start_date'] ?? '') || ($filters['end_date'] ?? ''))
-        <a href="{{ route('leave.index') }}"
-            class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-            Clear
-        </a>
-        @endif
-
-        <a href="{{ route('leave.export') }}" id="btnExport"
-            class="rounded-[0.5rem] border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 ml-auto flex items-center gap-1.5">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export CSV
-        </a>
     </form>
 
     {{-- Leave Requests Table --}}
     <div class="rounded-[0.8rem] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-slate-50 text-left text-[0.75rem] font-bold text-slate-500 border-b border-slate-100">
                 <tr>
@@ -194,6 +207,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>{{-- /overflow-x-auto --}}
         @if ($leaveRequestsPaginated->hasPages())
             <div class="bg-white px-6 py-4 border-t border-slate-200">
                 {{ $leaveRequestsPaginated->links() }}
@@ -482,36 +496,47 @@
             closeCancelM();
         });
 
-        // ── Dynamic Export URL Update ──
-        function updateExportUrl() {
-            const q = document.getElementById('filterSearch')?.value || '';
-            const status = document.getElementById('filterStatus')?.value || '';
-            const type = document.getElementById('filterType')?.value || '';
-            const startDate = document.getElementById('filterStartDate')?.value || '';
-            const endDate = document.getElementById('filterEndDate')?.value || '';
+        // ── Auto-submit filters + keep Export URL in sync ──
+        const filterForm    = document.getElementById('filterForm');
+        const filterSearch  = document.getElementById('filterSearch');
+        const filterStatus  = document.getElementById('filterStatus');
+        const filterType    = document.getElementById('filterType');
+        const filterStart   = document.getElementById('filterStartDate');
+        const filterEnd     = document.getElementById('filterEndDate');
+        const exportBtn     = document.getElementById('btnExport');
 
+        function buildExportUrl() {
+            const q         = filterSearch?.value || '';
+            const status    = filterStatus?.value || '';
+            const type      = filterType?.value || '';
+            const startDate = filterStart?.value || '';
+            const endDate   = filterEnd?.value || '';
             let url = "{{ route('leave.export') }}";
             const params = [];
-            if (q) params.push(`q=${encodeURIComponent(q)}`);
-            if (status) params.push(`status=${encodeURIComponent(status)}`);
-            if (type) params.push(`type=${encodeURIComponent(type)}`);
+            if (q)         params.push(`q=${encodeURIComponent(q)}`);
+            if (status)    params.push(`status=${encodeURIComponent(status)}`);
+            if (type)      params.push(`type=${encodeURIComponent(type)}`);
             if (startDate) params.push(`start_date=${encodeURIComponent(startDate)}`);
-            if (endDate) params.push(`end_date=${encodeURIComponent(endDate)}`);
-            if (params.length > 0) {
-                url += `?${params.join('&')}`;
-            }
-            const exportBtn = document.getElementById('btnExport');
+            if (endDate)   params.push(`end_date=${encodeURIComponent(endDate)}`);
+            if (params.length) url += `?${params.join('&')}`;
             if (exportBtn) exportBtn.href = url;
         }
 
-        document.getElementById('filterSearch')?.addEventListener('input', updateExportUrl);
-        document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterType')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterStartDate')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterEndDate')?.addEventListener('change', updateExportUrl);
+        // Selects & dates → submit immediately
+        [filterStatus, filterType, filterStart, filterEnd].forEach(el => {
+            el?.addEventListener('change', () => { buildExportUrl(); filterForm?.submit(); });
+        });
 
-        // Run once on load
-        updateExportUrl();
+        // Search → debounce 500 ms
+        let searchTimer;
+        filterSearch?.addEventListener('input', () => {
+            buildExportUrl();
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => filterForm?.submit(), 500);
+        });
+
+        // Sync export URL on load
+        buildExportUrl();
     });
     </script>
     </x-slot:scripts>

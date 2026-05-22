@@ -66,24 +66,24 @@
             </div>
 
             <!-- Navigation Tabs -->
-            <div class="border-b border-slate-200 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex items-center overflow-x-auto gap-1">
-                <button type="button" onclick="switchTab('profile-info')" id="tab-btn-profile-info" class="tab-btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition duration-150 bg-blue-50 text-blue-600 border border-blue-100" data-tab="profile-info">
+            <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-2 sm:flex sm:flex-wrap md:flex-nowrap sm:items-center gap-1.5 sm:gap-1">
+                <button type="button" onclick="switchTab('profile-info')" id="tab-btn-profile-info" class="tab-btn w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-semibold rounded-xl transition duration-150 bg-blue-50 text-blue-600 border border-blue-100" data-tab="profile-info">
                     <i class="ti ti-user text-lg"></i>
                     Profile Info
                 </button>
-                <button type="button" onclick="switchTab('leave')" id="tab-btn-leave" class="tab-btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="leave">
+                <button type="button" onclick="switchTab('leave')" id="tab-btn-leave" class="tab-btn w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="leave">
                     <i class="ti ti-calendar text-lg"></i>
                     Leave Requests
                 </button>
-                <button type="button" onclick="switchTab('payslips')" id="tab-btn-payslips" class="tab-btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="payslips">
+                <button type="button" onclick="switchTab('payslips')" id="tab-btn-payslips" class="tab-btn w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="payslips">
                     <i class="ti ti-receipt text-lg"></i>
                     Payslips
                 </button>
-                <button type="button" onclick="switchTab('documents')" id="tab-btn-documents" class="tab-btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="documents">
+                <button type="button" onclick="switchTab('documents')" id="tab-btn-documents" class="tab-btn w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="documents">
                     <i class="ti ti-files text-lg"></i>
                     Documents
                 </button>
-                <button type="button" onclick="switchTab('attendance')" id="tab-btn-attendance" class="tab-btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="attendance">
+                <button type="button" onclick="switchTab('attendance')" id="tab-btn-attendance" class="tab-btn col-span-2 sm:col-span-1 w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-xl transition duration-150 text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent" data-tab="attendance">
                     <i class="ti ti-clock text-lg"></i>
                     Attendance Logs
                 </button>

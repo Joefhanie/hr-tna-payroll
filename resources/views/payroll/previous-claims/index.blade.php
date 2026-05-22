@@ -11,10 +11,12 @@
             <p class="mt-1 text-sm text-slate-600">File claims for pay periods that have already passed. HR reviews and includes approved claims in the next pay run.</p>
         </div>
         <div class="flex items-center gap-2">
+            @if($isHR)
             <a href="{{ route('payroll.previous-claims.export') }}" id="btnExport"
                 class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg transition border border-slate-200 flex items-center gap-2 font-medium text-sm">
                 <i class="ti ti-download text-base"></i> Export CSV
             </a>
+            @endif
             <button type="button" id="openClaimModal"
                 class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
                 <i class="ti ti-plus text-base"></i> File a Claim

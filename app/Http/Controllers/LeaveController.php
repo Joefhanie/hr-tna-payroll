@@ -187,6 +187,12 @@ class LeaveController extends Controller
      */
     public function export(Request $request)
     {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
         $request->validate([
             'q'          => ['nullable', 'string', 'max:255'],
             'status'     => ['nullable', 'string', 'in:pending,approved,rejected,cancelled'],

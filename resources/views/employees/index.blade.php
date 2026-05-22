@@ -34,7 +34,7 @@
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <select name="status" id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="status" id="filterStatus" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Statuses</option>
                     <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Active</option>
                     <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Probationary</option>
@@ -45,7 +45,7 @@
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Employment Type</label>
-                <select name="employment_type" id="filterEmploymentType" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="employment_type" id="filterEmploymentType" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Types</option>
                     <option value="1" {{ ($filters['employment_type'] ?? '') == '1' ? 'selected' : '' }}>Full-time</option>
                     <option value="2" {{ ($filters['employment_type'] ?? '') == '2' ? 'selected' : '' }}>Part-time</option>
@@ -55,25 +55,24 @@
             </div>
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
-                <select name="department_id" id="filterDepartment" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="department_id" id="filterDepartment" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Departments</option>
                     @foreach($departments as $dept)
                         <option value="{{ $dept->id }}" {{ ($filters['department_id'] ?? '') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-                Apply
-            </button>
             <a href="{{ route('employees.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
             </a>
+            @if(auth()->user()->role === 4)
             <a href="{{ route('employees.export') }}" id="btnExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Export CSV
             </a>
+            @endif
         </div>
     </form>
 
@@ -282,6 +281,15 @@
         document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
         document.getElementById('filterEmploymentType')?.addEventListener('change', updateExportUrl);
         document.getElementById('filterDepartment')?.addEventListener('change', updateExportUrl);
+
+        // Auto-filter search input with debounce
+        let debounceTimer;
+        document.getElementById('filterSearch')?.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function() {
+                document.getElementById('filterForm')?.submit();
+            }, 500);
+        });
 
         // Run once on load
         updateExportUrl();

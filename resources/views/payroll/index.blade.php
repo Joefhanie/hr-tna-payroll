@@ -43,17 +43,18 @@
         <div class="flex flex-wrap gap-3 items-end">
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Period Start From</label>
-                <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}"
+                <input type="date" name="start_date" id="filterStartDate" value="{{ $filters['start_date'] ?? '' }}" onchange="this.form.submit()"
                     class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Period End To</label>
-                <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}"
+                <input type="date" name="end_date" id="filterEndDate" value="{{ $filters['end_date'] ?? '' }}" onchange="this.form.submit()"
                     class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <select name="status" id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="status" id="filterStatus" onchange="this.form.submit()"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Statuses</option>
                     <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Draft</option>
                     <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Processing</option>
@@ -61,18 +62,17 @@
                     <option value="4" {{ ($filters['status'] ?? '') == '4' ? 'selected' : '' }}>Cancelled</option>
                 </select>
             </div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-                Apply
-            </button>
             <a href="{{ route('payroll.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
             </a>
+            @if(auth()->user()->role === 4)
             <a href="{{ route('payroll.export') }}" id="btnExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Export CSV
             </a>
+            @endif
         </div>
     </form>
 
