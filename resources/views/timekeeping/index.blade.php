@@ -118,13 +118,13 @@
             <div class="order-1 lg:order-2 lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col lg:h-[700px]">
                 <div class="bg-[#06112e] text-white p-6 flex justify-center items-center">
                     <div class="flex items-center justify-between w-[300px]">
-                        <a href="{{ route('timekeeping.index') }}?date={{ $prevMonthDate }}&tab=calendar" 
+                        <a href="{{ route('timekeeping.index') }}?date={{ $prevMonthDate }}&tab=calendar"
                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
                            title="Previous Month">
                             <i class="ti ti-chevron-left text-lg"></i>
                         </a>
                         <h2 class="text-xl font-bold tracking-wider uppercase flex-1 text-center select-none">{{ $monthName }} {{ $year }}</h2>
-                        <a href="{{ route('timekeeping.index') }}?date={{ $nextMonthDate }}&tab=calendar" 
+                        <a href="{{ route('timekeeping.index') }}?date={{ $nextMonthDate }}&tab=calendar"
                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
                            title="Next Month">
                             <i class="ti ti-chevron-right text-lg"></i>
@@ -265,7 +265,7 @@
             {{-- Filters Form --}}
             <form id="filterForm" method="GET" action="{{ route('timekeeping.index') }}" class="mb-5 grid grid-cols-2 gap-3 items-end sm:flex sm:flex-wrap">
                 <input type="hidden" name="tab" value="list">
-                
+
                 <div class="col-span-2 sm:flex-1 sm:min-w-[200px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
                     <div class="relative">
@@ -710,11 +710,11 @@
                 <div class="mt-8 flex justify-end gap-3">
                     <button type="button"
                             onclick="document.getElementById('manualEntryModal').classList.replace('flex', 'hidden')"
-                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">
+                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 font-medium text-sm text-[#06112e] shadow-sm transition hover:bg-slate-50">
                         Cancel
                     </button>
                     <button type="submit"
-                            class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">
+                            class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">
                         Save Entry
                     </button>
                 </div>
@@ -937,7 +937,7 @@
                 if (q) params.push(`q=${encodeURIComponent(q)}`);
                 if (status) params.push(`status=${encodeURIComponent(status)}`);
                 if (date) params.push(`date=${encodeURIComponent(date)}`);
-                
+
                 if (params.length > 0) {
                     url += '?' + params.join('&');
                 }

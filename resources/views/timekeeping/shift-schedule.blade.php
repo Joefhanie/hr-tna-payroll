@@ -224,7 +224,7 @@
                                                 }
                                             }
                                         @endphp
-                                        <button type="button" onclick="openAddModalPreselected({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', '{{ implode('; ', $displayParts) }}', {{ json_encode(array_values($allActiveDays)) }})" class="inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors" title="Add another shift segment">
+                                        <button type="button" onclick="openAddModalPreselected({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', '{{ implode('; ', $displayParts) }}', {{ json_encode(array_values($allActiveDays)) }})" class="action-icon inline-flex items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition-colors" title="Add another shift segment">
                                             <i class="ti ti-plus text-lg"></i>
                                         </button>
                                     </td>

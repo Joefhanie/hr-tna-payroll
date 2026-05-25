@@ -256,7 +256,7 @@
                     <h2 class="text-base font-semibold text-slate-900">Company Files</h2>
                     <p class="text-sm text-slate-500">Upload and manage company documents used across settings and onboarding.</p>
                 </div>
-                <button type="button" data-open-modal="company-file-modal" class="brand-button-primary inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white shadow-sm transition">
+                <button type="button" data-open-modal="company-file-modal" class="action-icon brand-button-primary inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white shadow-sm transition">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
@@ -346,7 +346,7 @@
                         <h2 class="text-lg font-semibold text-slate-900">Upload Company File</h2>
                         <p class="text-sm text-slate-500">Store documents here for settings and employee onboarding.</p>
                     </div>
-                    <button type="button" data-close-modal="company-file-modal" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                    <button type="button" data-close-modal="company-file-modal" class="action-icon rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -401,7 +401,7 @@
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">
-                        <button type="button" data-close-modal="company-file-modal" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                        <button type="button" data-close-modal="company-file-modal" class="action-icon rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</button>
                         <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">Upload File</button>
                     </div>
                 </form>

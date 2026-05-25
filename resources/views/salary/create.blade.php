@@ -148,7 +148,7 @@
         </div>
 
         <!-- Buttons -->
-        <div class="mt-8 flex items-center gap-3">
+        <div class="mt-8 flex items-center gap-3 justify-end">
             <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
                 Create Salary Record
             </button>

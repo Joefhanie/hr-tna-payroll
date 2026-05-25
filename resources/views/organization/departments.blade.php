@@ -66,7 +66,7 @@
                                     <button
                                         type="button"
                                         onclick="openPositionModal({{ $department->id }})"
-                                        class="text-indigo-500 hover:text-indigo-700 transition"
+                                        class="action-icon text-indigo-500 hover:text-indigo-700 transition"
                                         title="Add Position"
                                     >
                                         <i class="ti ti-plus text-xl"></i>
@@ -76,7 +76,7 @@
 
                                     <button
                                         type="button"
-                                        class="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 transition"
+                                        class="action-icon flex items-center gap-1.5 text-slate-500 hover:text-slate-700 transition"
                                         title="View Employees"
                                         data-department-name="{{ $departmentRow['path'] }}"
                                         data-parent-name="{{ $department->parentDepartment->name ?? 'Top Level' }}"
@@ -87,14 +87,14 @@
                                         <i class="ti ti-users text-lg"></i>
                                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-600">{{ $department->employees_count }}</span>
                                     </button>
-                                    <a href="{{ route('organization.departments.edit', $department) }}" class="text-slate-500 hover:text-slate-700 transition" title="Edit Department">
+                                    <a href="{{ route('organization.departments.edit', $department) }}" class="action-icon text-slate-500 hover:text-slate-700 transition" title="Edit Department">
                                         <i class="ti ti-edit text-lg"></i>
                                     </a>
                                     <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?" style="display: inline;">
                                         @csrf
                                             @method('DELETE')
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Delete Department">
+                                        <button type="submit" class="action-icon text-red-500 hover:text-red-700 transition" title="Delete Department">
                                             <i class="ti ti-trash text-lg"></i>
                                         </button>
                                     </form>
@@ -202,8 +202,8 @@
                 </div>
 
                 <div class="mt-8 flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('departmentFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
-                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Department</button>
+                    <button type="button" onclick="document.getElementById('departmentFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">Save Department</button>
                 </div>
             </form>
         </div>
@@ -239,7 +239,7 @@
                 </div>
             </div>
             <div class="flex justify-end border-t border-slate-100 px-6 py-4">
-                <button type="button" onclick="closeDepartmentViewModal()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
+                <button type="button" onclick="closeDepartmentViewModal()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
             </div>
         </div>
     </div>
@@ -295,8 +295,8 @@
                 </div>
 
                 <div class="mt-8 flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
-                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Position</button>
+                    <button type="button" onclick="document.getElementById('positionFormModal').classList.replace('flex', 'hidden')" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">Save Position</button>
                 </div>
             </form>
         </div>

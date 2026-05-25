@@ -157,7 +157,7 @@
                             <div class="flex items-center gap-2">
                                 @if($isHR && $claim->status === 1)
                                     <button type="button"
-                                        class="btn-approve text-emerald-600 hover:text-emerald-800 transition"
+                                        class="action-icon btn-approve text-emerald-600 hover:text-emerald-800 transition"
                                         title="Approve"
                                         data-id="{{ $claim->id }}"
                                         data-employee="{{ $claim->employee?->full_name }}"
@@ -165,7 +165,7 @@
                                         <i class="ti ti-check text-lg"></i>
                                     </button>
                                     <button type="button"
-                                        class="btn-decline text-rose-500 hover:text-rose-700 transition"
+                                        class="action-icon btn-decline text-rose-500 hover:text-rose-700 transition"
                                         title="Decline"
                                         data-id="{{ $claim->id }}"
                                         data-employee="{{ $claim->employee?->full_name }}">
@@ -174,7 +174,7 @@
                                 @endif
                                 @if($claim->supporting_document)
                                     <a href="{{ route('media.file', ['path' => ltrim($claim->supporting_document, '/')]) }}"
-                                        target="_blank" class="text-slate-500 hover:text-slate-700 transition" title="View Document">
+                                        target="_blank" class="action-icon text-slate-500 hover:text-slate-700 transition" title="View Document">
                                         <i class="ti ti-paperclip text-lg"></i>
                                     </a>
                                 @endif
@@ -182,7 +182,7 @@
                                     <form method="POST" action="{{ route('payroll.previous-claims.destroy', $claim) }}">
                                         @csrf @method('DELETE')
                                         <button type="submit"
-                                            class="text-slate-400 hover:text-rose-600 transition"
+                                            class="action-icon text-slate-400 hover:text-rose-600 transition"
                                             title="Delete"
                                             data-confirm="Delete this pending claim?"
                                             data-confirm-title="Delete Claim">
