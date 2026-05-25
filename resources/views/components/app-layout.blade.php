@@ -37,6 +37,20 @@
             --brand-text-on-primary: {{ $brandPalette['text_on_primary'] }};
             --brand-text-on-secondary: {{ $brandPalette['text_on_secondary'] }};
             --brand-text-on-accent: {{ $brandPalette['text_on_accent'] }};
+            --sidebar-width: 16.5rem;
+        }
+        .logout-button {
+            transition: all 180ms ease-in-out !important;
+        }
+        .logout-button:hover {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+            color: #dc2626 !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.06) !important;
+            transform: translateY(-1px);
+        }
+        .logout-button:hover .sidebar-icon {
+            color: #dc2626 !important;
         }
     </style>
 </head>
@@ -176,17 +190,17 @@
                 $canAccessSettings = $user && $user->role === 4;
             @endphp
             @if ($canAccessSettings)
-                <a href="{{ $settingsHref }}" class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0 hover:bg-slate-50 border border-transparent hover:border-slate-100/80 rounded-2xl transition duration-150 group">
+                <a href="{{ $settingsHref }}" class="flex items-center gap-3 px-2.5 py-2.5 mb-1.5 shrink-0 hover:bg-slate-50 border border-transparent hover:border-slate-100/80 rounded-2xl transition duration-150 group">
             @else
-                <div class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0">
+                <div class="flex items-center gap-3 px-2.5 py-2.5 mb-1.5 shrink-0">
             @endif
                 @if ($hasLogo)
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
                         <img src="{{ asset('storage/' . $companySetting->logo_path) }}" alt="Company Logo" class="h-full w-full object-cover">
                     </div>
                 @else
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
-                        <i class="ti ti-building text-lg"></i>
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
+                        <i class="ti ti-building text-2xl"></i>
                     </div>
                 @endif
                 <div class="min-w-0 flex-1">
@@ -194,7 +208,7 @@
                         {{ $companySetting->company_name ?: 'Company Name' }}
                     </h2>
                     @if ($companySetting->tagline)
-                        <p class="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                        <p class="text-[11px] font-medium text-slate-400 truncate mt-0.5" title="{{ $companySetting->tagline }}">
                             {{ $companySetting->tagline }}
                         </p>
                     @endif
@@ -208,7 +222,7 @@
             <div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto pb-3">
                 <nav class="space-y-1">
                     @foreach ($navGroups as $groupName => $items)
-                        <p class="sidebar-group-label px-2 pt-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $groupName }}</p>
+                        <p class="sidebar-group-label px-2 {{ $loop->first ? 'pt-1.5' : 'pt-4' }} pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $groupName }}</p>
 
                         @foreach ($items as $item)
                             @if (isset($item['children']))
