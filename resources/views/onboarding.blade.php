@@ -426,7 +426,7 @@
     @if (!$isEmployeeView && $selectedEmployee && $canCreateTasks && $selectedEmployee['has_assignment'])
         <div
             id="add-task-modal"
-            class="fixed inset-0 z-50 hidden bg-slate-950/45 p-4 overflow-y-auto justify-center items-start sm:items-center"
+            class="fixed inset-0 z-50 hidden bg-slate-950/45 p-4 overflow-y-auto justify-center items-center"
             data-modal-backdrop="add-task-modal"
         >
             <div class="my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[1.1rem] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
