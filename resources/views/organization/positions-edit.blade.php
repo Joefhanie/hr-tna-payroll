@@ -1,4 +1,7 @@
 <x-app-layout>
+    @php
+        $positionLevels = ['entry-level', 'mid-level', 'senior-level', 'management', 'executive'];
+    @endphp
     <x-slot:title>Edit {{ $position->title }} - Position</x-slot:title>
     <x-slot:header>Edit Position</x-slot:header>
 
@@ -34,14 +37,16 @@
 
             <div>
                 <label for="position_level" class="mb-2 block text-sm font-medium text-slate-700">Level</label>
-                <input
+                <select
                     id="position_level"
                     name="level"
-                    type="text"
-                    value="{{ old('level', $position->level) }}"
                     class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-500 focus:ring-slate-500"
-                    placeholder="Senior"
                 >
+                    <option value="">Select level</option>
+                    @foreach ($positionLevels as $level)
+                        <option value="{{ $level }}" @selected(old('level', $position->level) === $level)>{{ ucwords(str_replace('-', ' ', $level)) }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div>

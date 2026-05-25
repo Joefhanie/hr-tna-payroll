@@ -20,6 +20,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrganizationController extends Controller
 {
+    private const POSITION_LEVELS = [
+        'entry-level',
+        'mid-level',
+        'senior-level',
+        'management',
+        'executive',
+    ];
+
     public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
     {
     }
@@ -279,7 +287,7 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'level' => ['nullable', 'string', 'max:60'],
+            'level' => ['nullable', 'in:' . implode(',', self::POSITION_LEVELS)],
             'department_id' => ['nullable', 'exists:departments,id'],
             'min_salary' => ['nullable', 'numeric', 'min:0'],
             'max_salary' => ['nullable', 'numeric', 'gte:min_salary'],
@@ -367,7 +375,7 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:120'],
-            'level' => ['nullable', 'string', 'max:60'],
+            'level' => ['nullable', 'in:' . implode(',', self::POSITION_LEVELS)],
             'department_id' => ['nullable', 'exists:departments,id'],
             'min_salary' => ['nullable', 'numeric', 'min:0'],
             'max_salary' => ['nullable', 'numeric', 'gte:min_salary'],
