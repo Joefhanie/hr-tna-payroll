@@ -10,6 +10,7 @@ use App\Models\Payslip;
 use App\Models\ProfileUpdateRequest;
 use App\Models\User;
 use App\Services\LeaveRequestService;
+use App\Services\NotificationService;
 use App\Support\UploadFilename;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class SelfServiceController extends Controller
 {
     public function __construct(
-        private readonly LeaveRequestService $leaveRequestService
+        private readonly LeaveRequestService $leaveRequestService,
+        private readonly NotificationService $notificationService
     ) {
     }
 
@@ -372,13 +374,18 @@ class SelfServiceController extends Controller
             ]);
         }
 
-        ProfileUpdateRequest::create([
+        $profileUpdateRequest = ProfileUpdateRequest::create([
             'employee_id' => $employee->id,
             'requested_by' => Auth::id(),
             'requested_changes' => $changes,
             'notes' => $validated['notes'] ?? null,
             'status' => 1,
         ]);
+
+        $currentUser = Auth::user();
+        if ($currentUser) {
+            $this->notificationService->notifyProfileUpdateRequested($profileUpdateRequest, $currentUser);
+        }
 
         return redirect()
             ->route('self-service.profile', $employee)

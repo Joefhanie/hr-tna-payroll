@@ -8,6 +8,10 @@ use Carbon\Carbon;
 
 class LeaveRequestService
 {
+    public function __construct(private readonly NotificationService $notificationService)
+    {
+    }
+
     public static function rules(): array
     {
         return [
@@ -28,7 +32,7 @@ class LeaveRequestService
         $startDate = Carbon::parse($validated['start_date']);
         $endDate = Carbon::parse($validated['end_date']);
 
-        return Leave::create([
+        $leave = Leave::create([
             'employee_id' => (int) $validated['employee_id'],
             'leave_type_id' => (int) $validated['leave_type_id'],
             'start_date' => $startDate->toDateString(),
@@ -37,5 +41,9 @@ class LeaveRequestService
             'reason' => $validated['reason'] ?? null,
             'status' => 1,
         ]);
+
+        $this->notificationService->notifyLeaveRequested($leave, $user);
+
+        return $leave;
     }
 }
