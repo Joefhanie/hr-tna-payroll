@@ -9,8 +9,9 @@ use App\Models\ProfileUpdateRequest;
 use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class NotificationService
 {
@@ -130,6 +131,74 @@ class NotificationService
         ));
     }
 
+    public function notifyLeaveDecision(Leave $leave, User $reviewer, string $decision, ?string $note = null): void
+    {
+        $leave->loadMissing('employee.user');
+
+        $employeeUser = $leave->employee?->user;
+        if (! $employeeUser || $employeeUser->id === $reviewer->id) {
+            return;
+        }
+
+        $decisionLabel = $decision === 'approved' ? 'approved' : 'rejected';
+        $icon = $decision === 'approved' ? 'ti ti-circle-check' : 'ti ti-circle-x';
+
+        $message = trim((string) ($reviewer->name ?? 'HR')) . ' ' . $decisionLabel . ' your leave request for ' . optional($leave->start_date)->format('M d, Y') . ' to ' . optional($leave->end_date)->format('M d, Y') . '.';
+
+        if ($note) {
+            $message .= ' Note: ' . $note;
+        }
+
+        $this->send(collect([$employeeUser]), new SystemNotification(
+            'leave-' . $decisionLabel,
+            'Leave request ' . $decisionLabel,
+            $message,
+            route('self-service.profile', $leave->employee_id),
+            $icon,
+            [
+                'leave_id' => $leave->id,
+                'employee_id' => $leave->employee_id,
+                'decision' => $decisionLabel,
+                'reviewer_id' => $reviewer->id,
+                'note' => $note,
+            ]
+        ));
+    }
+
+    public function notifyProfileUpdateDecision(ProfileUpdateRequest $request, User $reviewer, string $decision, ?string $note = null): void
+    {
+        $request->loadMissing('employee.user');
+
+        $employeeUser = $request->employee?->user;
+        if (! $employeeUser || $employeeUser->id === $reviewer->id) {
+            return;
+        }
+
+        $decisionLabel = $decision === 'approved' ? 'approved' : 'rejected';
+        $icon = $decision === 'approved' ? 'ti ti-circle-check' : 'ti ti-circle-x';
+
+        $message = trim((string) ($reviewer->name ?? 'HR')) . ' ' . $decisionLabel . ' your profile update request.';
+
+        if ($note) {
+            $message .= ' Note: ' . $note;
+        }
+
+        $this->send(collect([$employeeUser]), new SystemNotification(
+            'profile-update-' . $decisionLabel,
+            'Profile update request ' . $decisionLabel,
+            $message,
+            route('self-service.profile', $request->employee_id),
+            $icon,
+            [
+                'profile_update_request_id' => $request->id,
+                'employee_id' => $request->employee_id,
+                'decision' => $decisionLabel,
+                'reviewer_id' => $reviewer->id,
+                'note' => $note,
+            ]
+        ));
+    }
+
     private function hrUsers(): Collection
     {
         return User::query()
@@ -152,6 +221,28 @@ class NotificationService
             return;
         }
 
-        Notification::send($uniqueRecipients, $notification);
+        foreach ($uniqueRecipients as $recipient) {
+            DB::table('notifications')->insert([
+                'recipient_id' => $recipient->id,
+                'type' => $notification->type(),
+                'notifiable_type' => User::class,
+                'notifiable_id' => $recipient->id,
+                'data' => json_encode([
+                    'type' => $notification->type(),
+                    'title' => $notification->title(),
+                    'message' => $notification->message(),
+                    'url' => $notification->url(),
+                    'icon' => $notification->icon(),
+                    'meta' => $notification->meta(),
+                ]),
+                'title' => $notification->title(),
+                'message' => $notification->message(),
+                'link' => $notification->url(),
+                'is_read' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'read_at' => null,
+            ]);
+        }
     }
 }

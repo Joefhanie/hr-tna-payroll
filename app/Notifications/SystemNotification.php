@@ -3,9 +3,8 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 
-class SystemNotification extends Notification
+class SystemNotification
 {
     use Queueable;
 
@@ -19,20 +18,33 @@ class SystemNotification extends Notification
     ) {
     }
 
-    public function via(object $notifiable): array
+    public function type(): string
     {
-        return ['database'];
+        return $this->type;
     }
 
-    public function toDatabase(object $notifiable): array
+    public function title(): string
     {
-        return [
-            'type' => $this->type,
-            'title' => $this->title,
-            'message' => $this->message,
-            'url' => $this->url,
-            'icon' => $this->icon,
-            'meta' => $this->meta,
-        ];
+        return $this->title;
+    }
+
+    public function message(): string
+    {
+        return $this->message;
+    }
+
+    public function url(): string
+    {
+        return $this->url;
+    }
+
+    public function icon(): string
+    {
+        return $this->icon;
+    }
+
+    public function meta(): array
+    {
+        return $this->meta;
     }
 }

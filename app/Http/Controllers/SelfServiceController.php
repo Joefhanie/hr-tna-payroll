@@ -187,6 +187,7 @@ class SelfServiceController extends Controller
                 ->get()
                 ->map(function (ProfileUpdateRequest $profileUpdateRequest) {
                     return [
+                        'id' => $profileUpdateRequest->id,
                         'requested_fields' => collect($profileUpdateRequest->requested_changes ?? [])
                             ->keys()
                             ->map(fn ($field) => str_replace('_', ' ', ucfirst((string) $field)))
@@ -390,6 +391,107 @@ class SelfServiceController extends Controller
         return redirect()
             ->route('self-service.profile', $employee)
             ->with('success', 'Profile update request submitted successfully.');
+    }
+
+    public function reviewProfileUpdateRequest(Request $request, ProfileUpdateRequest $profileUpdateRequest): RedirectResponse
+    {
+        $user = Auth::user();
+        $role = (int) ($user?->role ?? 0);
+
+        abort_unless(in_array($role, [3, 4], true), 403, 'Unauthorized action.');
+
+        if (!Schema::hasTable('profile_update_requests')) {
+            abort(503, 'Profile update requests are not available until the latest migration is run.');
+        }
+
+        $validated = $request->validate([
+            'decision' => ['required', 'in:approve,reject'],
+            'remarks' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $profileUpdateRequest->loadMissing(['employee.user']);
+
+        if ((int) $profileUpdateRequest->status !== 1) {
+            return redirect()
+                ->route('self-service.profile', $profileUpdateRequest->employee_id)
+                ->with('error', 'This profile update request has already been reviewed.');
+        }
+
+        if ($validated['decision'] === 'reject') {
+            $profileUpdateRequest->update([
+                'status' => 3,
+                'remarks' => $validated['remarks'] ?? null,
+                'reviewed_by' => $user?->id,
+                'reviewed_at' => now(),
+            ]);
+
+            $this->notificationService->notifyProfileUpdateDecision($profileUpdateRequest, $user, 'rejected', $validated['remarks'] ?? null);
+
+            return redirect()
+                ->route('self-service.profile', $profileUpdateRequest->employee_id)
+                ->with('success', 'Profile update request rejected.');
+        }
+
+        $employee = $profileUpdateRequest->employee;
+        if (!$employee) {
+            abort(404, 'Employee record not found.');
+        }
+
+        $requestedChanges = $profileUpdateRequest->requested_changes ?? [];
+        $employeeUpdates = [];
+        $userUpdates = [];
+
+        foreach (['first_name', 'middle_name', 'last_name', 'phone', 'address_line1', 'address_line2', 'city', 'province', 'postal_code', 'country'] as $field) {
+            $newValue = data_get($requestedChanges, $field . '.to');
+
+            if ($newValue !== null) {
+                $employeeUpdates[$field] = $newValue;
+            }
+        }
+
+        $newEmail = data_get($requestedChanges, 'email.to');
+        if ($newEmail !== null && $newEmail !== '') {
+            $emailInUseByEmployee = Employee::query()
+                ->where('email', $newEmail)
+                ->where('id', '!=', $employee->id)
+                ->exists();
+
+            $emailInUseByUser = User::query()
+                ->where('email', $newEmail)
+                ->when($employee->user, fn ($query) => $query->where('id', '!=', $employee->user->id))
+                ->exists();
+
+            if ($emailInUseByEmployee || $emailInUseByUser) {
+                abort(422, 'The requested email is already in use.');
+            }
+
+            $employeeUpdates['email'] = $newEmail;
+            $userUpdates['email'] = $newEmail;
+        }
+
+        DB::transaction(function () use ($employee, $profileUpdateRequest, $employeeUpdates, $userUpdates, $validated, $user) {
+            if ($employeeUpdates !== []) {
+                $employee->update($employeeUpdates);
+            }
+
+            if ($userUpdates !== [] && $employee->user) {
+                $userUpdates['name'] = trim(collect([$employee->first_name, $employee->middle_name, $employee->last_name])->filter()->join(' '));
+                $employee->user->update($userUpdates);
+            }
+
+            $profileUpdateRequest->update([
+                'status' => 2,
+                'remarks' => $validated['remarks'] ?? null,
+                'reviewed_by' => $user?->id,
+                'reviewed_at' => now(),
+            ]);
+        });
+
+        $this->notificationService->notifyProfileUpdateDecision($profileUpdateRequest, $user, 'approved', $validated['remarks'] ?? null);
+
+        return redirect()
+            ->route('self-service.profile', $profileUpdateRequest->employee_id)
+            ->with('success', 'Profile update request approved and applied successfully.');
     }
 
     public function storeDocumentUpload(Request $request, Employee $employee): RedirectResponse

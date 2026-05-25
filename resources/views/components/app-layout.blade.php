@@ -352,7 +352,7 @@
                                 @endif
                             </button>
 
-                            <div id="notificationPanel" class="notification-panel absolute right-0 top-12 z-30 hidden w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                            <div id="notificationPanel" class="notification-panel fixed left-3 right-3 top-16 z-40 hidden max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-96 sm:max-w-none">
                                 <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                                     <div>
                                         <p class="text-sm font-semibold text-slate-900">Notifications</p>
@@ -368,7 +368,7 @@
                                     @endif
                                 </div>
 
-                                <div class="max-h-96 overflow-y-auto">
+                                <div class="max-h-[calc(100vh-10rem)] overflow-y-auto sm:max-h-96">
                                     @forelse ($recentNotifications as $notification)
                                         @php
                                             $notificationData = $notification->data ?? [];

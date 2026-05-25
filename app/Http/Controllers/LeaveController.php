@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Leave;
 use App\Services\LeaveRequestService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,8 @@ use Carbon\Carbon;
 class LeaveController extends Controller
 {
     public function __construct(
-        private readonly LeaveRequestService $leaveRequestService
+        private readonly LeaveRequestService $leaveRequestService,
+        private readonly NotificationService $notificationService
     ) {
     }
 
@@ -223,10 +225,10 @@ class LeaveController extends Controller
 
         return response()->stream(function () use ($leaves, $leaveTypes) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, [
                 'Request ID',
                 'Employee Code',
@@ -251,7 +253,7 @@ class LeaveController extends Controller
             foreach ($leaves as $leave) {
                 $employee = $leave->employee;
                 $leaveTypeName = isset($leaveTypes[$leave->leave_type_id]) ? $leaveTypes[$leave->leave_type_id]->name : 'Leave';
-                
+
                 fputcsv($file, [
                     $leave->id,
                     $employee->employee_code ?? 'N/A',
@@ -313,6 +315,8 @@ class LeaveController extends Controller
         if ($today->between($start, $end)) {
             $leave->employee()->update(['status' => 3]);
         }
+
+        $this->notificationService->notifyLeaveDecision($leave, $user, 'approved');
 
         return redirect()->route('leave.index')
             ->with('success', 'Leave request approved.');
@@ -455,6 +459,8 @@ class LeaveController extends Controller
                 $leave->employee()->update(['status' => 1]); // Revert to Active
             }
         }
+
+        $this->notificationService->notifyLeaveDecision($leave, Auth::user(), 'rejected', $validated['rejection_note'] ?? null);
 
         return redirect()->route('leave.index')
             ->with('success', 'Leave request declined.');

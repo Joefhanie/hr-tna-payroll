@@ -235,7 +235,7 @@
                     @csrf
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Leave Type</label>
-                        <select name="leave_type_id" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                        <select name="leave_type_id" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
                             <option value="">- Select Type -</option>
                             @foreach ($leaveTypeChoices as $leaveType)
                                 <option value="{{ $leaveType['id'] }}" @selected((string) old('leave_type_id') === (string) $leaveType['id'])>{{ $leaveType['name'] }}</option>
@@ -246,11 +246,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">From</label>
-                            <input type="date" id="self_service_leave_start_date" name="start_date" min="{{ now()->toDateString() }}" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('start_date') }}">
+                            <input type="date" id="self_service_leave_start_date" name="start_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('start_date') }}">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">To</label>
-                            <input type="date" id="self_service_leave_end_date" name="end_date" min="{{ now()->toDateString() }}" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('end_date') }}">
+                            <input type="date" id="self_service_leave_end_date" name="end_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('end_date') }}">
                         </div>
                     </div>
 
@@ -261,12 +261,12 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Reason <span class="font-normal text-slate-400">(optional)</span></label>
-                        <textarea name="reason" rows="3" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" placeholder="Briefly describe the reason...">{{ old('reason') }}</textarea>
+                        <textarea name="reason" rows="3" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" placeholder="Briefly describe the reason...">{{ old('reason') }}</textarea>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-1">
-                        <button type="button" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
-                        <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">Submit Request</button>
+                        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-[#1a56db] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">Submit Request</button>
                     </div>
                 </form>
             </div>
@@ -407,19 +407,48 @@
                         <th class="px-3 py-2">Status</th>
                         <th class="px-3 py-2">Remarks</th>
                         <th class="px-3 py-2">Submitted</th>
+                        @if (in_array((int) (auth()->user()?->role ?? 0), [3, 4], true))
+                            <th class="px-3 py-2 text-center">Action</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @forelse ($profileUpdateRequests as $request)
+                    @forelse ($profileUpdateRequests as $profileRequest)
                         <tr>
-                            <td class="px-3 py-2 text-slate-900">{{ $request['requested_fields'] ?: 'No fields listed' }}</td>
-                            <td class="px-3 py-2"><span class="badge {{ $badge($request['status']) }}">{{ $request['status'] }}</span></td>
-                            <td class="px-3 py-2 text-slate-600">{{ $request['remarks'] ?: 'No remarks' }}</td>
-                            <td class="px-3 py-2 text-slate-500">{{ $request['created_at'] }}</td>
+                            <td class="px-3 py-2 text-slate-900">{{ $profileRequest['requested_fields'] ?: 'No fields listed' }}</td>
+                            <td class="px-3 py-2"><span class="badge {{ $badge($profileRequest['status']) }}">{{ $profileRequest['status'] }}</span></td>
+                            <td class="px-3 py-2 text-slate-600">{{ $profileRequest['remarks'] ?: 'No remarks' }}</td>
+                            <td class="px-3 py-2 text-slate-500">{{ $profileRequest['created_at'] }}</td>
+                            @if (in_array((int) (auth()->user()?->role ?? 0), [3, 4], true))
+                                <td class="px-3 py-2">
+                                    @if ($profileRequest['status'] === 'Pending')
+                                        <div class="flex items-center justify-center gap-2">
+                                            <form method="POST" action="{{ route('self-service.profile-update-requests.review', $profileRequest['id']) }}">
+                                                @csrf
+                                                <input type="hidden" name="decision" value="approve">
+                                                <button type="submit" title="Approve" aria-label="Approve"
+                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                                    <i class="ti ti-check text-lg"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('self-service.profile-update-requests.review', $profileRequest['id']) }}">
+                                                @csrf
+                                                <input type="hidden" name="decision" value="reject">
+                                                <button type="submit" title="Reject" aria-label="Reject"
+                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                                    <i class="ti ti-x text-lg"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400">Reviewed</span>
+                                    @endif
+                                </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-3 py-6 text-center text-slate-500">No profile update requests found.</td>
+                            <td colspan="{{ in_array((int) (auth()->user()?->role ?? 0), [3, 4], true) ? 5 : 4 }}" class="px-3 py-6 text-center text-slate-500">No profile update requests found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -527,7 +556,7 @@
                 </div>
             </div>
             <div class="flex justify-end border-t border-slate-100 px-6 py-4">
-                <button type="button" onclick="closePayslipModal()" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
+                <button type="button" onclick="closePayslipModal()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
             </div>
         </div>
     </div>
@@ -904,7 +933,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
             const validTabs = ['leaves', 'updates', 'payslips', 'timelogs', 'documents'];
-            
+
             if (tabParam && validTabs.includes(tabParam)) {
                 initialTab = tabParam;
             } else {
@@ -923,7 +952,7 @@
                     initialTab = 'documents';
                 }
             }
-            
+
             switchProfileTab(initialTab);
         });
     </script>

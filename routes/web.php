@@ -58,6 +58,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
     });
 
+    Route::middleware('permission:self-service.edit')->group(function () {
+        Route::post('/self-service/profile-update-requests/{profileUpdateRequest}/review', [SelfServiceController::class, 'reviewProfileUpdateRequest'])->name('self-service.profile-update-requests.review');
+    });
+
     // Timekeeping Management
     Route::middleware('permission:timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete')->group(function () {
         Route::get('/timekeeping/export', [TimekeepingController::class, 'export'])->name('timekeeping.export');
