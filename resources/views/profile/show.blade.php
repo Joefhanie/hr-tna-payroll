@@ -28,15 +28,15 @@
 
             <!-- Header Profile card -->
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="h-32 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+                <div class="h-32" style="background-image: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);"></div>
                 <div class="px-6 pb-6">
                     <div class="relative -mt-16 mb-4 flex flex-col items-center sm:flex-row sm:items-end sm:gap-6">
                         <!-- Avatar selector -->
-                        <div class="group relative h-32 w-32 shrink-0 rounded-full border-4 border-white bg-blue-600 text-white shadow-md overflow-hidden">
+                        <div class="group relative h-32 w-32 shrink-0 rounded-full border-4 border-white bg-brand-primary text-white shadow-md overflow-hidden">
                             @if ($employee && $employee->profile_picture)
                                 <img id="avatar-preview" src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="Profile Picture" class="h-full w-full object-cover">
                             @else
-                                <div id="avatar-fallback" class="flex h-full w-full items-center justify-center text-3xl font-bold bg-indigo-600">
+                                <div id="avatar-fallback" class="flex h-full w-full items-center justify-center text-3xl font-bold bg-brand-primary">
                                     {{ $initials }}
                                 </div>
                                 <img id="avatar-preview" src="" alt="Profile Picture" class="hidden h-full w-full object-cover">
