@@ -166,7 +166,7 @@
                 </div>
             </div>
             <div class="flex justify-end border-t border-slate-100 px-6 py-4">
-                <button type="button" onclick="closePayslipModal()" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
+                <button type="button" onclick="closePayslipModal()" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Close</button>
             </div>
         </div>
     </div>
@@ -187,7 +187,7 @@
 
             // Known group prefixes (case-insensitive). Any "GroupName: item" description
             // is rendered as a labelled group with indented rows.
-            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes'];
+            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes', 'plotted payment'];
 
             lineItems.forEach((item) => {
                 const description = item.description || 'Item';

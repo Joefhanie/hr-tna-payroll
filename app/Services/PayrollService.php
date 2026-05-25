@@ -13,6 +13,7 @@ use App\Models\PayrollSetting;
 use App\Models\GovernmentPremium;
 use App\Models\PreviousClaim;
 use App\Models\SalaryRecord;
+use App\Models\EmployeePlotting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -636,8 +637,43 @@ class PayrollService
             $approvedDisputesTotal = round($approvedDisputesTotal, 2);
             // ─────────────────────────────────────────────────────────────────
 
+            // Include any posted plotted payments that fall within this pay period
+            $plottedPayments = EmployeePlotting::where('empid', $employee->employee_code)
+                ->where('posted', true)
+                ->whereBetween('date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                ->get();
+
+            $plottedTotal = 0.0;
+            $plottedByLocation = $plottedPayments
+                ->groupBy(function ($plotting) {
+                    return $plotting->location ?: 'Unspecified';
+                })
+                ->sortKeys();
+
+            foreach ($plottedByLocation as $location => $records) {
+                $locationTotal = round($records->sum(function ($plotting) {
+                    return (float) $plotting->amount;
+                }), 2);
+
+                if ($locationTotal <= 0) {
+                    continue;
+                }
+
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 1,
+                    'description' => 'Plotted Payment: ' . $location,
+                    'amount' => $locationTotal,
+                    'is_taxable' => true,
+                ]);
+
+                $plottedTotal += $locationTotal;
+            }
+
+            $plottedTotal = round($plottedTotal, 2);
+
             // Calculate taxable amount
-            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal, 2);
+            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal + $plottedTotal, 2);
             $taxable = $totalGross;
 
             // Tax — using employee's assigned brackets
