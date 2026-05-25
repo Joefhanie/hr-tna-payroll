@@ -10,16 +10,6 @@
         <a href="{{ route('payroll.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Cancel</a>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-6 p-4 rounded-lg bg-red-50 text-red-800">
-            <ul class="list-disc list-inside text-sm">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     <form action="{{ route('payroll.store') }}" method="POST">
         @csrf
         <div class="grid gap-6 md:grid-cols-3">

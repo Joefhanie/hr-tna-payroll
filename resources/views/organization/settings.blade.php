@@ -18,12 +18,6 @@
     @endphp
 
     <div class="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
-        @if ($errors->any())
-            <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                <p class="font-semibold">Please fix the highlighted fields and try again.</p>
-            </div>
-        @endif
-
         <form id="resetBrandColorsForm" method="POST" action="{{ route('organization.settings.reset-brand-colors') }}">
             @csrf
         </form>
