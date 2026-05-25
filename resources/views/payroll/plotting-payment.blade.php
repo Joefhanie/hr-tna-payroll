@@ -2,28 +2,40 @@
     <x-slot:title>Plotting of Payments</x-slot:title>
     <x-slot:header>Plotting of Payments</x-slot:header>
 
-    @if (session('status'))
-        <div id="success-toast" class="mb-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-sm transition-all duration-300">
-            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                <i class="ti ti-check text-lg"></i>
-            </span>
-            <p class="font-medium">{{ session('status') }}</p>
-            <button type="button" onclick="this.closest('#success-toast').remove()" class="ml-auto text-emerald-400 hover:text-emerald-600 transition">
-                <i class="ti ti-x text-base"></i>
-            </button>
-        </div>
-        <script>setTimeout(function(){ var t = document.getElementById('success-toast'); if(t){ t.style.opacity='0'; setTimeout(function(){ if(t) t.remove(); }, 300); }}, 4000);</script>
-    @endif
 
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <form id="plotting-form" action="{{ route('payroll.plotting-payment.save') }}" method="POST">
-            @csrf
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Plotting of Payments</h1>
-                    <p class="mt-1 text-sm text-slate-600">Weekly payroll plotting for field employees.</p>
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Plotting of Payments</h1>
+                <p class="mt-1 text-sm text-slate-600">Weekly payroll plotting for field employees.</p>
+            </div>
+        </div>
+
+        <!-- Date Range Filter Form -->
+        <form id="filter-form" method="GET" action="{{ route('payroll.plotting-payment') }}" class="mt-6 p-4 rounded-xl border border-slate-100 bg-slate-50/50">
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="w-full sm:w-auto min-w-[150px]">
+                    <label for="from-date" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">From Date</label>
+                    <input type="date" name="from_date" id="from-date" value="{{ $resolvedFromDate }}" onchange="this.form.submit()"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="w-full sm:w-auto min-w-[150px]">
+                    <label for="to-date" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">To Date</label>
+                    <input type="date" name="to_date" id="to-date" value="{{ $resolvedToDate }}" onchange="this.form.submit()"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <a href="{{ route('payroll.plotting-payment') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition bg-white font-medium flex items-center justify-center">
+                        Clear
+                    </a>
                 </div>
             </div>
+        </form>
+
+        <form id="plotting-form" action="{{ route('payroll.plotting-payment.save') }}" method="POST">
+            @csrf
+            <input type="hidden" name="from_date" value="{{ $resolvedFromDate }}">
+            <input type="hidden" name="to_date" value="{{ $resolvedToDate }}">
 
             <!-- Restore Banner -->
             <div id="restore-banner" style="display: none;"
@@ -51,6 +63,20 @@
                 </div>
             </div>
 
+            @php
+                $hasEditableFields = false;
+                foreach ($gridData as $row) {
+                    foreach ($dates as $dateString => $dateLabel) {
+                        foreach ($row['days'][$dateString] as $dayData) {
+                            if (empty($dayData['posted'])) {
+                                $hasEditableFields = true;
+                                break 3;
+                            }
+                        }
+                    }
+                }
+            @endphp
+
             <div class="mt-6 overflow-hidden rounded-lg border border-slate-200 relative">
                 <table class="min-w-full border-separate border-spacing-0 text-sm">
                     <thead>
@@ -62,7 +88,7 @@
                             @foreach ($dates as $dateString => $dateLabel)
                                 <th
                                     class="border-b border-r border-slate-200 bg-slate-50 text-center text-xs font-semibold uppercase tracking-wide last:border-r-0 hover:bg-slate-100 transition-colors">
-                                    <a href="{{ route('payroll.per-date', ['date' => $dateString]) }}"
+                                    <a href="{{ route('payroll.per-date', ['date' => $dateString, 'from_date' => $resolvedFromDate, 'to_date' => $resolvedToDate]) }}"
                                         class="block w-full px-4 py-3 text-blue-600 hover:text-blue-800 hover:underline">
                                         {{ $dateLabel }}
                                     </a>
@@ -78,7 +104,7 @@
                             <tr class="bg-white">
                                 <td
                                     class="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 font-medium text-slate-900">
-                                    <a href="{{ route('payroll.plotting-payment.employee', ['employee' => $employee->id]) }}"
+                                    <a href="{{ route('payroll.plotting-payment.employee', ['employee' => $employee->id, 'from_date' => $resolvedFromDate, 'to_date' => $resolvedToDate]) }}"
                                         class="text-blue-600 hover:text-blue-800 hover:underline">
                                         {{ $employee->first_name }} {{ $employee->last_name }}
                                     </a>
@@ -100,13 +126,10 @@
                                                         oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10); var tri = this.parentElement.querySelector('.payment-triangle'); if(tri){ if(this.value.trim()){ tri.style.borderRightColor='#16a34a'; tri.title='Paid'; } else { tri.style.borderRightColor='#ef4444'; tri.title='Unpaid'; } }"
                                                         @if(!empty($dayData['posted'])) readonly @endif
                                                         class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden @if(!empty($dayData['posted'])) bg-slate-100 text-slate-500 cursor-not-allowed font-medium @endif">
-
-                                                    @if(empty($dayData['posted']))
                                                     {{-- Payment status triangle: red = unpaid, green = has amount --}}
                                                     <div class="payment-triangle absolute top-0 right-0 w-0 h-0 pointer-events-none"
                                                         style="border-style:solid; border-width:0 8px 8px 0; border-color:transparent {{ ($dayData['amount'] > 0) ? '#16a34a' : '#ef4444' }} transparent transparent;"
                                                         title="{{ ($dayData['amount'] > 0) ? 'Paid' : 'Unpaid' }}"></div>
-                                                    @endif
 
                                                     <!-- Payroll note indicator triangle (Excel-style, top-left, blue) -->
                                                     <div
@@ -128,7 +151,7 @@
                                                             <div class="text-xs text-slate-700">
                                                                 <span class="font-semibold text-slate-900">Work Assignment:</span>
                                                                 @if(!empty(trim($dayData['location'])))
-                                                                    <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}"
+                                                                    <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location']), 'from_date' => $resolvedFromDate, 'to_date' => $resolvedToDate]) }}"
                                                                         class="text-blue-600 hover:text-blue-800 hover:underline">
                                                                         {{ $dayData['location'] }}
                                                                     </a>
@@ -170,7 +193,7 @@
                                                                 <button type="button"
                                                                     class="note-cancel-btn rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
                                                                 <button type="button"
-                                                                    class="note-save-btn rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition shadow-sm">Save</button>
+                                                                    class="note-save-btn rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition shadow-sm">Submit</button>
                                                             </div>
                                                         </div>
 
@@ -194,8 +217,11 @@
                 <p class="text-xs text-slate-500">Enter each employee's amount per date. Hover/focus cells to see
                     supervisor's note and work location.</p>
                 <button type="submit"
-                    class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 shadow-sm">
-                    Save Plotting
+                    data-confirm="Are you sure you want to submit and save the current plotting payments?"
+                    data-confirm-title="Submit Plotting Payments"
+                    @if(!$hasEditableFields) disabled @endif
+                    class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    Submit Plotting
                 </button>
             </div>
         </form>
@@ -442,6 +468,17 @@
                     saveDraftToLocalStorage();
                 }
             });
+
+            const filterForm = document.getElementById('filter-form');
+            if (filterForm) {
+                filterForm.addEventListener('submit', function (e) {
+                    if (hasUnsavedChanges()) {
+                        e.preventDefault();
+                        pendingNavigationUrl = filterForm.action + '?' + new URLSearchParams(new FormData(filterForm)).toString();
+                        showDiscardModal();
+                    }
+                });
+            }
 
             // Handle "Restore Changes" button click
             if (restoreConfirmBtn) {
