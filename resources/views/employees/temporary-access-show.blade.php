@@ -74,7 +74,18 @@
 
                 @php
                     $tempAssignment = $employee->user?->temporaryAssignments;
-                    $temporaryAssignment = $tempAssignment?->where('is_active', true)->first();
+                    $now = now();
+                    $temporaryAssignment = $tempAssignment
+                        ? $tempAssignment
+                            ->where('is_active', true)
+                            ->sortByDesc('to_date')
+                            ->first(function ($assignment) use ($now) {
+                                $fromDate = \Carbon\Carbon::parse($assignment->from_date);
+                                $toDate = \Carbon\Carbon::parse($assignment->to_date);
+
+                                return $now->between($fromDate, $toDate) || $now->lt($fromDate);
+                            })
+                        : null;
 
                     $isCurrentTemporary = false;
                     $isScheduled = false;
@@ -84,7 +95,6 @@
                     $tempRoleColor = '';
 
                     if ($temporaryAssignment) {
-                        $now = now();
                         $fromDate = \Carbon\Carbon::parse($temporaryAssignment->from_date);
                         $toDate = \Carbon\Carbon::parse($temporaryAssignment->to_date);
 
@@ -117,7 +127,7 @@
                             </div>
                             <div>
                                 <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Assigned By</span>
-                                <span class="text-sm font-medium text-slate-900">{{ auth()->user()->name ?? 'System' }}</span>
+                                <span class="text-sm font-medium text-slate-900">{{ $temporaryAssignment->grantedBy?->display_name ?? $temporaryAssignment->grantedBy?->name ?? 'System' }}</span>
                             </div>
                         </div>
 
@@ -213,7 +223,7 @@
                                 {{ $to->format('Y-m-d') }}
                             </td>
                             <td class="px-6 py-4 text-slate-600 font-medium">
-                                {{ auth()->user()->name ?? 'System' }}
+                                {{ $assignment->grantedBy?->display_name ?? $assignment->grantedBy?->name ?? 'System' }}
                             </td>
                             <td class="px-6 py-4">
                                 <span class="badge {{ $historyStatusColor }}">{{ $historyStatus }}</span>

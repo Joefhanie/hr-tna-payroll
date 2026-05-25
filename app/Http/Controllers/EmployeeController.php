@@ -370,8 +370,19 @@ class EmployeeController extends Controller
                 ->with('error', 'Employee does not have a user account.');
         }
 
-        $fromDate = isset($validated['from_date']) ? \Carbon\Carbon::parse($validated['from_date']) : now();
-        $toDate = isset($validated['to_date']) ? \Carbon\Carbon::parse($validated['to_date']) : now();
+        $fromDateInput = $validated['from_date'] ?? null;
+        $toDateInput = $validated['to_date'] ?? null;
+
+        $fromDate = $fromDateInput ? \Carbon\Carbon::parse($fromDateInput) : now();
+        $toDate = $toDateInput ? \Carbon\Carbon::parse($toDateInput) : now();
+
+        // Treat date-only values as whole-day access windows.
+        if (is_string($fromDateInput) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDateInput)) {
+            $fromDate->startOfDay();
+        }
+
+        // Temporary access should always remain valid through the selected end date.
+        $toDate->setTime(23, 59, 0);
 
         // Detect if there is an active assignment already (we're editing/updating)
         $hadActive = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)
