@@ -30,7 +30,7 @@ class NotificationService
             'leave-request',
             'Leave request submitted',
             trim((string) ($leave->employee?->full_name ?? 'An employee')) . ' submitted a leave request for ' . optional($leave->start_date)->format('M d, Y') . ' to ' . optional($leave->end_date)->format('M d, Y') . '.',
-            route('leave.index'),
+            route('leave.index', [], false),
             'ti ti-calendar-event',
             [
                 'leave_id' => $leave->id,
@@ -54,7 +54,7 @@ class NotificationService
             'profile-update-request',
             'Profile update request submitted',
             trim((string) ($request->employee?->full_name ?? 'An employee')) . ' requested changes to their profile information.',
-            route('self-service.profile', $request->employee_id),
+            route('self-service.profile', $request->employee_id, false),
             'ti ti-user-edit',
             [
                 'profile_update_request_id' => $request->id,
@@ -76,7 +76,7 @@ class NotificationService
             'onboarding-started',
             'Onboarding assigned',
             'Your onboarding tasks are ready. Please review the onboarding checklist and complete the assigned items.',
-            route('onboarding', ['employee' => $assignment->employee_id]),
+            route('onboarding', ['employee' => $assignment->employee_id], false),
             'ti ti-rocket',
             [
                 'onboarding_assignment_id' => $assignment->id,
@@ -121,7 +121,7 @@ class NotificationService
             'onboarding-task-completed',
             'Onboarding task completed',
             trim((string) ($task->completedBy?->name ?? 'A team member')) . ' completed the ' . $ownerLabel . ' onboarding task "' . $task->title . '".',
-            route('onboarding', ['employee' => $task->assignment?->employee_id]),
+            route('onboarding', ['employee' => $task->assignment?->employee_id], false),
             'ti ti-circle-check',
             [
                 'onboarding_task_id' => $task->id,
@@ -153,7 +153,7 @@ class NotificationService
             'leave-' . $decisionLabel,
             'Leave request ' . $decisionLabel,
             $message,
-            route('self-service.profile', $leave->employee_id),
+            route('self-service.profile', $leave->employee_id, false),
             $icon,
             [
                 'leave_id' => $leave->id,
@@ -187,7 +187,7 @@ class NotificationService
             'profile-update-' . $decisionLabel,
             'Profile update request ' . $decisionLabel,
             $message,
-            route('self-service.profile', $request->employee_id),
+            route('self-service.profile', $request->employee_id, false),
             $icon,
             [
                 'profile_update_request_id' => $request->id,
