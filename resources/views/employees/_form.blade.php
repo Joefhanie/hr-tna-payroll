@@ -310,9 +310,15 @@
             <input id="hire_date" name="hire_date" type="date" value="{{ old('hire_date', optional($employee->hire_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}" required>
             @error('hire_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
-        <div>
+        @php
+            $regularizationDateValue = old('regularization_date', optional($employee->regularization_date ?? null)->format('Y-m-d'));
+            if ((string) $selectedEmployment === '1' && blank($regularizationDateValue)) {
+                $regularizationDateValue = now()->toDateString();
+            }
+        @endphp
+        <div id="regularization_date_group" class="{{ (string) $selectedEmployment === '1' ? '' : 'hidden' }}">
             <label class="{{ $lbl }}" for="regularization_date">Regularization Date <span class="font-normal normal-case text-slate-400">(optional)</span></label>
-            <input id="regularization_date" name="regularization_date" type="date" value="{{ old('regularization_date', optional($employee->regularization_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}">
+            <input id="regularization_date" name="regularization_date" type="date" value="{{ $regularizationDateValue }}" class="{{ $inp }}">
             @error('regularization_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
     </div>
@@ -385,6 +391,27 @@
         }
 
         return true;
+    }
+
+    function toggleRegularizationField() {
+        const employmentType = document.getElementById('employment_type');
+        const regularizationGroup = document.getElementById('regularization_date_group');
+        const regularizationInput = document.getElementById('regularization_date');
+
+        if (!employmentType || !regularizationGroup) {
+            return;
+        }
+
+        const isFullTime = String(employmentType.value) === '1';
+        regularizationGroup.classList.toggle('hidden', !isFullTime);
+
+        if (isFullTime && regularizationInput && !regularizationInput.value) {
+            regularizationInput.value = new Date().toISOString().slice(0, 10);
+        }
+
+        if (!isFullTime && regularizationInput) {
+            regularizationInput.value = '';
+        }
     }
 
     const colorMap = {
@@ -468,7 +495,10 @@
         if (current > 1) { current--; update(); window.scrollTo({top: 0, behavior: 'smooth'}); }
     });
 
+    document.getElementById('employment_type')?.addEventListener('change', toggleRegularizationField);
+
     update();
+    toggleRegularizationField();
 
     // Position Dropdown Filtering Logic
     const deptSelect = document.getElementById('department_id');
