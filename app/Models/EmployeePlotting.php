@@ -10,16 +10,19 @@ class EmployeePlotting extends Model
     protected $table = 'employee_plottings';
 
     protected $fillable = [
-        'employee_id',
-        'supervisor_id',
+        'empid',
+        'sup_id',
         'date',
         'location',
         'amount',
+        'payment_status',
+        'posted',
     ];
 
     protected $casts = [
         'date' => 'date',
         'amount' => 'decimal:2',
+        'posted' => 'boolean',
     ];
 
     /**
@@ -27,7 +30,7 @@ class EmployeePlotting extends Model
      */
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'employee_id');
+        return $this->belongsTo(Employee::class, 'empid', 'employee_code');
     }
 
     /**
@@ -35,6 +38,6 @@ class EmployeePlotting extends Model
      */
     public function supervisor(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'supervisor_id');
+        return $this->belongsTo(Employee::class, 'sup_id', 'employee_code');
     }
 }

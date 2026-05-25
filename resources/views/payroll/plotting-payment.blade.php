@@ -85,90 +85,102 @@
                                 </td>
                                 @foreach ($dates as $dateString => $dateLabel)
                                     @php
-                                        $dayData = $row['days'][$dateString];
+                                        $dayEntries = $row['days'][$dateString];
                                     @endphp
                                     <td
                                         class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative">
-                                        <div class="relative">
-                                            <input type="text" inputmode="text" maxlength="10"
-                                                name="entries[{{ $employee->id }}][{{ $row['location'] }}][{{ $dateString }}]"
-                                                value="{{ $dayData['amount'] > 0 ? number_format($dayData['amount'], 2) : '' }}"
-                                                placeholder="0" data-workplace="{{ $row['location'] }}"
-                                                data-employee="{{ $employee->id }}"
-                                                oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
-                                                class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden">
+                                        <div class="flex flex-col gap-1.5">
+                                            @foreach ($dayEntries as $entryIndex => $dayData)
+                                                <div class="relative">
+                                                    <input type="text" inputmode="text" maxlength="10"
+                                                        name="entries[{{ $employee->id }}][{{ $dayData['location'] }}][{{ $dateString }}]"
+                                                        value="{{ $dayData['amount'] > 0 ? number_format($dayData['amount'], 2) : '' }}"
+                                                        placeholder="0" data-workplace="{{ $dayData['location'] }}"
+                                                        data-employee="{{ $employee->id }}"
+                                                        oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10); var tri = this.parentElement.querySelector('.payment-triangle'); if(tri){ if(this.value.trim()){ tri.style.borderRightColor='#16a34a'; tri.title='Paid'; } else { tri.style.borderRightColor='#ef4444'; tri.title='Unpaid'; } }"
+                                                        @if(!empty($dayData['posted'])) readonly @endif
+                                                        class="w-full min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring overflow-hidden @if(!empty($dayData['posted'])) bg-slate-100 text-slate-500 cursor-not-allowed font-medium @endif">
 
-                                            <!-- Payroll note indicator triangle (Excel-style, top-right, green) -->
-                                            <div
-                                                class="note-indicator hidden absolute top-0 right-0 w-0 h-0 pointer-events-none"
-                                                style="border-style:solid;border-width:0 7px 7px 0;border-color:transparent #16a34a transparent transparent;">
-                                            </div>
+                                                    @if(empty($dayData['posted']))
+                                                    {{-- Payment status triangle: red = unpaid, green = has amount --}}
+                                                    <div class="payment-triangle absolute top-0 right-0 w-0 h-0 pointer-events-none"
+                                                        style="border-style:solid; border-width:0 8px 8px 0; border-color:transparent {{ ($dayData['amount'] > 0) ? '#16a34a' : '#ef4444' }} transparent transparent;"
+                                                        title="{{ ($dayData['amount'] > 0) ? 'Paid' : 'Unpaid' }}"></div>
+                                                    @endif
 
-                                            <!-- Hidden payroll note value (submitted with form) -->
-                                            <input type="hidden"
-                                                name="payroll_notes[{{ $employee->id }}][{{ $row['location'] }}][{{ $dateString }}]"
-                                                class="payroll-note-input"
-                                                value="">
+                                                    <!-- Payroll note indicator triangle (Excel-style, top-left, blue) -->
+                                                    <div
+                                                        class="note-indicator hidden absolute top-0 left-0 w-0 h-0 pointer-events-none"
+                                                        style="border-style:solid; border-width:8px 8px 0 0; border-color:#3b82f6 transparent transparent transparent;">
+                                                    </div>
 
-                                            <!-- Workplace comment bubble (shows on amount-input focus) -->
-                                            <div
-                                                class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-52 text-left">
-                                                <!-- Work info rows -->
-                                                <div class="space-y-1">
-                                                    <div class="text-xs text-slate-700">
-                                                        <span class="font-semibold text-slate-900">Work Assignment:</span>
-                                                        @if(!empty(trim($dayData['location'])))
-                                                            <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}"
-                                                                class="text-blue-600 hover:text-blue-800 hover:underline">
-                                                                {{ $dayData['location'] }}
-                                                            </a>
-                                                        @else
-                                                            <span class="text-slate-400 italic">Unassigned</span>
-                                                        @endif
-                                                    </div>
-                                                    <div class="text-xs text-slate-700">
-                                                        <span class="font-semibold text-slate-900">Supervisor:</span>
-                                                        <span class="text-slate-600">{{ $dayData['supervisor_name'] }}</span>
-                                                    </div>
-                                                    <div class="text-xs text-slate-700">
-                                                        <span class="font-semibold text-slate-900">Supervisor ID:</span>
-                                                        <span class="text-slate-600">{{ $dayData['supervisor_code'] ?? '—' }}</span>
-                                                    </div>
-                                                    <div class="text-xs text-slate-700">
-                                                        <span class="font-semibold text-slate-900">Supervisor's note:</span>
-                                                        <span class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
+                                                    <!-- Hidden payroll note value (submitted with form) -->
+                                                    <input type="hidden"
+                                                        name="payroll_notes[{{ $employee->id }}][{{ $dayData['location'] }}][{{ $dateString }}]"
+                                                        class="payroll-note-input"
+                                                        value="">
+
+                                                    <!-- Workplace comment bubble (shows on amount-input focus) -->
+                                                    <div
+                                                        class="workplace-comment hidden absolute top-0 bg-gray-50 border border-gray-300 rounded px-3 py-2 shadow-lg z-50 w-52 text-left">
+                                                        <!-- Work info rows -->
+                                                        <div class="space-y-1">
+                                                            <div class="text-xs text-slate-700">
+                                                                <span class="font-semibold text-slate-900">Work Assignment:</span>
+                                                                @if(!empty(trim($dayData['location'])))
+                                                                    <a href="{{ route('payroll.work-location-details', ['date' => $dateString, 'workplace' => urlencode($dayData['location'])]) }}"
+                                                                        class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                                        {{ $dayData['location'] }}
+                                                                    </a>
+                                                                @else
+                                                                    <span class="text-slate-400 italic">Unassigned</span>
+                                                                @endif
+                                                            </div>
+                                                            <div class="text-xs text-slate-700">
+                                                                <span class="font-semibold text-slate-900">Supervisor:</span>
+                                                                <span class="text-slate-600">{{ $dayData['supervisor_name'] }}</span>
+                                                            </div>
+                                                            <div class="text-xs text-slate-700">
+                                                                <span class="font-semibold text-slate-900">Supervisor ID:</span>
+                                                                <span class="text-slate-600">{{ $dayData['supervisor_code'] ?? '—' }}</span>
+                                                            </div>
+                                                            <div class="text-xs text-slate-700">
+                                                                <span class="font-semibold text-slate-900">Supervisor's note:</span>
+                                                                <span class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Divider + payroll note toggle row -->
+                                                        <div class="pt-1.5 mt-1.5 border-t border-slate-200 flex items-center justify-between gap-2">
+                                                            <span class="text-xs text-slate-400 italic note-preview-text">No payroll note</span>
+                                                            <button type="button"
+                                                                class="note-add-btn shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
+                                                                title="Add payroll note">+</button>
+                                                        </div>
+
+                                                        <!-- Inline payroll note panel (expands below on "+" click) -->
+                                                        <div class="note-inline-panel hidden pt-2 mt-1 border-t border-blue-100">
+                                                            <p class="text-xs font-semibold text-blue-700 mb-1.5 flex items-center gap-1">
+                                                                <i class="ti ti-pencil text-xs"></i> Payroll Note
+                                                            </p>
+                                                            <textarea rows="3"
+                                                                class="note-bubble-textarea w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                                                                placeholder="Type a note…"></textarea>
+                                                            <div class="mt-1.5 flex justify-end gap-1.5">
+                                                                <button type="button"
+                                                                    class="note-cancel-btn rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                                                                <button type="button"
+                                                                    class="note-save-btn rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition shadow-sm">Save</button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Comment pointer -->
+                                                        <div
+                                                            class="bubble-pointer absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50">
+                                                        </div>
                                                     </div>
                                                 </div>
-
-                                                <!-- Divider + payroll note toggle row -->
-                                                <div class="pt-1.5 mt-1.5 border-t border-slate-200 flex items-center justify-between gap-2">
-                                                    <span class="text-xs text-slate-400 italic note-preview-text">No payroll note</span>
-                                                    <button type="button"
-                                                        class="note-add-btn shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
-                                                        title="Add payroll note">+</button>
-                                                </div>
-
-                                                <!-- Inline payroll note panel (expands below on "+" click) -->
-                                                <div class="note-inline-panel hidden pt-2 mt-1 border-t border-blue-100">
-                                                    <p class="text-xs font-semibold text-blue-700 mb-1.5 flex items-center gap-1">
-                                                        <i class="ti ti-pencil text-xs"></i> Payroll Note
-                                                    </p>
-                                                    <textarea rows="3"
-                                                        class="note-bubble-textarea w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                                                        placeholder="Type a note…"></textarea>
-                                                    <div class="mt-1.5 flex justify-end gap-1.5">
-                                                        <button type="button"
-                                                            class="note-cancel-btn rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
-                                                        <button type="button"
-                                                            class="note-save-btn rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700 transition shadow-sm">Save</button>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Comment pointer -->
-                                                <div
-                                                    class="bubble-pointer absolute right-full top-1 -mr-1 w-0 h-0 border-r-4 border-t-4 border-t-transparent border-r-gray-50">
-                                                </div>
-                                            </div>
+                                            @endforeach
                                         </div>
                                     </td>
                                 @endforeach

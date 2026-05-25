@@ -18,11 +18,17 @@ return new class extends Migration
         });
 
         Schema::table('employee_plottings', function (Blueprint $table) {
+            // Drop foreign key that depends on the unique index first
+            $table->dropForeign('employee_plottings_employee_id_foreign');
+
             // Drop old unique constraint
             $table->dropUnique('uq_emp_date');
             
             // Create new unique constraint including location
             $table->unique(['employee_id', 'date', 'location'], 'uq_emp_date_location');
+
+            // Re-add the foreign key
+            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
         });
     }
 

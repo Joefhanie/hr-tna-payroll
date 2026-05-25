@@ -71,7 +71,8 @@
                                         name="entries[{{ $day['date_string'] }}]" placeholder="0.00"
                                         value="{{ $day['amount'] > 0 ? number_format($day['amount'], 2, '.', '') : '' }}"
                                         oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
-                                        class="w-40 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring font-mono text-right">
+                                        @if(!empty($day['posted'])) readonly @endif
+                                        class="w-40 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-200 focus:ring font-mono text-right @if(!empty($day['posted'])) bg-slate-100 text-slate-500 cursor-not-allowed @else text-slate-900 @endif">
                                 </td>
                             </tr>
                         @endforeach

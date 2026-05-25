@@ -50,7 +50,8 @@
                                         name="entries[{{ $employee['id'] }}][{{ $employee['workplace'] }}][{{ $date }}]"
                                         value="{{ $employee['amount'] > 0 ? number_format($employee['amount'], 2) : '' }}"
                                         oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
-                                        class="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-blue-200 focus:ring"
+                                        @if(!empty($employee['posted'])) readonly @endif
+                                        class="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-200 focus:ring @if(!empty($employee['posted'])) bg-slate-100 text-slate-500 cursor-not-allowed font-medium @else text-slate-900 @endif"
                                     >
                                 </td>
                             </tr>
