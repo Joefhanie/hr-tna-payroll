@@ -2,16 +2,6 @@
     <x-slot:title>Manage Benefit Plan</x-slot:title>
     <x-slot:header>Manage Plan</x-slot:header>
 
-    @if(session('success'))
-        <div class="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700">
-            <i class="ti ti-check-circle mr-1"></i> {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-            <i class="ti ti-alert-circle mr-1"></i> {{ session('error') }}
-        </div>
-    @endif
 
     {{-- Back to Plans & Title --}}
     <div class="mb-6">
