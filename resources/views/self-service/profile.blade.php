@@ -68,7 +68,7 @@
                         <input type="file" name="profile_picture" id="profilePictureInput" accept="image/*" class="sr-only">
                     </form>
 
-                    <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-lg font-bold text-white">
+                    <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-lg font-bold" style="color: var(--brand-text-on-primary);">
                         @if ($employee->profile_picture)
                             <img id="profilePicturePreview" src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="profile" class="h-full w-full object-cover">
                         @else
@@ -266,7 +266,7 @@
 
                     <div class="flex justify-end gap-3 pt-1">
                         <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
-                        <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">Submit Request</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold shadow-sm transition hover:bg-indigo-700" style="color: var(--brand-text-on-primary);">Submit Request</button>
                     </div>
                 </form>
             </div>

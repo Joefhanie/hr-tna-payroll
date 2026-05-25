@@ -402,7 +402,7 @@
 
                     <div class="flex items-center justify-end gap-3 pt-2">
                         <button type="button" data-close-modal="company-file-modal" class="action-icon rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</button>
-                        <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">Upload File</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold transition hover:bg-indigo-700" style="color: var(--brand-text-on-primary);">Upload File</button>
                     </div>
                 </form>
             </div>

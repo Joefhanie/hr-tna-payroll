@@ -111,7 +111,7 @@
         <div class="order-1 lg:order-2 lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col lg:h-[700px]">
 
             {{-- Month Nav Header --}}
-            <div class="bg-brand-primary text-brand-text-on-primary px-4 py-4 lg:p-6 flex justify-center items-center">
+            <div class="bg-brand-primary px-4 py-4 lg:p-6 flex justify-center items-center" style="color: var(--brand-text-on-primary);">
                 <div class="flex items-center justify-between w-full max-w-sm lg:w-[300px]">
                     <a href="{{ route('leave.calendar') }}?date={{ $prevMonthDate }}"
                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/90 text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white hover:border-slate-900 shrink-0"

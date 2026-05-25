@@ -77,7 +77,7 @@
 
         .brand-btn {
             background: {{ $primaryColor }};
-            color: {{ $textOnPrimary }};
+            color: <?php echo $computedTextOnBrand; ?>;
             transition: all 0.2s ease;
         }
 
@@ -186,7 +186,7 @@
 <body class="min-h-screen flex">
 
     {{-- Left panel — brand identity --}}
-    <div class="brand-bg hidden lg:flex lg:w-[45%] xl:w-[42%] relative flex-col justify-between p-12 overflow-hidden">
+    <div class="brand-bg hidden lg:flex lg:w-[45%] xl:w-[42%] relative flex-col justify-between p-12 overflow-hidden" style="color: var(--text-on-brand);">
 
         {{-- Animated orbs --}}
         <div class="orb orb-1"></div>
@@ -195,7 +195,7 @@
 
         {{-- Top: Employee Portal badge --}}
         <div class="relative z-10">
-            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-white/70">
+            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-current" style="opacity: 0.7;">
                 <span class="h-1.5 w-1.5 rounded-full bg-white/70 animate-pulse"></span>
                 Employee Portal
             </div>
@@ -215,26 +215,26 @@
             @else
                 <div class="relative mb-6">
                     <div class="absolute inset-0 rounded-3xl bg-white/20 blur-xl scale-110"></div>
-                    <div class="relative h-28 w-28 rounded-3xl flex items-center justify-center bg-white/20 border-2 border-white/30 shadow-[0_0_0_4px_rgba(255,255,255,0.15),0_20px_60px_rgba(0,0,0,0.3)] text-white font-bold text-4xl backdrop-blur">
+                    <div class="relative h-28 w-28 rounded-3xl flex items-center justify-center bg-white/20 border-2 border-white/30 shadow-[0_0_0_4px_rgba(255,255,255,0.15),0_20px_60px_rgba(0,0,0,0.3)] text-current font-bold text-4xl backdrop-blur">
                         {{ $initials }}
                     </div>
                 </div>
             @endif
 
             {{-- Company name --}}
-            <h1 class="text-3xl xl:text-4xl font-extrabold text-white tracking-tight drop-shadow-lg">
+            <h1 class="text-3xl xl:text-4xl font-extrabold text-current tracking-tight drop-shadow-lg">
                 {{ $companyName }}
             </h1>
 
             {{-- Industry tag --}}
             @if ($company->industry)
-                <span class="mt-2 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-medium text-white/70 tracking-wide">
+                <span class="mt-2 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-medium text-current tracking-wide" style="opacity: 0.7;">
                     {{ $company->industry }}
                 </span>
             @endif
 
             {{-- Tagline --}}
-            <p class="mt-5 text-white/65 text-sm leading-relaxed max-w-[16rem]">
+            <p class="mt-5 text-current text-sm leading-relaxed max-w-[16rem]" style="opacity: 0.65;">
                 {{ $tagline }}
             </p>
 
@@ -249,18 +249,18 @@
         {{-- Bottom: Footer info --}}
         <div class="relative z-10 space-y-1">
             @if ($company->address || $company->city)
-                <p class="text-white/50 text-xs flex items-center gap-1.5">
+                <p class="text-current text-xs flex items-center gap-1.5" style="opacity: 0.5;">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     {{ trim(($company->address ? $company->address . ', ' : '') . ($company->city ?? '')) }}
                 </p>
             @endif
             @if ($company->phone)
-                <p class="text-white/50 text-xs flex items-center gap-1.5">
+                <p class="text-current text-xs flex items-center gap-1.5" style="opacity: 0.5;">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548A1 1 0 0119 10.72V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                     {{ $company->phone }}
                 </p>
             @endif
-            <p class="text-white/30 text-xs mt-2">
+            <p class="text-current text-xs mt-2" style="opacity: 0.3;">
                 &copy; {{ date('Y') }} {{ $companyName }}. All rights reserved.
             </p>
         </div>
@@ -277,7 +277,7 @@
                         <img src="{{ $logoPath }}" alt="{{ $companyName }} Logo" class="h-full w-full object-contain">
                     </div>
                 @else
-                    <div class="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow" style="background: {{ $primaryColor }}">
+                        <div class="h-10 w-10 rounded-xl flex items-center justify-center text-current font-bold text-sm shadow" style="background: {{ $primaryColor }}; color: var(--text-on-brand);">
                         {{ $initials }}
                     </div>
                 @endif
