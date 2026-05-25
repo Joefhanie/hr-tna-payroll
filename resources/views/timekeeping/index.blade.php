@@ -729,11 +729,11 @@
                 <div class="mt-8 flex justify-end gap-3">
                     <button type="button"
                             onclick="document.getElementById('manualEntryModal').classList.replace('flex', 'hidden')"
-                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">
+                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 font-medium text-sm text-[#06112e] shadow-sm transition hover:bg-slate-50">
                         Cancel
                     </button>
-                        <button type="submit"
-                            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
+                    <button type="submit"
+                            class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">
                         Save Entry
                     </button>
                 </div>

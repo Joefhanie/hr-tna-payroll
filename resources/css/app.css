@@ -44,6 +44,36 @@ body {
     color: var(--nw-text);
 }
 
+button,
+button *,
+[type='button'],
+[type='button'] *,
+[type='submit'],
+[type='submit'] *,
+[type='reset'],
+[type='reset'] *,
+a,
+a *,
+label[for],
+label[for] *,
+summary,
+summary *,
+[role='button'],
+[role='button'] *,
+[onclick],
+[onclick] *,
+.action-icon,
+.cursor-pointer {
+    cursor: pointer;
+}
+
+button:disabled,
+[type='button']:disabled,
+[type='submit']:disabled,
+[type='reset']:disabled {
+    cursor: default;
+}
+
 body.sidebar-open {
     overflow: hidden;
 }

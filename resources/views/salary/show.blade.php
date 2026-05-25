@@ -206,7 +206,7 @@
 
                 @if ($allDeductionRules->count() > 0)
                     <div class="mb-3 flex justify-end">
-                        <button type="button" class="select-all-group rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-target="deductions-group">
+                        <button type="button" class="action-icon select-all-group rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" data-target="deductions-group">
                             Select All
                         </button>
                     </div>

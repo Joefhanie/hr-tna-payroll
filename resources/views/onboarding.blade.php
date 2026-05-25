@@ -375,7 +375,7 @@
                                                                 type="button"
                                                                 title="Edit task"
                                                                 aria-label="Edit task"
-                                                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
+                                                                class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:bg-sky-100"
                                                                 data-task-edit
                                                                 data-task-id="{{ $task['id'] }}"
                                                                 data-task-title="{{ $task['title'] }}"
@@ -392,7 +392,7 @@
                                                             <form method="POST" action="{{ route('onboarding.tasks.destroy', $task['id']) }}" data-confirm="Delete this onboarding task?" data-confirm-title="Delete Task">
                                                                 @csrf
                                                                 @method('DELETE')
-                                                                <button type="submit" title="Delete task" aria-label="Delete task" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                                                <button type="submit" title="Delete task" aria-label="Delete task" class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
                                                                     <i class="ti ti-x text-lg"></i>
                                                                 </button>
                                                             </form>
@@ -400,7 +400,7 @@
 
                                                         <form method="POST" action="{{ route('onboarding.tasks.complete', $task['id']) }}">
                                                             @csrf
-                                                            <button type="submit" title="Mark done" aria-label="Mark done" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                                            <button type="submit" title="Mark done" aria-label="Mark done" class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
                                                                 <i class="ti ti-check text-lg"></i>
                                                             </button>
                                                         </form>

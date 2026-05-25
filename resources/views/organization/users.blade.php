@@ -64,11 +64,11 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <button type="button" onclick="openPermissionsModal({{ $user->id }}, '{{ addslashes($user->username) }}', {{ $user->role }}, {{ json_encode($user->permissions ?? null) }})" class="text-slate-600 hover:text-indigo-600 transition" title="Manage Permissions/Access">
+                                    <button type="button" onclick="openPermissionsModal({{ $user->id }}, '{{ addslashes($user->username) }}', {{ $user->role }}, {{ json_encode($user->permissions ?? null) }})" class="action-icon text-slate-600 hover:text-indigo-600 transition" title="Manage Permissions/Access">
                                         <i class="ti ti-shield-lock text-xl"></i>
                                     </button>
                                     <div class="w-px h-4 bg-slate-200 mx-1"></div>
-                                    <a href="{{ route('organization.users.edit', $user) }}" class="text-slate-600 hover:text-slate-900 transition" title="Edit User">
+                                    <a href="{{ route('organization.users.edit', $user) }}" class="action-icon text-slate-600 hover:text-slate-900 transition" title="Edit User">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
@@ -91,7 +91,7 @@
         <div class="my-auto flex max-h-[calc(100vh-2rem)] sm:max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.45)] ring-4 ring-black/5">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                 <h3 class="text-base font-bold text-[#06112e]">Add User</h3>
-                <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="text-slate-400 transition hover:text-slate-600">
+                <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="action-icon text-slate-400 transition hover:text-slate-600">
                     <i class="ti ti-x text-xl"></i>
                 </button>
             </div>
@@ -151,8 +151,8 @@
                 </div>
 
                 <div class="mt-4 flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50">Cancel</button>
-                    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Create User</button>
+                    <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-lg bg-[#1a56db] px-4 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">Create User</button>
                 </div>
             </form>
         </div>
@@ -222,8 +222,8 @@
                     </div>
 
                     <div class="mt-4 flex justify-end gap-2 pt-1">
-                        <button type="button" onclick="document.getElementById('editUserModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50">Cancel</button>
-                        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Save Changes</button>
+                        <button type="button" onclick="document.getElementById('editUserModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-[#1a56db] px-4 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#1e40af]">Save Changes</button>
                     </div>
                 </form>
             </div>

@@ -155,8 +155,8 @@
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     {{-- Eye (View Profile) --}}
-                                    <a href="{{ route('employees.show', $employee) }}"
-                                       class="text-slate-500 hover:text-slate-900 transition"
+                                                <a href="{{ route('employees.show', $employee) }}"
+                                                    class="action-icon text-slate-500 hover:text-slate-900 transition"
                                        title="View Details">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -166,8 +166,8 @@
 
                                     {{-- Edit --}}
                                     @if(auth()->user()->hasPermission('employees.edit'))
-                                    <a href="{{ route('employees.edit', $employee) }}"
-                                       class="text-blue-600 hover:text-blue-800 transition"
+                                                <a href="{{ route('employees.edit', $employee) }}"
+                                                    class="action-icon text-blue-600 hover:text-blue-800 transition"
                                        title="Edit Employee">
                                         <i class="ti ti-edit text-base"></i>
                                     </a>
@@ -175,8 +175,8 @@
 
                                     {{-- Terminate --}}
                                     @if(auth()->check() && auth()->user()->role === 4)
-                                    <button type="button"
-                                            class="text-red-600 hover:text-red-800 transition"
+                                        <button type="button"
+                                            class="action-icon text-red-600 hover:text-red-800 transition"
                                             title="Terminate Employee"
                                             onclick="openTerminationModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}')">
                                         <i class="ti ti-ban text-base"></i>

@@ -165,13 +165,13 @@
                                     <form method="POST" action="{{ route('leave.approve', $req['id']) }}">
                                         @csrf
                                         <button type="submit" title="Approve" aria-label="Approve"
-                                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                            class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
                                             <i class="ti ti-check text-lg"></i>
                                         </button>
                                     </form>
                                     {{-- Decline --}}
                                     <button type="button" title="Decline" aria-label="Decline"
-                                        class="open-decline-modal inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100"
+                                        class="action-icon open-decline-modal inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100"
                                         data-id="{{ $req['id'] }}"
                                         data-employee="{{ $req['employee'] }}">
                                         <i class="ti ti-x text-lg"></i>
@@ -181,7 +181,7 @@
                                 {{-- Cancel Approved --}}
                                 <div class="flex items-center justify-center">
                                     <button type="button"
-                                        class="open-cancel-modal inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:text-rose-700 hover:scale-[1.05] active:scale-[0.95]"
+                                        class="action-icon open-cancel-modal inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 hover:text-rose-700 hover:scale-[1.05] active:scale-[0.95]"
                                         data-id="{{ $req['id'] }}"
                                         data-employee="{{ $req['employee'] }}"
                                         title="Cancel Leave Request">

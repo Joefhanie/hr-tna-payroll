@@ -427,7 +427,7 @@
                                                 @csrf
                                                 <input type="hidden" name="decision" value="approve">
                                                 <button type="submit" title="Approve" aria-label="Approve"
-                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
+                                                    class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm transition hover:bg-emerald-100">
                                                     <i class="ti ti-check text-lg"></i>
                                                 </button>
                                             </form>
@@ -435,7 +435,7 @@
                                                 @csrf
                                                 <input type="hidden" name="decision" value="reject">
                                                 <button type="submit" title="Reject" aria-label="Reject"
-                                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
+                                                    class="action-icon inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:bg-rose-100">
                                                     <i class="ti ti-x text-lg"></i>
                                                 </button>
                                             </form>

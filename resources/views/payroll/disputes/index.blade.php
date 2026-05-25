@@ -152,14 +152,14 @@
                             <div class="flex items-center gap-2">
                                 @if($isHR && $dispute->status === 1)
                                     <button type="button"
-                                        class="btn-resolve text-emerald-600 hover:text-emerald-800 transition"
+                                        class="action-icon btn-resolve text-emerald-600 hover:text-emerald-800 transition"
                                         title="Resolve"
                                         data-id="{{ $dispute->id }}"
                                         data-employee="{{ $dispute->employee?->full_name }}">
                                         <i class="ti ti-check text-lg"></i>
                                     </button>
                                     <button type="button"
-                                        class="btn-reject text-rose-500 hover:text-rose-700 transition"
+                                        class="action-icon btn-reject text-rose-500 hover:text-rose-700 transition"
                                         title="Reject"
                                         data-id="{{ $dispute->id }}"
                                         data-employee="{{ $dispute->employee?->full_name }}">
