@@ -613,7 +613,7 @@
         function openPermissionsModal(userId, username, role, customPermissions) {
             activeUserRole = role;
             document.getElementById('perm_username_title').textContent = username;
-            
+
             // Set Badge
             const badgeEl = document.getElementById('perm_role_badge');
             badgeEl.className = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ' + (roleBadgeClasses[role] || 'bg-slate-100 text-slate-700');
@@ -630,7 +630,7 @@
 
             hrBanner.classList.add('hidden');
             overrideBanner.classList.add('hidden');
-            
+
             const checkboxes = document.querySelectorAll('.perm-checkbox');
 
             if (role === 4) {
@@ -650,7 +650,7 @@
                 saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 restoreBtn.disabled = false;
                 restoreBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                
+
                 // If customPermissions is defined/active, show override banner
                 const hasCustom = customPermissions !== null && customPermissions !== undefined;
                 if (hasCustom) {
