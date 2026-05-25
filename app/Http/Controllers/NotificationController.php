@@ -13,7 +13,13 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
         abort_unless($user, 403);
-        abort_unless(Schema::hasTable('notifications'), 503, 'Notifications are unavailable until the latest migration is run.');
+        abort_unless(
+            Schema::hasTable('notifications')
+                && Schema::hasColumn('notifications', 'notifiable_type')
+                && Schema::hasColumn('notifications', 'notifiable_id'),
+            503,
+            'Notifications are unavailable until the latest migration is run.'
+        );
 
         $notificationModel = $user->notifications()->where('id', $notification)->firstOrFail();
 
@@ -30,7 +36,13 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
         abort_unless($user, 403);
-        abort_unless(Schema::hasTable('notifications'), 503, 'Notifications are unavailable until the latest migration is run.');
+        abort_unless(
+            Schema::hasTable('notifications')
+                && Schema::hasColumn('notifications', 'notifiable_type')
+                && Schema::hasColumn('notifications', 'notifiable_id'),
+            503,
+            'Notifications are unavailable until the latest migration is run.'
+        );
 
         $user->unreadNotifications()->update(['read_at' => now()]);
 

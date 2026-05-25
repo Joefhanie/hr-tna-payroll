@@ -94,11 +94,14 @@
     @php
         $user = auth()->user();
         $hasNotificationTable = \Illuminate\Support\Facades\Schema::hasTable('notifications');
+        $hasNotificationMorphColumns = $hasNotificationTable
+            && \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'notifiable_type')
+            && \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'notifiable_id');
         $recentNotifications = $user
-            ? ($hasNotificationTable ? $user->notifications()->latest()->limit(5)->get() : collect())
+            ? ($hasNotificationMorphColumns ? $user->notifications()->latest()->limit(5)->get() : collect())
             : collect();
         $unreadNotificationCount = $user
-            ? ($hasNotificationTable ? $user->unreadNotifications()->count() : 0)
+            ? ($hasNotificationMorphColumns ? $user->unreadNotifications()->count() : 0)
             : 0;
         $navGroups = [
             'Overview' => [
