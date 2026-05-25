@@ -295,37 +295,24 @@ class PayrollController extends Controller
                         ];
                     }
                 } else {
-                    // No field records for this date – show a single empty entry
-                    $supervisorCode = $employee->manager?->employee_code ?? null;
-                    $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
-                    $svName = $supervisor ? ($supervisor->first_name . ' ' . $supervisor->last_name) : 'None';
-
-                    $location = 'General';
-                    if ($isSupervisor) {
-                        $fieldSupervisor = $supervisorMap[$employee->employee_code][$date] ?? null;
-                        $location = $fieldSupervisor['location'] ?? 'General';
-                    } else {
-                        $dailySupervisorId = $employee->manager_id;
-                        if ($dailySupervisorId) {
-                            $dailySupervisor = $employeeMap[$dailySupervisorId] ?? Employee::find($dailySupervisorId);
-                            if ($dailySupervisor && isset($supervisorMap[$dailySupervisor->employee_code][$date])) {
-                                $location = $supervisorMap[$dailySupervisor->employee_code][$date]['location'];
+                    // No field records for this date
+                    // Only show existing plottings if they manually exist in the DB without a field record.
+                    if (isset($plottingMap[$employee->employee_code])) {
+                        foreach ($plottingMap[$employee->employee_code] as $loc => $datesObj) {
+                            if (isset($datesObj[$date])) {
+                                $plotting = $datesObj[$date];
+                                $entries[] = [
+                                    'record_id' => null,
+                                    'amount' => $plotting->amount,
+                                    'location' => $loc,
+                                    'supervisor_name' => 'None',
+                                    'supervisor_code' => $plotting->sup_id,
+                                    'supervisor_note' => null,
+                                    'posted' => $plotting->posted,
+                                ];
                             }
                         }
                     }
-
-                    $plotting = $plottingMap[$employee->employee_code][$location][$date] ?? null;
-                    $amount = $plotting ? $plotting->amount : 0.00;
-
-                    $entries[] = [
-                        'record_id' => null,
-                        'amount' => $amount,
-                        'location' => $location,
-                        'supervisor_name' => $svName,
-                        'supervisor_code' => $supervisorCode,
-                        'supervisor_note' => null,
-                        'posted' => $plotting ? $plotting->posted : false,
-                    ];
                 }
 
                 $row['days'][$date] = $entries;
@@ -575,46 +562,21 @@ class PayrollController extends Controller
                 }
             } else {
                 // Fallback logic when there are no field records for this employee on this date
-                $location = 'General';
-                $supervisorName = 'None';
-                $supervisorCode = $employee->manager?->employee_code ?? null;
-                $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
-
-                $isSupervisor = $employee->user && $employee->user->role === 2;
-
-                if ($isSupervisor) {
-                    // It's a supervisor, look at their own supervisorMap if any
-                    $fieldSupervisor = $fieldSupervisorMap[$employee->employee_code][$dateString] ?? null;
-                    $location = $fieldSupervisor['location'] ?? 'General';
-                } else {
-                    $dailySupervisorId = $employee->manager_id;
-                    if ($dailySupervisorId) {
-                        $fallbackSupervisor = $employee->manager?->employee_code
-                            ? ($employeeCodeMap[$employee->manager->employee_code] ?? Employee::find($dailySupervisorId))
-                            : Employee::find($dailySupervisorId);
-                        if ($fallbackSupervisor) {
-                            $supervisorName = $fallbackSupervisor->first_name . ' ' . $fallbackSupervisor->last_name;
-                            $location = $fieldSupervisorMap[$fallbackSupervisor->employee_code][$dateString]['location'] ?? 'General';
-                        }
-                    }
-                    if ($supervisor) {
-                        $supervisorName = $supervisor->first_name . ' ' . $supervisor->last_name;
+                // Only show existing plottings
+                if (isset($plottingsMap[$dateString])) {
+                    foreach ($plottingsMap[$dateString] as $loc => $plotting) {
+                        $weekData[] = [
+                            'date_string' => $dateString,
+                            'date' => $dateLabel,
+                            'workplace' => $loc,
+                            'supervisor' => 'None',
+                            'supervisor_code' => $plotting->sup_id,
+                            'supervisor_note' => null,
+                            'amount' => $plotting->amount,
+                            'posted' => $plotting->posted,
+                        ];
                     }
                 }
-
-                $plotting = $plottingsMap[$dateString][$location] ?? null;
-                $amount = $plotting ? $plotting->amount : 0.00;
-
-                $weekData[] = [
-                    'date_string' => $dateString,
-                    'date' => $dateLabel,
-                    'workplace' => $location,
-                    'supervisor' => $supervisorName,
-                    'supervisor_code' => $supervisorCode,
-                    'supervisor_note' => null,
-                    'amount' => $amount,
-                    'posted' => $plotting ? $plotting->posted : false,
-                ];
             }
         }
 
