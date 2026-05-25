@@ -172,10 +172,16 @@ class PayrollController extends Controller
     /**
      * Display the spreadsheet-style payment plotting grid.
      */
-    public function plottingPayment(): View
+    public function plottingPayment(Request $request): View
     {
-        $dates = $this->fieldRecordDates();
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $dates = $this->fieldRecordDates($fromDate, $toDate);
         $dateKeys = array_keys($dates);
+
+        $resolvedFromDate = !empty($dateKeys) ? array_key_first($dates) : null;
+        $resolvedToDate = !empty($dateKeys) ? array_key_last($dates) : null;
 
         $scannedEmployeeCodes = DB::table('field_records')
             ->whereIn('Date', $dateKeys)
@@ -328,7 +334,7 @@ class PayrollController extends Controller
             $gridData[] = $row;
         }
 
-        return view('payroll.plotting-payment', compact('dates', 'gridData'));
+        return view('payroll.plotting-payment', compact('dates', 'gridData', 'resolvedFromDate', 'resolvedToDate'));
     }
     /**
      * Display details for a specific date in plotting payment.
@@ -483,15 +489,23 @@ class PayrollController extends Controller
             }
         }
 
-        return redirect()->route('payroll.plotting-payment')->with('status', 'Plotting payments updated successfully.');
+        return redirect()->route('payroll.plotting-payment', $request->only(['from_date', 'to_date']))
+            ->with('success', 'Plotting payments submitted successfully.');
     }
 
     /**
      * Show plotting details for a single employee.
      */
-    public function showPlottingEmployee(Employee $employee): View
+    public function showPlottingEmployee(Request $request, Employee $employee): View
     {
-        $dates = $this->fieldRecordDates();
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $dates = $this->fieldRecordDates($fromDate, $toDate);
+        $dateKeys = array_keys($dates);
+
+        $resolvedFromDate = !empty($dateKeys) ? array_key_first($dates) : null;
+        $resolvedToDate = !empty($dateKeys) ? array_key_last($dates) : null;
 
         $plottings = EmployeePlotting::where('empid', $employee->employee_code)
             ->whereIn('date', array_keys($dates))
@@ -604,7 +618,7 @@ class PayrollController extends Controller
             }
         }
 
-        return view('payroll.per-employee', compact('employee', 'weekData'));
+        return view('payroll.per-employee', compact('employee', 'weekData', 'resolvedFromDate', 'resolvedToDate'));
     }
 
     /**
@@ -662,7 +676,8 @@ class PayrollController extends Controller
             }
         }
 
-        return redirect()->route('payroll.plotting-payment')->with('status', "Plotting payments for {$employee->first_name} saved successfully.");
+        return redirect()->route('payroll.plotting-payment', $request->only(['from_date', 'to_date']))
+            ->with('success', "Plotting payments for {$employee->first_name} submitted successfully.");
     }
 
     public function showWorkLocationDetails(string $date, string $workplace): View
@@ -779,22 +794,37 @@ class PayrollController extends Controller
     /**
      * Build a lookup of work locations from field records keyed by employee code and date.
      */
-    private function fieldRecordDates(): array
+    private function fieldRecordDates(?string $fromDate = null, ?string $toDate = null): array
     {
-        $dates = DB::table('field_records')
-            ->whereNotNull('Date')
-            ->distinct()
-            ->orderBy('Date')
-            ->pluck('Date')
-            ->all();
-
-        if (empty($dates)) {
-            $dates = [now()->toDateString()];
+        if (empty($fromDate) || empty($toDate)) {
+            $latestDate = DB::table('field_records')->max('Date');
+            if ($latestDate) {
+                $latestCarbon = Carbon::parse($latestDate);
+                $fromDate = $latestCarbon->copy()->startOfWeek()->toDateString();
+                $toDate = $latestCarbon->copy()->endOfWeek()->toDateString();
+            } else {
+                $fromDate = Carbon::now()->startOfWeek()->toDateString();
+                $toDate = Carbon::now()->endOfWeek()->toDateString();
+            }
         }
 
-        return collect($dates)->mapWithKeys(function ($date) {
-            return [$date => Carbon::parse($date)->format('M d')];
-        })->all();
+        $start = Carbon::parse($fromDate);
+        $end = Carbon::parse($toDate);
+
+        // Limit the range to prevent excessive memory/column usage (max 31 days)
+        if ($start->diffInDays($end) > 31) {
+            $end = $start->copy()->addDays(31);
+        }
+
+        $dates = [];
+        $current = $start->copy();
+        while ($current->lessThanOrEqualTo($end)) {
+            $dateStr = $current->toDateString();
+            $dates[$dateStr] = $current->format('M d');
+            $current->addDay();
+        }
+
+        return $dates;
     }
 
     /**

@@ -10,8 +10,20 @@
             </div>
         </div>
 
+        @php
+            $hasEditableFields = false;
+            foreach ($employeeData as $employee) {
+                if (empty($employee['posted'])) {
+                    $hasEditableFields = true;
+                    break;
+                }
+            }
+        @endphp
+
         <form action="{{ route('payroll.plotting-payment.save') }}" method="POST">
             @csrf
+            <input type="hidden" name="from_date" value="{{ request('from_date') }}">
+            <input type="hidden" name="to_date" value="{{ request('to_date') }}">
             <div class="overflow-hidden rounded-lg border border-slate-200">
                 <table class="min-w-full border-collapse text-sm">
                     <thead>
@@ -63,11 +75,15 @@
             <div class="mt-4 flex items-center justify-between gap-3">
                 <p class="text-xs text-slate-500">Enter the amount for each employee assigned on this date.</p>
                 <div class="flex gap-3">
-                    <a href="{{ route('payroll.plotting-payment') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <a href="{{ route('payroll.plotting-payment', ['from_date' => request('from_date'), 'to_date' => request('to_date')]) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                         Back
                     </a>
-                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
-                        Save Details
+                    <button type="submit"
+                        data-confirm="Are you sure you want to submit and save the plotting payments for this date?"
+                        data-confirm-title="Submit Date Plotting"
+                        @if(!$hasEditableFields) disabled @endif
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Submit
                     </button>
                 </div>
             </div>

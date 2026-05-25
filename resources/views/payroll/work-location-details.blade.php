@@ -64,11 +64,11 @@
         <div class="mt-4 flex items-center justify-between gap-3">
             <p class="text-xs text-slate-500">Enter the amount for each employee at this Work Assignment.</p>
             <div class="flex gap-3">
-                <a href="{{ route('payroll.plotting-payment') }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                <a href="{{ route('payroll.plotting-payment', ['from_date' => request('from_date'), 'to_date' => request('to_date')]) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                     Back
                 </a>
                 <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
-                    Save Details
+                    Submit
                 </button>
             </div>
         </div>

@@ -15,26 +15,19 @@
             </span>
         </div>
 
-        @if (session('status'))
-            <div class="mt-4 rounded-md bg-green-50 p-4 border border-green-200">
-                <div class="flex">
-                    <div class="shrink-0">
-                        <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium text-green-800">
-                            {{ session('status') }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        @endif
 
-        <form action="{{ route('payroll.plotting-payment.employee.save', ['employee' => $employee->id]) }}"
+
+        @php
+            $hasEditableFields = false;
+            foreach ($weekData as $day) {
+                if (empty($day['posted'])) {
+                    $hasEditableFields = true;
+                    break;
+                }
+            }
+        @endphp
+
+        <form action="{{ route('payroll.plotting-payment.employee.save', ['employee' => $employee->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]) }}"
             method="POST">
             @csrf
             <div class="mt-6 overflow-hidden rounded-lg border border-slate-200">
@@ -81,13 +74,16 @@
             </div>
 
             <div class="mt-4 flex items-center justify-end gap-3">
-                <a href="{{ route('payroll.plotting-payment') }}"
+                <a href="{{ route('payroll.plotting-payment', ['from_date' => request('from_date'), 'to_date' => request('to_date')]) }}"
                     class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                     Back
                 </a>
                 <button type="submit"
-                    class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-                    Save
+                    data-confirm="Are you sure you want to submit and save the plotting payments for this employee?"
+                    data-confirm-title="Submit Employee Plotting"
+                    @if(!$hasEditableFields) disabled @endif
+                    class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Submit
                 </button>
             </div>
         </form>
