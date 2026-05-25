@@ -81,6 +81,7 @@ class PreviousClaim extends Model
             'Bonus',
             'Night Differential',
             'Holiday Pay',
+            'Late Plotted Payment',
             'Other',
         ];
     }

@@ -187,7 +187,7 @@
 
             // Known group prefixes (case-insensitive). Any "GroupName: item" description
             // is rendered as a labelled group with indented rows.
-            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes', 'plotted payment'];
+            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes', 'plotted payment', 'previous claim (plotted payment)'];
 
             lineItems.forEach((item) => {
                 const description = item.description || 'Item';

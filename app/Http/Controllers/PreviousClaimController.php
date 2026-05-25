@@ -273,18 +273,34 @@ class PreviousClaimController extends Controller
             'pay_run_id' => ['nullable', 'exists:pay_runs,id'],
         ]);
 
+        $payRunId = $validated['pay_run_id'] ?? null;
+
+        if (is_null($payRunId)) {
+            // Find the earliest active pay run where this employee is selected
+            $activePayRun = PayRun::whereIn('status', [1, 2])
+                ->whereHas('payslips', function ($q) use ($previousClaim) {
+                    $q->where('employee_id', $previousClaim->employee_id);
+                })
+                ->orderBy('period_start')
+                ->first();
+
+            if ($activePayRun) {
+                $payRunId = $activePayRun->id;
+            }
+        }
+
         $previousClaim->update([
             'status'      => PreviousClaim::STATUS_APPROVED,
             'reviewed_by' => $user->id,
             'reviewed_at' => now(),
             'hr_notes'    => $validated['hr_notes'] ?? null,
-            'pay_run_id'  => $validated['pay_run_id'] ?? null,
+            'pay_run_id'  => $payRunId,
         ]);
 
         // If assigned to a pay run, regenerate the employee's payslip so the
         // claim amount is immediately included in the payslip breakdown.
-        if ($validated['pay_run_id']) {
-            $payRun   = PayRun::find($validated['pay_run_id']);
+        if ($payRunId) {
+            $payRun   = PayRun::find($payRunId);
             $employee = $previousClaim->employee;
 
             if ($payRun && $employee && in_array($payRun->status, [1, 2])) {

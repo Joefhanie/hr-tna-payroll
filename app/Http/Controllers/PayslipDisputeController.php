@@ -261,6 +261,35 @@ class PayslipDisputeController extends Controller
             'resolved_at' => now(),
         ]);
 
+        // Find the earliest active pay run where this employee is selected
+        $activePayRun = \App\Models\PayRun::whereIn('status', [1, 2])
+            ->whereHas('payslips', function ($q) use ($dispute) {
+                $q->where('employee_id', $dispute->employee_id);
+            })
+            ->orderBy('period_start')
+            ->first();
+
+        if ($activePayRun) {
+            // Find the draft payslip for this employee in that pay run
+            $draftPayslip = \App\Models\Payslip::where('pay_run_id', $activePayRun->id)
+                ->where('employee_id', $dispute->employee_id)
+                ->first();
+
+            if ($draftPayslip) {
+                $dispute->update([
+                    'adjustment_pay_run_id' => $activePayRun->id,
+                    'adjustment_payslip_id' => $draftPayslip->id,
+                ]);
+
+                // Regenerate the draft payslip
+                $draftPayslip->lineItems()->delete();
+                $draftPayslip->delete();
+
+                $payrollService = app(\App\Services\PayrollService::class);
+                $payrollService->generatePayslip($activePayRun, $dispute->employee);
+            }
+        }
+
         return redirect()->back()->with('success', 'Dispute marked as resolved.');
     }
 

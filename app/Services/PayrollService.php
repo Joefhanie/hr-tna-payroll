@@ -606,11 +606,23 @@ class PayrollService
 
             foreach ($previousClaims as $claim) {
                 $claimAmount = (float) $claim->amount;
+                
+                if ($claim->claim_type === 'Late Plotted Payment') {
+                    $location = 'Unspecified';
+                    if (preg_match('/at\s+(.+)$/i', $claim->description, $matches)) {
+                        $location = trim($matches[1]);
+                    }
+                    $description = 'Previous Claim (Plotted Payment): ' . $location
+                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                } else {
+                    $description = 'Previous Claim: ' . $claim->claim_type
+                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                }
+
                 PayslipLineItem::create([
                     'payslip_id'     => $payslip->id,
                     'component_type' => 1, // Earning
-                    'description'    => 'Previous Claim: ' . $claim->claim_type
-                        . ' (' . $claim->claim_date->format('M d, Y') . ')',
+                    'description'    => $description,
                     'amount'         => $claimAmount,
                     'is_taxable'     => true,
                 ]);
@@ -629,7 +641,10 @@ class PayrollService
             $approvedDisputes = PayslipDispute::with('lineItem')
                 ->where('employee_id', $employee->id)
                 ->where('status', 2)
-                ->whereNull('adjustment_pay_run_id')
+                ->where(function ($q) use ($payRun) {
+                    $q->where('adjustment_pay_run_id', $payRun->id)
+                      ->orWhereNull('adjustment_pay_run_id');
+                })
                 ->get();
 
             foreach ($approvedDisputes as $dispute) {
@@ -651,9 +666,11 @@ class PayrollService
                 ]);
 
                 $approvedDisputesTotal += $disputeAmount;
-                $dispute->adjustment_pay_run_id = $payRun->id;
-                $dispute->adjustment_payslip_id = $payslip->id;
-                $dispute->save();
+                if (is_null($dispute->adjustment_pay_run_id)) {
+                    $dispute->adjustment_pay_run_id = $payRun->id;
+                    $dispute->adjustment_payslip_id = $payslip->id;
+                    $dispute->save();
+                }
             }
 
             $approvedDisputesTotal = round($approvedDisputesTotal, 2);

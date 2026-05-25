@@ -1093,11 +1093,12 @@ class PayrollController extends Controller
                     $existingClaim->update([
                         'amount' => $amount,
                         'description' => $description,
+                        'claim_type' => 'Late Plotted Payment',
                     ]);
                 } else {
                     PreviousClaim::create([
                         'employee_id' => $employee->id,
-                        'claim_type' => 'Other',
+                        'claim_type' => 'Late Plotted Payment',
                         'claim_date' => $date,
                         'amount' => $amount,
                         'description' => $description,
