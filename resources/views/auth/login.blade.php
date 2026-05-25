@@ -30,7 +30,41 @@
             --brand-hover: {{ $primaryHover }};
             --brand-soft: {{ $brandPalette['primary_soft'] }};
             --brand-ring: {{ $brandPalette['primary_ring'] }};
-            --text-on-brand: {{ $textOnPrimary }};
+            <?php
+                $hex2rgb = function($hex) {
+                    $hex = ltrim($hex, '#');
+                    if (strlen($hex) === 3) {
+                        $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                    }
+                    $int = hexdec($hex);
+                    return [($int >> 16) & 255, ($int >> 8) & 255, $int & 255];
+                };
+                $relLuminance = function(array $rgb) {
+                    $sr = $rgb[0] / 255; $sg = $rgb[1] / 255; $sb = $rgb[2] / 255;
+                    $r = ($sr <= 0.03928) ? ($sr / 12.92) : pow((($sr + 0.055) / 1.055), 2.4);
+                    $g = ($sg <= 0.03928) ? ($sg / 12.92) : pow((($sg + 0.055) / 1.055), 2.4);
+                    $b = ($sb <= 0.03928) ? ($sb / 12.92) : pow((($sb + 0.055) / 1.055), 2.4);
+                    return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+                };
+                $contrastRatio = function(array $rgb1, array $rgb2) use ($relLuminance) {
+                    $l1 = $relLuminance($rgb1);
+                    $l2 = $relLuminance($rgb2);
+                    $lighter = max($l1, $l2);
+                    $darker = min($l1, $l2);
+                    return ($lighter + 0.05) / ($darker + 0.05);
+                };
+
+                $primaryHex = $primaryColor ?? '#4f46e5';
+                $whiteRgb = [255,255,255];
+                try {
+                    $primaryRgb = $hex2rgb($primaryHex);
+                    $contrastWithWhite = $contrastRatio($primaryRgb, $whiteRgb);
+                    $computedTextOnBrand = $contrastWithWhite >= 4.5 ? '#ffffff' : '#06112e';
+                } catch (\Throwable $e) {
+                    $computedTextOnBrand = $textOnPrimary ?? '#ffffff';
+                }
+            ?>
+            --text-on-brand: <?php echo $computedTextOnBrand; ?>;
         }
 
         body {
