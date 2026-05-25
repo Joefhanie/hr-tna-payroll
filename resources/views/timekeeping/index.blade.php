@@ -341,8 +341,9 @@
                 })();
             </script>
             <!-- Desktop View -->
+            <x-table-pagination target="attendanceTable" />
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <table class="min-w-full text-sm">
+                <table id="attendanceTable" class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                         <tr>
                             <th class="px-4 py-3">Employee</th>

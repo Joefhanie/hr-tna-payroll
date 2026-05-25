@@ -8,7 +8,7 @@
         $brandPalette = $company->brand_palette;
         $companyName = $company->company_name ?? 'HR System';
         $tagline = $company->tagline ?? 'People Operations Platform';
-        $logoPath = $company->logo_path ? asset('storage/' . $company->logo_path) : null;
+        $logoPath = $company->logo_path ? route('media.file', ['path' => ltrim($company->logo_path, '/')]) : null;
         $faviconUrl = $logoPath ?? asset('favicon.ico');
         $primaryColor = $brandPalette['primary'];
         $primaryHover = $brandPalette['primary_hover'];

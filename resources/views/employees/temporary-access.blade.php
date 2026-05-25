@@ -131,7 +131,7 @@
                                 <div class="flex items-center gap-3">
                                     @if ($employee->profile_picture)
                                         <div class="h-8 w-8 overflow-hidden rounded-full bg-slate-100">
-                                            <img src="{{ asset('storage/' . $employee->profile_picture) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
+                                            <img src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
                                         </div>
                                     @else
                                         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">

@@ -77,6 +77,7 @@
     </form>
 
 
+    <x-table-pagination target="emp-table" />
     <!-- Employees Table -->
     <div class="card overflow-hidden">
         @if ($employees->count() > 0)
@@ -103,7 +104,7 @@
                                 <div class="flex items-center gap-3">
                                     @if ($employee->profile_picture)
                                         <div class="h-8 w-8 overflow-hidden rounded-full bg-slate-100">
-                                            <img src="{{ asset('storage/' . $employee->profile_picture) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
+                                            <img src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="{{ $employee->full_name }}" class="h-8 w-8 object-cover">
                                         </div>
                                     @else
                                         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
@@ -188,10 +189,6 @@
                 </tbody>
             </table>
 
-            <!-- Pagination -->
-            <div class="bg-white px-6 py-4 border-t border-slate-200 uppercase">
-                {{ $employees->links() }}
-            </div>
         @else
             <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>
         @endif

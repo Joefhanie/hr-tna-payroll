@@ -70,7 +70,7 @@
 
                     <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-lg font-bold text-white">
                         @if ($employee->profile_picture)
-                            <img id="profilePicturePreview" src="{{ asset('storage/' . $employee->profile_picture) }}" alt="profile" class="h-full w-full object-cover">
+                            <img id="profilePicturePreview" src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="profile" class="h-full w-full object-cover">
                         @else
                             <div id="profileInitials" class="h-full w-full flex items-center justify-center">{{ $initials }}</div>
                         @endif

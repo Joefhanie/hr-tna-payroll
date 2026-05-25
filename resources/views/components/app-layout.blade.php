@@ -12,7 +12,7 @@
         $themeSettings = \App\Models\CompanySetting::current();
         $brandPalette = $themeSettings->brand_palette;
         $faviconUrl = $themeSettings && $themeSettings->logo_path
-            ? asset('storage/' . $themeSettings->logo_path)
+            ? route('media.file', ['path' => ltrim($themeSettings->logo_path, '/')])
             : asset('favicon.ico');
     @endphp
     <title>{{ $title ?? 'HR System' }}</title>
@@ -196,7 +196,7 @@
             @endif
                 @if ($hasLogo)
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
-                        <img src="{{ asset('storage/' . $companySetting->logo_path) }}" alt="Company Logo" class="h-full w-full object-cover">
+                        <img src="{{ route('media.file', ['path' => ltrim($companySetting->logo_path, '/')]) }}" alt="Company Logo" class="h-full w-full object-cover">
                     </div>
                 @else
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
@@ -415,7 +415,7 @@
                         </div>
                         <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 text-sm font-bold shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" style="background-color: var(--brand-primary); color: var(--brand-text-on-primary);" title="View Profile">
                             @if ($user && $user->employee && $user->employee->profile_picture)
-                                <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
+                                <img src="{{ route('media.file', ['path' => ltrim($user->employee->profile_picture, '/')]) }}" alt="Profile" class="h-full w-full object-cover">
                             @else
                                 {{ $userInitials }}
                             @endif

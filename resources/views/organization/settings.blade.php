@@ -28,7 +28,7 @@
                     <div class="group relative">
                         <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white text-3xl font-bold shadow-lg" style="background-image: linear-gradient(135deg, {{ $brandPalette['accent'] }} 0%, {{ $brandPalette['secondary'] }} 100%); color: {{ $brandPalette['text_on_secondary'] }};">
                             @if ($settings->logo_path)
-                                <img id="headerLogoPreview" src="{{ asset('storage/' . $settings->logo_path) }}" alt="logo" class="h-full w-full object-cover">
+                                <img id="headerLogoPreview" src="{{ route('media.file', ['path' => ltrim($settings->logo_path, '/')]) }}" alt="logo" class="h-full w-full object-cover">
                             @else
                                 <span id="headerLogoText">{{ strtoupper(substr($settings->company_name ?? 'C', 0, 1)) }}</span>
                             @endif
@@ -658,7 +658,7 @@
                 const textInput = card.querySelector('input[type="text"]');
                 const colorInput = card.querySelector('input[type="color"]');
                 const colorStrip = card.querySelector('.color-strip');
-                
+
                 if (!textInput || !colorInput) return;
 
                 // Sync function
