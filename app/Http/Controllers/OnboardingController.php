@@ -8,6 +8,7 @@ use App\Models\EmployeeDocument;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
 use App\Services\OnboardingAssignmentService;
+use App\Services\NotificationService;
 use App\Support\UploadFilename;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,10 @@ class OnboardingController extends Controller
     private bool $latestContractDocumentResolved = false;
     private ?CompanyDocument $latestContractDocumentCache = null;
 
-    public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
+    public function __construct(
+        private readonly OnboardingAssignmentService $onboardingAssignmentService,
+        private readonly NotificationService $notificationService
+    )
     {
     }
 
@@ -318,6 +322,11 @@ class OnboardingController extends Controller
 
         $this->syncAssignmentStatus($task->assignment);
 
+        $currentUser = Auth::user();
+        if ($currentUser) {
+            $this->notificationService->notifyOnboardingTaskCompleted($task, $currentUser);
+        }
+
         return redirect()
             ->route('onboarding')
             ->with('success', 'Onboarding action submitted successfully.');
@@ -346,6 +355,11 @@ class OnboardingController extends Controller
 
             $this->syncAssignmentStatus($task->assignment()->with('tasks')->first());
         });
+
+        $currentUser = Auth::user();
+        if ($currentUser) {
+            $this->notificationService->notifyOnboardingTaskCompleted($task->fresh(), $currentUser);
+        }
 
         return redirect()
             ->route('onboarding', ['employee' => $task->assignment->employee_id])

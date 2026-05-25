@@ -11,8 +11,8 @@
     @php
         $themeSettings = \App\Models\CompanySetting::current();
         $brandPalette = $themeSettings->brand_palette;
-        $faviconUrl = $themeSettings && $themeSettings->logo_path 
-            ? asset('storage/' . $themeSettings->logo_path) 
+        $faviconUrl = $themeSettings && $themeSettings->logo_path
+            ? asset('storage/' . $themeSettings->logo_path)
             : asset('favicon.ico');
     @endphp
     <title>{{ $title ?? 'HR System' }}</title>
@@ -42,7 +42,7 @@
 </head>
 <body class="min-h-screen font-sans text-slate-900 bg-slate-50">
     <!-- Global Toast Container -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full">
         @if (session('success'))
             <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-emerald-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="success">
                 <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -93,6 +93,13 @@
 
     @php
         $user = auth()->user();
+        $hasNotificationTable = \Illuminate\Support\Facades\Schema::hasTable('notifications');
+        $recentNotifications = $user
+            ? ($hasNotificationTable ? $user->notifications()->latest()->limit(5)->get() : collect())
+            : collect();
+        $unreadNotificationCount = $user
+            ? ($hasNotificationTable ? $user->unreadNotifications()->count() : 0)
+            : 0;
         $navGroups = [
             'Overview' => [
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
@@ -332,9 +339,63 @@
                     </div>
 
                     <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications">
-                            <i class="ti ti-bell text-xl"></i>
-                        </button>
+                        <div class="relative">
+                            <button id="notificationToggle" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notificationPanel">
+                                <i class="ti ti-bell text-xl"></i>
+                                @if ($unreadNotificationCount > 0)
+                                    <span class="absolute -right-0.5 -top-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[0.65rem] font-bold leading-none text-white">
+                                        {{ $unreadNotificationCount > 9 ? '9+' : $unreadNotificationCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div id="notificationPanel" class="notification-panel absolute right-0 top-12 z-30 hidden w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">Notifications</p>
+                                        <p class="text-xs text-slate-500">Recent system activity</p>
+                                    </div>
+                                    @if ($unreadNotificationCount > 0)
+                                        <form method="POST" action="{{ route('notifications.read-all') }}">
+                                            @csrf
+                                            <button type="submit" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-[#1a56db] transition hover:bg-blue-50">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div class="max-h-96 overflow-y-auto">
+                                    @forelse ($recentNotifications as $notification)
+                                        @php
+                                            $notificationData = $notification->data ?? [];
+                                            $notificationTitle = $notificationData['title'] ?? 'Notification';
+                                            $notificationMessage = $notificationData['message'] ?? '';
+                                            $notificationIcon = $notificationData['icon'] ?? 'ti ti-bell';
+                                        @endphp
+                                        <a href="{{ route('notifications.show', $notification->id) }}" class="flex items-start gap-3 border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 {{ $notification->read_at ? 'opacity-80' : '' }}">
+                                            <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full {{ $notification->read_at ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-[#1a56db]' }}">
+                                                <i class="{{ $notificationIcon }} text-base"></i>
+                                            </span>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <p class="truncate text-sm font-semibold text-slate-900">{{ $notificationTitle }}</p>
+                                                    @if (!$notification->read_at)
+                                                        <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[0.65rem] font-semibold text-[#1a56db]">New</span>
+                                                    @endif
+                                                </div>
+                                                <p class="mt-0.5 text-xs text-slate-500">{{ $notificationMessage }}</p>
+                                                <p class="mt-1 text-[0.7rem] text-slate-400">{{ optional($notification->created_at)->diffForHumans() }}</p>
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="px-4 py-6 text-center text-sm text-slate-500">
+                                            No notifications yet.
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
                         <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 text-sm font-bold shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" style="background-color: var(--brand-primary); color: var(--brand-text-on-primary);" title="View Profile">
                             @if ($user && $user->employee && $user->employee->profile_picture)
                                 <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
@@ -514,9 +575,56 @@
                 });
             }
 
+            const notificationToggle = document.getElementById('notificationToggle');
+            const notificationPanel = document.getElementById('notificationPanel');
+
+            const closeNotificationPanel = function () {
+                if (!notificationPanel || !notificationToggle) {
+                    return;
+                }
+
+                notificationPanel.classList.add('hidden');
+                notificationToggle.setAttribute('aria-expanded', 'false');
+            };
+
+            const toggleNotificationPanel = function () {
+                if (!notificationPanel || !notificationToggle) {
+                    return;
+                }
+
+                const isHidden = notificationPanel.classList.contains('hidden');
+                if (isHidden) {
+                    notificationPanel.classList.remove('hidden');
+                    notificationToggle.setAttribute('aria-expanded', 'true');
+                } else {
+                    closeNotificationPanel();
+                }
+            };
+
+            if (notificationToggle) {
+                notificationToggle.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    toggleNotificationPanel();
+                });
+            }
+
+            if (notificationPanel) {
+                notificationPanel.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                });
+            }
+
+            document.addEventListener('click', function () {
+                closeNotificationPanel();
+            });
+
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && logoutModal && logoutModal.classList.contains('flex')) {
                     closeLogoutModal();
+                }
+
+                if (event.key === 'Escape') {
+                    closeNotificationPanel();
                 }
 
                 if (event.key === 'Escape') {
