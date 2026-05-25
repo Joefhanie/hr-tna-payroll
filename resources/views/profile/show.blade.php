@@ -32,11 +32,11 @@
                 <div class="px-6 pb-6">
                     <div class="relative -mt-16 mb-4 flex flex-col items-center sm:flex-row sm:items-end sm:gap-6">
                         <!-- Avatar selector -->
-                        <div class="group relative h-32 w-32 shrink-0 rounded-full border-4 border-white bg-brand-primary text-white shadow-md overflow-hidden">
+                        <div class="group relative h-32 w-32 shrink-0 rounded-full border-4 border-white bg-brand-primary shadow-md overflow-hidden" style="color: var(--brand-text-on-primary);">
                             @if ($employee && $employee->profile_picture)
                                 <img id="avatar-preview" src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="Profile Picture" class="h-full w-full object-cover">
                             @else
-                                <div id="avatar-fallback" class="flex h-full w-full items-center justify-center text-3xl font-bold bg-brand-primary">
+                                <div id="avatar-fallback" class="flex h-full w-full items-center justify-center text-3xl font-bold bg-brand-primary" style="color: var(--brand-text-on-primary);">
                                     {{ $initials }}
                                 </div>
                                 <img id="avatar-preview" src="" alt="Profile Picture" class="hidden h-full w-full object-cover">
@@ -330,7 +330,7 @@
 
                         <!-- Save profile settings button -->
                         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
-                            <button type="submit" class="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]">
+                            <button type="submit" class="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold shadow-sm transition hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]" style="color: var(--brand-text-on-primary);">
                                 <i class="ti ti-device-floppy text-base"></i>
                                 Save Changes
                             </button>
