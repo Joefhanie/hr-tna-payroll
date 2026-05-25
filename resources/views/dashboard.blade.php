@@ -59,19 +59,19 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-                        <a href="{{ route('employees.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+                        <a href="{{ route('employees.index') }}" class="btn-outline inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-medium">
                             <i class="ti ti-users text-base"></i>
                             Team
                         </a>
-                        <a href="{{ route('timekeeping.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+                        <a href="{{ route('timekeeping.index') }}" class="btn-outline inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-medium">
                             <i class="ti ti-clock text-base"></i>
                             Attendance
                         </a>
-                        <a href="{{ route('leave.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                        <a href="{{ route('leave.index') }}" class="btn-primary inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-semibold">
                             <i class="ti ti-calendar-event text-base"></i>
                             Leave
                         </a>
-                        <a href="{{ route('payroll.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+                        <a href="{{ route('payroll.index') }}" class="btn-outline inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-medium">
                             <i class="ti ti-wallet text-base"></i>
                             Payroll
                         </a>
@@ -239,18 +239,18 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-                        <a href="{{ $personalHubHref }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                        <a href="{{ $personalHubHref }}" class="btn-primary inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-semibold">
                             <i class="ti ti-user-circle text-base"></i>
                             {{ $personalHubLabel }}
                         </a>
                         @if (auth()->user()->hasPermission('leaves.view'))
-                            <a href="{{ route('leave.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+                            <a href="{{ route('leave.index') }}" class="btn-outline inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-medium">
                                 <i class="ti ti-calendar-event text-base"></i>
                                 Leave
                             </a>
                         @endif
                         @if (auth()->user()->hasPermission('timekeeping.view'))
-                            <a href="{{ route('timekeeping.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+                            <a href="{{ route('timekeeping.index') }}" class="btn-outline inline-flex min-h-11 items-center justify-center gap-2 px-4 py-3 text-sm font-medium">
                                 <i class="ti ti-clock text-base"></i>
                                 Timekeeping
                             </a>
