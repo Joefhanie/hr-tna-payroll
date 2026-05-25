@@ -255,8 +255,7 @@
     </div>
 
     {{-- ── No User Account Warning Modal ── --}}
-    <div id="noUserWarningModal" class="hidden fixed inset-0 z-40 bg-black/50 p-4 justify-center items-start sm:items-center overflow-y-auto"
-         style="padding-left: var(--sidebar-width, 0);">
+    <div id="noUserWarningModal" class="hidden fixed inset-0 z-40 bg-black/50 p-4 justify-center items-center overflow-y-auto">
         <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             <div class="border-b border-slate-200 px-6 py-4">
                 <h3 class="text-lg font-semibold text-slate-900">User Account Required</h3>
@@ -283,9 +282,8 @@
     </div>
 
     {{-- ── Grant Temporary Access Modal ── --}}
-    <div id="grantRoleModal"
-         class="hidden fixed inset-0 z-35 bg-black/40 p-4 justify-center items-start sm:items-center overflow-y-auto"
-         style="padding-left: var(--sidebar-width, 0);">
+            <div id="grantRoleModal"
+                class="hidden fixed inset-0 z-35 bg-black/40 p-4 justify-center items-center overflow-y-auto">
 
         <div class="my-auto w-full max-w-md rounded-xl bg-white shadow-xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
             {{-- Header --}}
@@ -606,11 +604,15 @@
         function openNoUserModal(id, name) {
             currentEmployeeId = id;
             currentEmployeeName = name;
-            document.getElementById('noUserWarningModal').classList.remove('hidden');
+            const modal = document.getElementById('noUserWarningModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         function closeNoUserModal() {
-            document.getElementById('noUserWarningModal').classList.add('hidden');
+            const modal = document.getElementById('noUserWarningModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             currentEmployeeId = null;
             currentEmployeeName = null;
         }
