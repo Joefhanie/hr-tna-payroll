@@ -18,8 +18,9 @@
 
 
     <section class="card p-6">
+        <x-table-pagination target="positionsTable" />
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-            <table class="w-full text-sm">
+            <table id="positionsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Title</th>

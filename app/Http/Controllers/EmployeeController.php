@@ -64,8 +64,7 @@ class EmployeeController extends Controller
         ]);
 
         $employees = $this->buildQuery($request)
-            ->paginate(15)
-            ->appends($request->query());
+            ->get();
 
         $departments = Department::all();
         $filters = $request->only(['q', 'status', 'employment_type', 'department_id']);

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   @php
       $themeSettings = \App\Models\CompanySetting::current();
-      $faviconUrl = $themeSettings && $themeSettings->logo_path 
-          ? asset('storage/' . $themeSettings->logo_path) 
+        $faviconUrl = $themeSettings && $themeSettings->logo_path
+          ? route('media.file', ['path' => ltrim($themeSettings->logo_path, '/')])
           : asset('favicon.ico');
   @endphp
   <title>@yield('title', 'HR System')</title>
