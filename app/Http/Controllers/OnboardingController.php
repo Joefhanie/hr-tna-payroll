@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\CompanyDocument;
 use App\Models\EmployeeDocument;
@@ -46,6 +47,7 @@ class OnboardingController extends Controller
             'q' => trim((string) $request->string('q')),
             'employment_type' => (string) $request->string('employment_type'),
             'employee_status' => (string) $request->string('employee_status'),
+            'department' => (string) $request->string('department'),
             'onboarding_status' => (string) $request->string('onboarding_status'),
         ];
 
@@ -108,6 +110,9 @@ class OnboardingController extends Controller
             })
             ->when($filters['employee_status'] !== '', function ($query) use ($filters) {
                 $query->where('status', (int) $filters['employee_status']);
+            })
+            ->when($filters['department'] !== '', function ($query) use ($filters) {
+                $query->where('department_id', (int) $filters['department']);
             })
             ->orderByRaw(
                 'CASE WHEN YEAR(hire_date) = ? AND MONTH(hire_date) = ? THEN 0 ELSE 1 END',
@@ -538,6 +543,15 @@ class OnboardingController extends Controller
                 ['value' => '4', 'label' => 'Resigned'],
                 ['value' => '5', 'label' => 'Terminated'],
             ],
+            'departments' => Department::query()
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Department $department) => [
+                    'value' => (string) $department->id,
+                    'label' => $department->name,
+                ])
+                ->values()
+                ->all(),
             'onboarding_statuses' => [
                 ['value' => 'not_assigned', 'label' => 'Not Yet Assigned'],
                 ['value' => 'in_progress', 'label' => 'In Progress'],
