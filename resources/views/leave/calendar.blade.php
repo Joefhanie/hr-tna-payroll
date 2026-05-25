@@ -172,7 +172,7 @@
 
                             {{-- Day number --}}
                             <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold
-                                {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
+                                {{ $isToday ? 'bg-indigo-600 text-white' : 'text-slate-700 group-hover:text-indigo-600' }}">
                                 {{ $day }}
                             </span>
 

@@ -26,28 +26,28 @@
                                 name="q"
                                 value="{{ $filters['q'] ?? '' }}"
                                 placeholder="Search by name, code, email..."
-                                class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100"
+                                class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                 data-auto-submit-search
                             >
                         </div>
                     </div>
 
                     <div class="mt-2 flex w-full flex-wrap items-center gap-2 md:mt-0 md:w-auto">
-                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
                             <option value="">All Statuses</option>
                             @foreach (($filterOptions['employee_statuses'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['employee_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
 
-                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
                             <option value="">All Types</option>
                             @foreach (($filterOptions['employment_types'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['employment_type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
 
-                        <select name="department" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="department" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
                             <option value="">All Departments</option>
                             @foreach (($filterOptions['departments'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['department'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
@@ -70,8 +70,8 @@
     @php
         $selectedEmployeeName = $selectedEmployee['name'] ?? 'the selected employee';
         $statusBadge = fn (string $status) => match ($status) {
-            'Completed' => 'bg-[#dcfce7] text-[#166534]',
-            'In Progress' => 'bg-[#e0f2fe] text-[#0369a1]',
+            'Completed' => 'bg-emerald-50 text-emerald-700',
+            'In Progress' => 'bg-sky-50 text-sky-700',
             default => 'bg-slate-100 text-slate-600',
         };
 
@@ -114,7 +114,7 @@
                 @else
                     <div class="mt-4">
                         <div class="h-[0.35rem] w-full overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full bg-[#1a56db]" style="width: {{ $selectedEmployee['progress'] }}%"></div>
+                            <div class="h-full rounded-full bg-indigo-600" style="width: {{ $selectedEmployee['progress'] }}%"></div>
                         </div>
                         <p class="mt-2 text-[0.75rem] text-slate-500">{{ $selectedEmployee['progress'] }}% complete</p>
                     </div>
@@ -124,10 +124,10 @@
                             <details class="group rounded-[0.8rem] border {{ $task['completed'] ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-200 bg-white' }} shadow-sm" @if (!$task['completed']) open @endif>
                                 <summary class="flex cursor-pointer list-none items-start justify-between gap-3 p-4">
                                     <div class="flex items-start gap-4">
-                                        <i class="ti {{ $task['completed'] ? 'ti-circle-check text-[#10b981]' : 'ti-circle text-slate-400' }} mt-0.5 text-2xl"></i>
+                                            <i class="ti {{ $task['completed'] ? 'ti-circle-check text-emerald-600' : 'ti-circle text-slate-400' }} mt-0.5 text-2xl"></i>
                                         <div>
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-[0.9rem] {{ $task['completed'] ? 'font-medium text-slate-400 line-through' : 'font-bold text-[#06112e]' }}">{{ $task['title'] }}</p>
+                                                <p class="text-[0.9rem] {{ $task['completed'] ? 'font-medium text-slate-400 line-through' : 'font-bold text-slate-900' }}">{{ $task['title'] }}</p>
                                                 <span class="rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide {{ $ownerBadge($task['assigned_role_label']) }}">
                                                     {{ $task['assigned_role_label'] }}
                                                 </span>
@@ -188,7 +188,7 @@
                                                       <div>
                                                           <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Upload file</label>
                                                           <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                                                              class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-blue-100 transition focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                                                              class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-blue-100 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                                       </div>
                                                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <div>
@@ -200,7 +200,7 @@
                                                             <input type="text" name="submission_notes" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional note for HR">
                                                         </div>
                                                     </div>
-                                                    <button type="submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
+                                                    <button type="submit" class="rounded-[0.55rem] bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
                                                         Submit document
                                                     </button>
                                                 </form>
@@ -208,14 +208,14 @@
                                                 <form method="POST" action="{{ route('onboarding.tasks.submit', $task['id']) }}" class="space-y-3">
                                                     @csrf
                                                     <label class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-                                                        <input type="checkbox" name="acknowledged" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                                        <input type="checkbox" name="acknowledged" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                                                         <span>I confirm that I reviewed and accepted this onboarding requirement.</span>
                                                     </label>
                                                     <div>
                                                         <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Notes</label>
                                                         <textarea name="submission_notes" rows="2" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional comment"></textarea>
                                                     </div>
-                                                    <button type="submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
+                                                    <button type="submit" class="rounded-[0.55rem] bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
                                                         Confirm and complete
                                                     </button>
                                                 </form>
@@ -226,7 +226,7 @@
                                                         <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Completion note</label>
                                                         <textarea name="submission_notes" rows="2" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Optional note"></textarea>
                                                     </div>
-                                                    <button type="submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
+                                                    <button type="submit" class="rounded-[0.55rem] bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
                                                         Mark as done
                                                     </button>
                                                 </form>
@@ -251,7 +251,7 @@
                     <div class="min-h-0 flex-1 overflow-y-scroll pr-1">
                         <div class="flex flex-col gap-3">
                         @forelse ($employees as $emp)
-                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-[#1a56db] bg-blue-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
+                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-indigo-600 bg-indigo-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
                                         <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
@@ -273,7 +273,7 @@
 
                                 <div class="mt-4">
                                     <div class="h-[0.35rem] w-full overflow-hidden rounded-full bg-slate-100">
-                                        <div class="h-full rounded-full bg-[#1a56db]" style="width: {{ $emp['progress'] }}%"></div>
+                                        <div class="h-full rounded-full bg-indigo-600" style="width: {{ $emp['progress'] }}%"></div>
                                     </div>
                                     <p class="mt-2 text-[0.75rem] text-slate-500">{{ $emp['progress'] }}% complete</p>
                                 </div>
@@ -311,7 +311,7 @@
                             @if ($canAssignOnboarding && !$selectedEmployee['has_assignment'])
                                 <form method="POST" action="{{ route('onboarding.start', $selectedEmployee['id']) }}">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+                                    <button type="submit" class="inline-flex items-center gap-2 rounded-[0.5rem] bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
                                         <i class="ti ti-plus text-base"></i>
                                         Start Onboarding
                                     </button>
@@ -326,7 +326,7 @@
                         @else
                             <div class="mt-4">
                                 <div class="h-[0.35rem] w-full overflow-hidden rounded-full bg-slate-100">
-                                    <div class="h-full rounded-full bg-[#1a56db]" style="width: {{ $selectedEmployee['progress'] }}%"></div>
+                                    <div class="h-full rounded-full bg-indigo-600" style="width: {{ $selectedEmployee['progress'] }}%"></div>
                                 </div>
                                 <p class="mt-2 text-[0.75rem] text-slate-500">{{ $selectedEmployee['progress'] }}% complete</p>
                             </div>
@@ -515,7 +515,7 @@
                         <div data-document-type-group class="sm:col-span-1">
                             <label class="mb-1 block text-[0.75rem] font-semibold uppercase tracking-wide text-slate-500">Attach documents</label>
                             <div class="relative">
-                                <button type="button" id="company_documents_toggle" class="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                                <button type="button" id="company_documents_toggle" class="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                     <span id="company_documents_label" class="text-sm text-slate-700">Select one or more documents</span>
                                     <i class="ti ti-chevron-down text-base text-slate-500"></i>
                                 </button>
@@ -527,7 +527,7 @@
                                                     type="checkbox"
                                                     name="company_document_ids[]"
                                                     value="{{ $option['value'] }}"
-                                                    class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]"
+                                                    class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                     @checked(collect(old('company_document_ids', []))->contains((string) $option['value']))
                                                 >
                                                 <span>{{ $option['label'] }}</span>
@@ -549,7 +549,7 @@
                         >
                             Cancel
                         </button>
-                        <button type="submit" id="task-form-submit" class="rounded-[0.55rem] bg-[#1a56db] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1e40af]">
+                        <button type="submit" id="task-form-submit" class="rounded-[0.55rem] bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
                             {{ $taskFormMode === 'edit' ? 'Save changes' : 'Create task' }}
                         </button>
                     </div>

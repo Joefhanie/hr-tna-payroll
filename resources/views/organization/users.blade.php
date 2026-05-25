@@ -13,7 +13,7 @@
             <h1 class="text-[1.65rem] font-bold text-[#06112e]">Users</h1>
             <p class="mt-1 text-sm text-slate-500">Manage user accounts and roles for system access.</p>
         </div>
-        <button type="button" onclick="document.getElementById('userFormModal').classList.replace('hidden', 'flex')" class="inline-flex items-center gap-2 rounded-lg bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+        <button type="button" onclick="document.getElementById('userFormModal').classList.replace('hidden', 'flex')" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
             <i class="ti ti-plus text-base"></i>
             Add User
         </button>
@@ -104,15 +104,15 @@
                 <div class="grid gap-2.5">
                     <div>
                         <label for="user_email" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Email</label>
-                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. john@example.com">
+                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. john@example.com">
                     </div>
                     <div>
                         <label for="user_username" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Username</label>
-                        <input id="user_username" name="username" type="text" value="{{ old('username') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="e.g. johndoe" pattern="[a-z0-9_-]+" title="Username must contain only lowercase letters, numbers, underscores, and hyphens">
+                        <input id="user_username" name="username" type="text" value="{{ old('username') }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. johndoe" pattern="[a-z0-9_-]+" title="Username must contain only lowercase letters, numbers, underscores, and hyphens">
                     </div>
                     <div>
                         <label for="user_role" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Role</label>
-                        <select id="user_role" name="role" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                        <select id="user_role" name="role" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="">Select a role</option>
                             <option value="1" @selected(old('role') == 1)>Employee</option>
                             <option value="2" @selected(old('role') == 2)>Supervisor</option>
@@ -121,22 +121,22 @@
                     </div>
                     <div>
                         <label for="user_password" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Password</label>
-                        <input id="user_password" name="password" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="Minimum 8 characters">
+                        <input id="user_password" name="password" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Minimum 8 characters">
                     </div>
                     <div>
                         <label for="user_password_confirm" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Confirm Password</label>
-                        <input id="user_password_confirm" name="password_confirmation" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="Confirm password">
+                        <input id="user_password_confirm" name="password_confirmation" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Confirm password">
                     </div>
                     <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
                         <label class="flex items-center gap-2 text-sm font-semibold text-[#06112e]">
-                            <input id="user_has_employee_record" name="has_employee_record" type="checkbox" value="1" @checked($createHasEmployeeRecord) class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                            <input id="user_has_employee_record" name="has_employee_record" type="checkbox" value="1" @checked($createHasEmployeeRecord) class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                             This user already has an employee record
                         </label>
                         <p class="mt-1 text-xs text-slate-500">Leave it off to create the user account first, then continue to employee creation.</p>
                     </div>
                     <div id="user_employee_selector" class="{{ $availableEmployees->isNotEmpty() && $createHasEmployeeRecord ? '' : 'hidden' }}">
                         <label for="user_employee_id" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Select existing employee</label>
-                        <select id="user_employee_id" name="employee_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" @disabled(! $createHasEmployeeRecord || $availableEmployees->isEmpty())>
+                        <select id="user_employee_id" name="employee_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" @disabled(! $createHasEmployeeRecord || $availableEmployees->isEmpty())>
                             <option value="">Choose an employee</option>
                             @foreach ($availableEmployees as $employee)
                                 <option value="{{ $employee->id }}" @selected((string) old('employee_id') === (string) $employee->id)>{{ $employee->full_name }} @if ($employee->employee_code) ({{ $employee->employee_code }}) @endif</option>
@@ -151,8 +151,8 @@
                 </div>
 
                 <div class="mt-4 flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
-                    <button type="submit" class="rounded-lg bg-[#1a56db] px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Create User</button>
+                    <button type="button" onclick="document.getElementById('userFormModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Create User</button>
                 </div>
             </form>
         </div>
@@ -175,15 +175,15 @@
                     <div class="grid gap-2.5">
                         <div>
                             <label for="edit_user_email" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Email</label>
-                            <input id="edit_user_email" name="email" type="email" value="{{ old('email', $editingUser->email) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                            <input id="edit_user_email" name="email" type="email" value="{{ old('email', $editingUser->email) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label for="edit_user_username" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Username</label>
-                            <input id="edit_user_username" name="username" type="text" value="{{ old('username', $editingUser->username) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" pattern="[a-z0-9_-]+" title="Username must contain only lowercase letters, numbers, underscores, and hyphens">
+                            <input id="edit_user_username" name="username" type="text" value="{{ old('username', $editingUser->username) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" pattern="[a-z0-9_-]+" title="Username must contain only lowercase letters, numbers, underscores, and hyphens">
                         </div>
                         <div>
                             <label for="edit_user_role" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Role</label>
-                            <select id="edit_user_role" name="role" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                            <select id="edit_user_role" name="role" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                 <option value="">Select a role</option>
                                 <option value="1" @selected((string) old('role', $editingUser->role) === '1')>Employee</option>
                                 <option value="2" @selected((string) old('role', $editingUser->role) === '2')>Supervisor</option>
@@ -192,22 +192,22 @@
                         </div>
                         <div>
                             <label for="edit_user_password" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Password</label>
-                            <input id="edit_user_password" name="password" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="Leave blank to keep current password">
+                            <input id="edit_user_password" name="password" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Leave blank to keep current password">
                         </div>
                         <div>
                             <label for="edit_user_password_confirm" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Confirm Password</label>
-                            <input id="edit_user_password_confirm" name="password_confirmation" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" placeholder="Confirm password">
+                            <input id="edit_user_password_confirm" name="password_confirmation" type="password" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Confirm password">
                         </div>
                         <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
                             <label class="flex items-center gap-2 text-sm font-semibold text-[#06112e]">
-                                <input id="edit_user_has_employee_record" name="has_employee_record" type="checkbox" value="1" @checked($editHasEmployeeRecord) class="h-4 w-4 rounded border-slate-300 text-[#1a56db] focus:ring-[#1a56db]">
+                                <input id="edit_user_has_employee_record" name="has_employee_record" type="checkbox" value="1" @checked($editHasEmployeeRecord) class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                                 This user already has an employee record
                             </label>
                             <p class="mt-1 text-xs text-slate-500">Use this if the account should be linked to an existing employee profile.</p>
                         </div>
                         <div id="edit_user_employee_selector" class="{{ $editHasEmployeeRecord ? '' : 'hidden' }}">
                             <label for="edit_user_employee_id" class="mb-1 block text-[0.75rem] font-bold text-[#06112e]">Select employee</label>
-                            <select id="edit_user_employee_id" name="employee_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]" @disabled(! $editHasEmployeeRecord)>
+                            <select id="edit_user_employee_id" name="employee_id" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" @disabled(! $editHasEmployeeRecord)>
                                 <option value="">Choose an employee</option>
                                 @foreach ($availableEmployees as $employee)
                                     <option value="{{ $employee->id }}" @selected((string) old('employee_id', $editingUser->employee_id) === (string) $employee->id)>{{ $employee->full_name }} @if ($employee->employee_code) ({{ $employee->employee_code }}) @endif</option>
@@ -222,8 +222,8 @@
                     </div>
 
                     <div class="mt-4 flex justify-end gap-2 pt-1">
-                        <button type="button" onclick="document.getElementById('editUserModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">Cancel</button>
-                        <button type="submit" class="rounded-lg bg-[#1a56db] px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">Save Changes</button>
+                        <button type="button" onclick="document.getElementById('editUserModal').classList.replace('flex', 'hidden')" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm transition hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">Save Changes</button>
                     </div>
                 </form>
             </div>

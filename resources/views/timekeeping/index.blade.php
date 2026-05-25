@@ -35,9 +35,9 @@
             <p class="mt-1 text-sm text-slate-500">Track and manage employee attendance records.</p>
         </div>
         <div class="flex gap-2">
-            <button type="button"
+                <button type="button"
                     onclick="document.getElementById('manualEntryModal').classList.replace('hidden', 'flex')"
-                    class="inline-flex items-center gap-2 rounded-lg bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
+                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
                 <i class="ti ti-pencil text-base"></i>
                 Manual Entry
             </button>
@@ -75,7 +75,7 @@
     <div class="mb-4">
         <div class="border-b border-slate-200">
             <nav class="-mb-px flex gap-6" aria-label="Tabs">
-                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="border-[#1a56db] text-[#1a56db] whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Calendar View</button>
+                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="border-indigo-600 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Calendar View</button>
                 <button type="button" onclick="switchTab('list')" id="tab-list" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">List View</button>
             </nav>
         </div>
@@ -186,7 +186,7 @@
                                     . ' | OL: ' . $calendarDayStatusCounts['excused'];
                             @endphp
                             <div data-date="{{ $currentDateStr }}" class="calendar-day-cell bg-white border-r border-b border-slate-100 p-1 lg:p-2 cursor-pointer hover:bg-[#f0f4ff] transition group relative flex flex-col items-center pt-2 lg:pt-4 min-h-[48px] sm:min-h-[70px] lg:min-h-[90px]" onclick="selectDate('{{ $currentDateStr }}', {{ $day }}, '{{ strtoupper($currentDateObj->format('l')) }}', this)">
-                                <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold {{ $isToday ? 'bg-[#1a56db] text-white' : 'text-slate-700 group-hover:text-[#1a56db]' }}">
+                                <span class="inline-flex h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full text-xs sm:text-sm font-semibold {{ $isToday ? 'bg-indigo-600 text-white' : 'text-slate-700 group-hover:text-indigo-600' }}">
                                     {{ $day }}
                                 </span>
                                 @if($hasEvents)
@@ -272,14 +272,14 @@
                         <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
                         <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
                             placeholder="Search by name, code, email…"
-                            class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                            class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
 
                 <div class="col-span-1 sm:min-w-[150px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
                     <select name="status" id="filterStatus" onchange="this.form.submit()"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">All Statuses</option>
                         <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Present</option>
                         <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Late</option>
@@ -292,7 +292,7 @@
                 <div class="col-span-1 sm:min-w-[150px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Date</label>
                     <input type="date" name="date" id="filterDate" value="{{ $selectedDate }}" onchange="this.form.submit()"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
 
                 @if(auth()->user()->role === 4)
@@ -630,7 +630,7 @@
                             Employee <span class="text-red-500">*</span>
                         </label>
                         <select id="manual-employee-id" name="employee_id" required
-                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="" disabled {{ old('employee_id') ? '' : 'selected' }}>Select employee…</option>
                             @foreach($users as $employee)
                                 @php
@@ -655,7 +655,7 @@
                         </label>
                         <input type="date" id="manual-date" name="attendance_date" required
                                value="{{ old('attendance_date', now()->toDateString()) }}"
-                               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                     </div>
 
                     {{-- Time In / Time Out --}}
@@ -666,7 +666,7 @@
                             </label>
                             <input type="time" id="manual-check-in" name="check_in" required
                                    value="{{ old('check_in') }}"
-                                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
 
                         <div>
@@ -675,7 +675,7 @@
                             </label>
                             <input type="time" id="manual-check-out" name="check_out"
                                    value="{{ old('check_out') }}"
-                                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                                   class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         </div>
                     </div>
 
@@ -686,7 +686,7 @@
                             <span class="ml-1 text-[0.75rem] font-normal text-slate-400">(auto-detected from Time In if blank)</span>
                         </label>
                         <select id="manual-status" name="status"
-                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="">— Auto-detect —</option>
                             <option value="1" {{ old('status') == '1' ? 'selected' : '' }}>Present</option>
                             <option value="2" {{ old('status') == '2' ? 'selected' : '' }}>Late</option>
@@ -702,7 +702,7 @@
                         </label>
                         <textarea id="manual-notes" name="notes" rows="2"
                                   placeholder="Optional remarks…"
-                                  class="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-[#1a56db] focus:outline-none focus:ring-1 focus:ring-[#1a56db]">{{ old('notes') }}</textarea>
+                                  class="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">{{ old('notes') }}</textarea>
                     </div>
                 </div>
 
@@ -713,8 +713,8 @@
                             class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#06112e] shadow-sm transition hover:bg-slate-50">
                         Cancel
                     </button>
-                    <button type="submit"
-                            class="rounded-lg bg-[#1a56db] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-[#1e40af]">
+                        <button type="submit"
+                            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700">
                         Save Entry
                     </button>
                 </div>
@@ -748,10 +748,10 @@
                 document.getElementById('view-calendar').classList.remove('block');
                 document.getElementById('view-calendar').classList.add('hidden');
 
-                document.getElementById('tab-list').classList.add('border-[#1a56db]', 'text-[#1a56db]');
+                document.getElementById('tab-list').classList.add('border-indigo-600', 'text-indigo-600');
                 document.getElementById('tab-list').classList.remove('border-transparent', 'text-slate-500');
 
-                document.getElementById('tab-calendar').classList.remove('border-[#1a56db]', 'text-[#1a56db]');
+                document.getElementById('tab-calendar').classList.remove('border-indigo-600', 'text-indigo-600');
                 document.getElementById('tab-calendar').classList.add('border-transparent', 'text-slate-500');
             } else {
                 document.getElementById('view-list').classList.remove('block');
@@ -759,10 +759,10 @@
                 document.getElementById('view-calendar').classList.remove('hidden');
                 document.getElementById('view-calendar').classList.add('block');
 
-                document.getElementById('tab-calendar').classList.add('border-[#1a56db]', 'text-[#1a56db]');
+                document.getElementById('tab-calendar').classList.add('border-indigo-600', 'text-indigo-600');
                 document.getElementById('tab-calendar').classList.remove('border-transparent', 'text-slate-500');
 
-                document.getElementById('tab-list').classList.remove('border-[#1a56db]', 'text-[#1a56db]');
+                document.getElementById('tab-list').classList.remove('border-indigo-600', 'text-indigo-600');
                 document.getElementById('tab-list').classList.add('border-transparent', 'text-slate-500');
 
                 if (!window.calendarInitialized) {

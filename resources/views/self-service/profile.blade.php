@@ -235,7 +235,7 @@
                     @csrf
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Leave Type</label>
-                        <select name="leave_type_id" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                        <select name="leave_type_id" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <option value="">- Select Type -</option>
                             @foreach ($leaveTypeChoices as $leaveType)
                                 <option value="{{ $leaveType['id'] }}" @selected((string) old('leave_type_id') === (string) $leaveType['id'])>{{ $leaveType['name'] }}</option>
@@ -246,11 +246,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">From</label>
-                            <input type="date" id="self_service_leave_start_date" name="start_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('start_date') }}">
+                            <input type="date" id="self_service_leave_start_date" name="start_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('start_date') }}">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">To</label>
-                            <input type="date" id="self_service_leave_end_date" name="end_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" value="{{ old('end_date') }}">
+                            <input type="date" id="self_service_leave_end_date" name="end_date" min="{{ now()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('end_date') }}">
                         </div>
                     </div>
 
@@ -261,12 +261,12 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Reason <span class="font-normal text-slate-400">(optional)</span></label>
-                        <textarea name="reason" rows="3" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" placeholder="Briefly describe the reason...">{{ old('reason') }}</textarea>
+                        <textarea name="reason" rows="3" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Briefly describe the reason...">{{ old('reason') }}</textarea>
                     </div>
 
                     <div class="flex justify-end gap-3 pt-1">
                         <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="leaveRequestModal">Cancel</button>
-                        <button type="submit" class="rounded-lg bg-[#1a56db] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">Submit Request</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">Submit Request</button>
                     </div>
                 </form>
             </div>
@@ -355,7 +355,7 @@
         <div class="border-b border-slate-200">
             <div class="overflow-x-auto scrollbar-none">
                 <nav class="-mb-px flex gap-6 min-w-max pb-px" aria-label="Tabs">
-                    <button type="button" onclick="switchProfileTab('timelogs')" id="tab-timelogs" class="border-[#1a56db] text-[#1a56db] whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Time Logs</button>
+                    <button type="button" onclick="switchProfileTab('timelogs')" id="tab-timelogs" class="border-indigo-600 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Time Logs</button>
                     <button type="button" onclick="switchProfileTab('leaves')" id="tab-leaves" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Leave Requests</button>
                     <button type="button" onclick="switchProfileTab('updates')" id="tab-updates" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Profile Updates</button>
                     <button type="button" onclick="switchProfileTab('payslips')" id="tab-payslips" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Payslips</button>
@@ -911,11 +911,11 @@
                 const btn = buttons[tab];
                 if (tab === tabName) {
                     el?.classList.remove('hidden');
-                    btn?.classList.add('border-[#1a56db]', 'text-[#1a56db]');
+                    btn?.classList.add('border-indigo-600', 'text-indigo-600');
                     btn?.classList.remove('border-transparent', 'text-slate-500', 'hover:border-slate-300', 'hover:text-slate-700');
                 } else {
                     el?.classList.add('hidden');
-                    btn?.classList.remove('border-[#1a56db]', 'text-[#1a56db]');
+                    btn?.classList.remove('border-indigo-600', 'text-indigo-600');
                     btn?.classList.add('border-transparent', 'text-slate-500', 'hover:border-slate-300', 'hover:text-slate-700');
                 }
             });

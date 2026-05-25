@@ -351,6 +351,15 @@ details>summary::-webkit-details-marker {
 .focus\:ring-\[\#1a56db\]\/30:focus {
     --tw-ring-color: var(--brand-primary-ring) !important;
 }
+.group-hover\:text-\[\#1a56db\] {
+    color: var(--brand-primary) !important;
+}
+.group-hover\:text-\[\#1a56db\]:where(.group:hover) {
+    color: var(--brand-primary) !important;
+}
+.hover\:text-\[\#1a56db\]:hover {
+    color: var(--brand-primary) !important;
+}
 
 .ring-blue-100,
 .ring-blue-200,
@@ -361,6 +370,24 @@ details>summary::-webkit-details-marker {
 
 .bg-indigo-50 {
     background-color: var(--brand-primary-soft) !important;
+}
+
+/* Map Tailwind JIT bracketed color utilities to brand tokens so existing markup inherits theme */
+.bg-\[\#1a56db\] {
+    background-color: var(--brand-primary) !important;
+    color: var(--brand-text-on-primary) !important;
+}
+.hover\:bg-\[\#1e40af\]:hover {
+    background-color: var(--brand-primary-hover) !important;
+}
+.text-\[\#1a56db\] {
+    color: var(--brand-primary) !important;
+}
+.border-\[\#1a56db\] {
+    border-color: var(--brand-primary) !important;
+}
+.focus\:ring-\[\#1a56db\]\/30:focus {
+    --tw-ring-color: var(--brand-primary-ring) !important;
 }
 
 .bg-blue-50,
