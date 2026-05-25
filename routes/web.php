@@ -374,6 +374,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/{payRun}/edit', [PayrollController::class, 'edit'])->name('payroll.edit');
         Route::put('/payroll/{payRun}', [PayrollController::class, 'update'])->name('payroll.update');
         Route::post('/payroll/plotting-payment/save', [PayrollController::class, 'savePlottingPayment'])->name('payroll.plotting-payment.save');
+        Route::post('/payroll/plotting-payment/save-note', [PayrollController::class, 'savePayrollNote'])->name('payroll.plotting-payment.save-note');
         Route::post('/payroll/plotting-payment/{employee}', [PayrollController::class, 'savePlottingEmployee'])->name('payroll.plotting-payment.employee.save');
     });
     Route::middleware('permission:payroll.delete')->group(function () {

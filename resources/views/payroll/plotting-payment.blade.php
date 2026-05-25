@@ -136,7 +136,7 @@
 
                                                     <!-- Payroll note indicator triangle (Excel-style, top-left, blue) -->
                                                     <div
-                                                        class="note-indicator hidden absolute top-0 left-0 w-0 h-0 pointer-events-none"
+                                                        class="note-indicator {{ !empty($dayData['payroll_note']) ? '' : 'hidden' }} absolute top-0 left-0 w-0 h-0 pointer-events-none"
                                                         style="border-style:solid; border-width:8px 8px 0 0; border-color:#3b82f6 transparent transparent transparent;">
                                                     </div>
 
@@ -144,7 +144,10 @@
                                                     <input type="hidden"
                                                         name="payroll_notes[{{ $employee->id }}][{{ $dayData['location'] }}][{{ $dateString }}]"
                                                         class="payroll-note-input"
-                                                        value="">
+                                                        data-employee="{{ $employee->id }}"
+                                                        data-location="{{ $dayData['location'] }}"
+                                                        data-date="{{ $dateString }}"
+                                                        value="{{ $dayData['payroll_note'] ?? '' }}">
 
                                                     <!-- Workplace comment bubble (shows on amount-input focus) -->
                                                     <div
@@ -188,10 +191,10 @@
 
                                                         <!-- Divider + payroll note toggle row -->
                                                         <div class="pt-1.5 mt-1.5 border-t border-slate-200 flex items-center justify-between gap-2">
-                                                            <span class="text-xs text-slate-400 italic note-preview-text">No payroll note</span>
+                                                            <span class="text-xs {{ !empty($dayData['payroll_note']) ? 'text-slate-600 font-medium' : 'text-slate-400 italic' }} note-preview-text">{{ !empty($dayData['payroll_note']) ? $dayData['payroll_note'] : 'No payroll note' }}</span>
                                                             <button type="button"
-                                                                class="note-add-btn shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-500 hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
-                                                                title="Add payroll note">+</button>
+                                                                class="note-add-btn shrink-0 flex items-center justify-center w-5 h-5 rounded-full {{ !empty($dayData['payroll_note']) ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500' }} hover:bg-blue-100 hover:text-blue-600 transition-colors text-sm font-bold leading-none"
+                                                                title="{{ !empty($dayData['payroll_note']) ? 'Edit payroll note' : 'Add payroll note' }}">+</button>
                                                         </div>
 
                                                         <!-- Inline payroll note panel (expands below on "+" click) -->
@@ -391,32 +394,70 @@
                     }
                 });
 
-                saveBtn.addEventListener('click', function () {
-                    noteInput.value = textarea.value.trim();
-                    if (noteInput.value) {
-                        if (indicator) indicator.classList.remove('hidden');
-                        if (previewText) {
-                            previewText.textContent = noteInput.value;
-                            previewText.classList.remove('text-slate-400', 'italic');
-                            previewText.classList.add('text-slate-600', 'font-medium');
+                saveBtn.addEventListener('click', async function () {
+                    const originalText = saveBtn.textContent;
+                    saveBtn.textContent = '...';
+                    saveBtn.disabled = true;
+
+                    const noteText = textarea.value.trim();
+                    const empId = noteInput.dataset.employee;
+                    const loc = noteInput.dataset.location;
+                    const date = noteInput.dataset.date;
+
+                    try {
+                        const response = await fetch('{{ route("payroll.plotting-payment.save-note") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : document.querySelector('input[name="_token"]').value
+                            },
+                            body: JSON.stringify({
+                                employee_id: empId,
+                                location: loc,
+                                date: date,
+                                note: noteText
+                            })
+                        });
+
+                        if (!response.ok) throw new Error('Failed to save note');
+
+                        noteInput.value = noteText;
+                        if (noteInput.value) {
+                            if (indicator) indicator.classList.remove('hidden');
+                            if (previewText) {
+                                previewText.textContent = noteInput.value;
+                                previewText.classList.remove('text-slate-400', 'italic');
+                                previewText.classList.add('text-slate-600', 'font-medium');
+                            }
+                            btn.title = 'Edit payroll note';
+                            btn.classList.add('bg-green-100', 'text-green-700');
+                            btn.classList.remove('bg-slate-200', 'text-slate-500');
+                        } else {
+                            if (indicator) indicator.classList.add('hidden');
+                            if (previewText) {
+                                previewText.textContent = 'No payroll note';
+                                previewText.classList.add('text-slate-400', 'italic');
+                                previewText.classList.remove('text-slate-600', 'font-medium');
+                            }
+                            btn.title = 'Add payroll note';
+                            btn.classList.remove('bg-green-100', 'text-green-700');
+                            btn.classList.add('bg-slate-200', 'text-slate-500');
                         }
-                        btn.title = 'Edit payroll note';
-                        btn.classList.add('bg-green-100', 'text-green-700');
-                        btn.classList.remove('bg-slate-200', 'text-slate-500');
-                    } else {
-                        if (indicator) indicator.classList.add('hidden');
-                        if (previewText) {
-                            previewText.textContent = 'No payroll note';
-                            previewText.classList.add('text-slate-400', 'italic');
-                            previewText.classList.remove('text-slate-600', 'font-medium');
+                        
+                        // Update the original value so the page doesn't think there are unsaved changes
+                        if (window.originalValues) {
+                            window.originalValues[noteInput.name] = noteText;
                         }
-                        btn.title = 'Add payroll note';
-                        btn.classList.remove('bg-green-100', 'text-green-700');
-                        btn.classList.add('bg-slate-200', 'text-slate-500');
+                        
+                        closePanel();
+                        const form = document.getElementById('plotting-form');
+                        if (form) form.dispatchEvent(new Event('input', { bubbles: true }));
+                    } catch (error) {
+                        alert('Error saving note: ' + error.message);
+                    } finally {
+                        saveBtn.textContent = originalText;
+                        saveBtn.disabled = false;
                     }
-                    closePanel();
-                    const form = document.getElementById('plotting-form');
-                    if (form) form.dispatchEvent(new Event('input', { bubbles: true }));
                 });
 
                 cancelBtn.addEventListener('click', closePanel);
@@ -511,16 +552,16 @@
             const gridInputs = Array.from(form.querySelectorAll('input[name^="entries["], input[name^="payroll_notes["]'));
 
             // Capture initial database values
-            const originalValues = {};
+            window.originalValues = {};
             gridInputs.forEach(input => {
-                originalValues[input.name] = input.value;
+                window.originalValues[input.name] = input.value;
             });
 
             // Check if the current form has any dirty/unsaved changes
             function hasUnsavedChanges() {
                 return gridInputs.some(input => {
                     const currentVal = input.value;
-                    const originalVal = originalValues[input.name] || '';
+                    const originalVal = window.originalValues[input.name] || '';
                     return currentVal !== originalVal;
                 });
             }
@@ -529,7 +570,7 @@
             function saveDraftToLocalStorage() {
                 const draft = {};
                 gridInputs.forEach(input => {
-                    if (input.value !== (originalValues[input.name] || '')) {
+                    if (input.value !== (window.originalValues[input.name] || '')) {
                         draft[input.name] = input.value;
                     }
                 });

@@ -207,7 +207,7 @@ class PayrollController extends Controller
 
         // Get ALL field records grouped by empid+date so we can show multiple entries per cell
         $allFieldRecords = DB::table('field_records')
-            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'time', 'id', 'session_id', 'work_status')
+            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'payroll_note', 'time', 'id', 'session_id', 'work_status')
             ->whereIn('Date', $dateKeys)
             ->orderBy('time')
             ->orderBy('id')
@@ -292,6 +292,7 @@ class PayrollController extends Controller
                             'supervisor_name' => $svName,
                             'supervisor_code' => $supervisorCode,
                             'supervisor_note' => $record->notes,
+                            'payroll_note' => $record->payroll_note,
                             'posted' => $plotting ? $plotting->posted : false,
                         ];
                     }
@@ -309,6 +310,7 @@ class PayrollController extends Controller
                                     'supervisor_name' => 'None',
                                     'supervisor_code' => $plotting->sup_id,
                                     'supervisor_note' => null,
+                                    'payroll_note' => null,
                                     'posted' => $plotting->posted,
                                 ];
                             }
@@ -448,6 +450,7 @@ class PayrollController extends Controller
     public function savePlottingPayment(Request $request)
     {
         $entries = $request->input('entries', []);
+        $payrollNotes = $request->input('payroll_notes', []);
 
         foreach ($entries as $employeeId => $locations) {
             $employee = Employee::find($employeeId);
@@ -509,6 +512,29 @@ class PayrollController extends Controller
 
         return redirect()->route('payroll.plotting-payment', $request->only(['from_date', 'to_date']))
             ->with('success', 'Plotting payments submitted successfully.');
+    }
+
+    public function savePayrollNote(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'date' => 'required|date',
+            'location' => 'required|string',
+            'note' => 'nullable|string',
+        ]);
+
+        $employee = Employee::find($validated['employee_id']);
+        if (!$employee) {
+            return response()->json(['success' => false, 'message' => 'Employee not found'], 404);
+        }
+
+        DB::table('field_records')
+            ->where('empid', $employee->employee_code)
+            ->where('Date', $validated['date'])
+            ->where('location', $validated['location'])
+            ->update(['payroll_note' => $validated['note']]);
+
+        return response()->json(['success' => true]);
     }
 
     /**
