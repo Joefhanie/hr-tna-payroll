@@ -24,7 +24,7 @@ class RegisterController extends Controller
     {
         return view('auth.register', $this->registrationViewData('personal', [
             'title' => 'Personal Information',
-            'description' => 'Basic identity details of the employee',
+            'description' => 'Account credentials and basic identity details of the employee.',
             'formAction' => route('register.store'),
         ]));
     }
@@ -32,6 +32,10 @@ class RegisterController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'remember' => ['nullable', 'boolean'],
             'first_name' => ['required', 'string', 'max:80'],
             'last_name' => ['required', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
@@ -41,6 +45,15 @@ class RegisterController extends Controller
             'marital_status' => ['nullable', 'in:Single,Married,Widowed,Divorced,Separated'],
         ]);
 
+        $request->session()->put('registration.account', [
+            'name' => trim($validated['first_name'] . ' ' . ($validated['middle_name'] ?? '') . ' ' . $validated['last_name']),
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'role' => 4,
+            'remember' => (bool) $request->input('remember'),
+        ]);
+
         $request->session()->put('registration.profile', $validated);
 
         return redirect()->route('register.profile');
@@ -48,13 +61,13 @@ class RegisterController extends Controller
 
     public function profile(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('registration.profile')) {
+        if (! $request->session()->has('registration.profile') || ! $request->session()->has('registration.account')) {
             return redirect()->route('register');
         }
 
         return view('auth.register', $this->registrationViewData('contact', [
             'title' => 'Contact Information',
-            'description' => 'Credentials and contact details of the employee.',
+            'description' => 'Contact and location details of the employee.',
             'formAction' => route('register.profile.store'),
         ]));
     }
@@ -62,10 +75,6 @@ class RegisterController extends Controller
     public function storeProfile(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'min:3', 'max:255', 'unique:users,username', 'alpha_dash'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email', 'unique:employees,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'remember' => ['nullable', 'boolean'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address_line1' => ['nullable', 'string', 'max:200'],
             'address_line2' => ['nullable', 'string', 'max:200'],
@@ -73,15 +82,6 @@ class RegisterController extends Controller
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:80'],
-        ]);
-
-        $request->session()->put('registration.account', [
-            'name' => $validated['username'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'role' => 4,
-            'remember' => (bool) $request->input('remember'),
         ]);
 
         $profileData = $request->session()->get('registration.profile', []);

@@ -19,6 +19,10 @@ class RegistrationTest extends TestCase
     public function test_users_can_register_with_a_hashed_password(): void
     {
         $personalResponse = $this->post('/register', [
+            'username' => 'jane.doe',
+            'email' => 'jane@example.com',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'gender' => 'Female',
@@ -30,11 +34,8 @@ class RegistrationTest extends TestCase
         $personalResponse->assertRedirect('/register/profile');
 
         $contactResponse = $this->post('/register/profile', [
-            'username' => 'jane.doe',
-            'email' => 'jane@example.com',
-            'password' => 'secret123',
-            'password_confirmation' => 'secret123',
             'phone' => '09123456789',
+            'address_line1' => '123 Main Street',
             'city' => 'Pasig',
             'country' => 'Philippines',
         ]);
