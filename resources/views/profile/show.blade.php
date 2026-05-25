@@ -180,17 +180,17 @@
                 @else
                 {{-- ===== EDITABLE VIEW FOR HR / SUPERVISORS ===== --}}
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    
+
                     <!-- Main details (2 columns) -->
                     <div class="space-y-6 lg:col-span-2">
-                        
+
                         <!-- Account & Personal Info -->
                         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                             <h2 class="mb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <i class="ti ti-user text-blue-600 text-xl"></i>
                                 Personal Information
                             </h2>
-                            
+
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 @if ($employee)
                                     <div>
@@ -261,7 +261,7 @@
                                 <i class="ti ti-mail text-blue-600 text-xl"></i>
                                 Contact Information
                             </h2>
-                            
+
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Email Address</label>
@@ -287,14 +287,14 @@
                                     <i class="ti ti-map-pin text-blue-600 text-xl"></i>
                                     Address details
                                 </h2>
-                                
+
                                 <div class="space-y-4">
                                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         <div class="sm:col-span-2">
                                             <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Address Line 1</label>
                                             <input type="text" name="address_line1" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" value="{{ old('address_line1', $employee->address_line1) }}">
                                         </div>
-                                        
+
                                         <div class="sm:col-span-2">
                                             <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Address Line 2 (Optional)</label>
                                             <input type="text" name="address_line2" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" value="{{ old('address_line2', $employee->address_line2) }}">
@@ -327,7 +327,7 @@
 
                     <!-- Sidebar Details / Read-Only details (1 column) -->
                     <div class="space-y-6">
-                        
+
                         <!-- Save profile settings button -->
                         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
                             <button type="submit" class="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98]">
@@ -343,7 +343,7 @@
                         @if ($employee)
                             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                                 <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Job details</h3>
-                                
+
                                 <div class="space-y-3.5 text-sm">
                                     <div class="flex flex-col gap-0.5">
                                         <span class="text-xs text-slate-400 uppercase tracking-wide">Employee Code</span>
@@ -390,7 +390,7 @@
                             <p class="text-xs text-slate-500 mt-1">History of all leave requests and their statuses</p>
                         </div>
                     </div>
-                    
+
                     <div class="overflow-x-auto rounded-xl border border-slate-100">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
@@ -700,7 +700,7 @@
         function renderEarningsLineItems(lineItems) {
             const groups        = [];
             const standaloneItems = [];
-            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes'];
+            const GROUP_PREFIXES = ['attendance', 'previous claim', 'disputes', 'plotted payment'];
 
             lineItems.forEach((item) => {
                 const description = item.description || 'Item';
