@@ -79,10 +79,11 @@
         <p id="filterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
     </div>
 
+    <x-table-pagination target="disputesTable" />
     {{-- Claims Table --}}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="disputesTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         @if($isHR)<th class="px-4 py-3">Filed By</th>@endif
@@ -367,6 +368,7 @@
                 const matchDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
 
                 const show = matchQ && matchStatus && matchDate;
+                row.setAttribute('data-filter-hidden', show ? 'false' : 'true');
                 row.style.display = show ? '' : 'none';
                 if (show) visible++;
             });

@@ -147,7 +147,7 @@
                                     <td class="px-5 py-3.5 flex items-center gap-3">
                                         @if ($emp->profile_picture)
                                             <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-100">
-                                                <img src="{{ asset('storage/' . $emp->profile_picture) }}" alt="{{ $emp->full_name }}" class="h-8 w-8 object-cover">
+                                                <img src="{{ route('media.file', ['path' => ltrim($emp->profile_picture, '/')]) }}" alt="{{ $emp->full_name }}" class="h-8 w-8 object-cover">
                                             </div>
                                         @else
                                             @php

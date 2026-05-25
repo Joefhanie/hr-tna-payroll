@@ -31,7 +31,7 @@
             <div class="flex items-center gap-3">
                 <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-lg font-bold text-white">
                     @if ($employee->profile_picture)
-                        <img src="{{ asset('storage/' . $employee->profile_picture) }}" alt="{{ $employee->full_name_with_middle_name }}" class="h-full w-full object-cover">
+                        <img src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="{{ $employee->full_name_with_middle_name }}" class="h-full w-full object-cover">
                     @else
                         <div class="flex h-full w-full items-center justify-center">{{ $initials }}</div>
                     @endif

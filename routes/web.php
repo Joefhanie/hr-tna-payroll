@@ -11,6 +11,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayslipDisputeController;
 use App\Http\Controllers\PreviousClaimController;
+use App\Http\Controllers\PublicStorageController;
 use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
@@ -23,6 +24,11 @@ use Illuminate\Support\Facades\Route;
 use App\Services\TapRecordAttendanceService;
 
 Route::redirect('/', '/dashboard');
+
+// Machine-independent media URL for files stored on the public disk.
+Route::get('/media/{path}', [PublicStorageController::class, 'show'])
+    ->where('path', '.*')
+    ->name('media.file');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('register');

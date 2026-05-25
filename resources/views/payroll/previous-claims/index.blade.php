@@ -92,10 +92,11 @@
         <p id="filterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
     </div>
 
+    <x-table-pagination target="claimsTable" />
     {{-- Claims Table --}}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="claimsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         @if($isHR)<th class="px-4 py-3">Employee</th>@endif
@@ -172,7 +173,7 @@
                                     </button>
                                 @endif
                                 @if($claim->supporting_document)
-                                    <a href="{{ asset('storage/' . $claim->supporting_document) }}"
+                                    <a href="{{ route('media.file', ['path' => ltrim($claim->supporting_document, '/')]) }}"
                                         target="_blank" class="text-slate-500 hover:text-slate-700 transition" title="View Document">
                                         <i class="ti ti-paperclip text-lg"></i>
                                     </a>
@@ -405,11 +406,12 @@
 
                 const matchStatus = !status || row.dataset.status === status;
                 const matchType   = !type   || row.dataset.type === type;
-                
+
                 const rowDate = row.dataset.date;
                 const matchDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
 
                 const show = matchQ && matchStatus && matchType && matchDate;
+                row.setAttribute('data-filter-hidden', show ? 'false' : 'true');
                 row.style.display = show ? '' : 'none';
                 if (show) visible++;
             });

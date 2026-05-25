@@ -34,7 +34,7 @@
                         <!-- Avatar selector -->
                         <div class="group relative h-32 w-32 shrink-0 rounded-full border-4 border-white bg-blue-600 text-white shadow-md overflow-hidden">
                             @if ($employee && $employee->profile_picture)
-                                <img id="avatar-preview" src="{{ asset('storage/' . $employee->profile_picture) }}" alt="Profile Picture" class="h-full w-full object-cover">
+                                <img id="avatar-preview" src="{{ route('media.file', ['path' => ltrim($employee->profile_picture, '/')]) }}" alt="Profile Picture" class="h-full w-full object-cover">
                             @else
                                 <div id="avatar-fallback" class="flex h-full w-full items-center justify-center text-3xl font-bold bg-indigo-600">
                                     {{ $initials }}
