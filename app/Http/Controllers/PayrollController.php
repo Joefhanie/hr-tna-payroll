@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PayRun;
 use App\Models\Employee;
 use App\Models\EmployeePlotting;
+use App\Models\PreviousClaim;
 use App\Services\PayrollService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -444,6 +445,7 @@ class PayrollController extends Controller
                             'payment_status' => 'paid',
                             'posted' => true
                         ]);
+                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
                     } else {
                         // Resolve supervisor code
                         $supCode = null;
@@ -471,6 +473,7 @@ class PayrollController extends Controller
                             'payment_status' => 'paid',
                             'posted' => true
                         ]);
+                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
                     }
                 }
             }
@@ -608,6 +611,7 @@ class PayrollController extends Controller
                         'payment_status' => 'paid',
                         'posted' => true
                     ]);
+                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
                 } else {
                     $supCode = null;
                     $fieldRecord = DB::table('field_records')
@@ -634,6 +638,7 @@ class PayrollController extends Controller
                         'payment_status' => 'paid',
                         'posted' => true
                     ]);
+                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
                 }
             }
         }
@@ -1014,5 +1019,50 @@ class PayrollController extends Controller
         $payRun->update(['status' => 13]);
 
         return redirect()->route('payroll.index')->with('status', 'Payroll run deleted successfully.');
+    }
+
+    /**
+     * Check if a completed payrun covers the given date, and if so,
+     * create or update a PreviousClaim for the employee.
+     */
+    private function checkAndCreatePreviousClaimForPlotting(Employee $employee, string $date, string $locationName, float $amount): void
+    {
+        $completedPayRun = PayRun::where('status', 3) // 3 = Completed
+            ->where('period_start', '<=', $date)
+            ->where('period_end', '>=', $date)
+            ->first();
+
+        if ($completedPayRun) {
+            $description = "Auto-generated: Plotted Payment for {$date} at {$locationName}";
+
+            $existingClaim = PreviousClaim::where('employee_id', $employee->id)
+                ->where('claim_date', $date)
+                ->where('status', PreviousClaim::STATUS_PENDING)
+                ->where('description', 'like', 'Auto-generated: Plotted Payment for%')
+                ->first();
+
+            if ($amount <= 0) {
+                if ($existingClaim) {
+                    $existingClaim->delete();
+                }
+            } else {
+                if ($existingClaim) {
+                    $existingClaim->update([
+                        'amount' => $amount,
+                        'description' => $description,
+                    ]);
+                } else {
+                    PreviousClaim::create([
+                        'employee_id' => $employee->id,
+                        'claim_type' => 'Other',
+                        'claim_date' => $date,
+                        'amount' => $amount,
+                        'description' => $description,
+                        'status' => PreviousClaim::STATUS_PENDING,
+                        'submitted_by' => auth()->id(),
+                    ]);
+                }
+            }
+        }
     }
 }

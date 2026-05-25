@@ -87,6 +87,11 @@ class PayrollService
      */
     public function calculateTax(float $taxableAmount, Employee $employee): float
     {
+        $activeSalary = $this->getSalaryRecordForDate($employee);
+        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+            return 0.0;
+        }
+
         $brackets = $employee->taxBrackets()
             ->where('is_active', true)
             ->orderBy('threshold', 'asc')
@@ -122,6 +127,11 @@ class PayrollService
      */
     public function calculateDeductionRules(float $gross, Employee $employee): array
     {
+        $activeSalary = $this->getSalaryRecordForDate($employee);
+        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+            return [];
+        }
+
         $rules = $employee->deductionRules()
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -218,6 +228,14 @@ class PayrollService
      */
     public function applyBonuses(Payslip $payslip, array $bonuses = []): float
     {
+        $employee = $payslip->employee;
+        if ($employee) {
+            $activeSalary = $this->getSalaryRecordForDate($employee);
+            if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+                return 0.0;
+            }
+        }
+
         $total = 0.0;
         foreach ($bonuses as $b) {
             $amount = (float) ($b['amount'] ?? 0);
@@ -465,9 +483,12 @@ class PayrollService
             $cursor->addDay();
         }
 
-        $lateDeduction = round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
-        $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
-        $absenceDeduction = round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
+        $activeSalary = $salaryRecord ?? $this->getSalaryRecordForDate($employee, $periodStart);
+        $isFixedRate = $activeSalary && is_null($activeSalary->daily_divisor);
+
+        $lateDeduction = $isFixedRate ? 0.0 : round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
+        $undertimeDeduction = $isFixedRate ? 0.0 : round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
+        $absenceDeduction = $isFixedRate ? 0.0 : round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
 
         $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * $overtimeMultiplier, 2);
         $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * $nightDifferentialMultiplier, 2);
@@ -516,6 +537,7 @@ class PayrollService
             $employee->load('taxBrackets', 'deductionRules');
 
             $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
+            $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
             $gross = 0.0;
             if ($salaryRecord) {
                 $gross = $this->computeGrossForPeriod($salaryRecord, $periodStart, $periodEnd);
@@ -565,8 +587,8 @@ class PayrollService
             }
 
             // Bonuses (manually passed in options)
-            $bonuses = $options['bonuses'] ?? [];
-            $bonusTotal = $this->applyBonuses($payslip, $bonuses);
+            $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
+            $bonusTotal = $isFixedRate ? 0.0 : $this->applyBonuses($payslip, $bonuses);
 
             // ── Previous Claims assigned to this pay run ──────────────────────
             // 1. Claims explicitly assigned to this specific pay run
@@ -691,7 +713,7 @@ class PayrollService
             // Government contributions — using government premium bracket tables
             $totalGovEmployee = 0.0;
             $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
-            $premiumItems = $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation);
+            $premiumItems = $isFixedRate ? [] : $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation);
             foreach ($premiumItems as $premium) {
                 GovernmentContribution::create([
                     'payslip_id' => $payslip->id,
@@ -745,14 +767,15 @@ class PayrollService
 
         $date = Carbon::now();
         $salaryRecord = $this->getSalaryRecordForDate($employee, $date);
+        $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
         $gross = $salaryRecord ? $salaryRecord->amount : 0.0;
 
-        $bonuses = $options['bonuses'] ?? [];
-        $bonusTotal = array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
+        $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
+        $bonusTotal = $isFixedRate ? 0.0 : array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
 
         $tax = $this->calculateTax($gross + $bonusTotal, $employee);
         $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
-        $premiumItems = $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation);
+        $premiumItems = $isFixedRate ? [] : $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation);
         $deductionItems = $this->calculateDeductionRules($gross, $employee);
 
         $totalPremiumEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $premiumItems));

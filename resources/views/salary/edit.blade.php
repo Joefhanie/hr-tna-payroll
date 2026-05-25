@@ -41,8 +41,8 @@
             <!-- Daily Rate Divisor -->
             <div>
                 <label for="daily_divisor" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Daily Rate Divisor</label>
-                <input type="number" id="daily_divisor" name="daily_divisor" step="0.01" min="1" value="{{ old('daily_divisor', isset($salaryRecord->daily_divisor) ? number_format($salaryRecord->daily_divisor, 2, '.', '') : '21.80') }}" required class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="21.80">
-                <p class="mt-1 text-xs text-slate-500">Usually 21.80 (5-day week) or 26.17 (6-day week)</p>
+                <input type="number" id="daily_divisor" name="daily_divisor" step="0.01" min="1" value="{{ old('daily_divisor', isset($salaryRecord->daily_divisor) ? number_format($salaryRecord->daily_divisor, 2, '.', '') : '') }}" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="21.80">
+                <p class="mt-1 text-xs text-slate-500">Usually 21.80 (5-day week) or 26.17 (6-day week). <strong>Leave blank for Fixed Rate (no bonuses or deductions).</strong></p>
                 @error('daily_divisor')
                     <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
                 @enderror
