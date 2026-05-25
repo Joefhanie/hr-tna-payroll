@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayslipDisputeController;
@@ -38,6 +39,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
+    Route::get('/notifications/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
     // User Profile
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
@@ -52,6 +56,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
         Route::post('/self-service/profile/{employee}/profile-picture', [SelfServiceController::class, 'storeProfilePicture'])->name('self-service.profile-picture.store');
         Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
+    });
+
+    Route::middleware('permission:self-service.edit')->group(function () {
+        Route::post('/self-service/profile-update-requests/{profileUpdateRequest}/review', [SelfServiceController::class, 'reviewProfileUpdateRequest'])->name('self-service.profile-update-requests.review');
     });
 
     // Timekeeping Management

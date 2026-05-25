@@ -104,10 +104,10 @@ class EmployeeController extends Controller
 
         return response()->stream(function () use ($employees) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, [
                 'ID',
                 'Employee Code',
@@ -179,7 +179,7 @@ class EmployeeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'employee_code' => ['required', 'string', 'unique:employees'],
+            'employee_code' => ['nullable', 'string', 'max:30', 'unique:employees'],
             'first_name' => ['required', 'string', 'max:80'],
             'last_name' => ['required', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
@@ -195,7 +195,7 @@ class EmployeeController extends Controller
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:80'],
-            'employment_type' => ['required', 'in:Full-time,Part-time,Contractual,Intern'],
+            'employment_type' => ['required', 'integer', 'in:1,2,3,4'],
             // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned/Terminated
             'status' => ['required', 'in:1,2,3,4'],
             'hire_date' => ['required', 'date'],
@@ -208,7 +208,23 @@ class EmployeeController extends Controller
         ]);
 
         $employee = DB::transaction(function () use ($request, $validated) {
+            $employeeCode = trim((string) ($validated['employee_code'] ?? ''));
+            $validated['employee_code'] = $employeeCode !== ''
+                ? $employeeCode
+                : $this->generateTemporaryEmployeeCode();
+
             $employee = Employee::create($validated);
+
+            if ($employeeCode === '') {
+                $employee->update([
+                    'employee_code' => $this->generateEmployeeCode(
+                        $employee->first_name,
+                        $employee->last_name,
+                        $employee->id
+                    ),
+                ]);
+            }
+
             $pendingUserId = $request->session()->pull('pending_employee_user_id');
 
             if ($pendingUserId) {
@@ -282,7 +298,7 @@ class EmployeeController extends Controller
             'province' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:80'],
-            'employment_type' => ['required', 'in:Full-time,Part-time,Contractual,Intern'],
+            'employment_type' => ['required', 'integer', 'in:1,2,3,4'],
             // status codes: 1=Active, 2=Probationary, 3=On Leave, 4=Resigned/Terminated
             'status' => ['required', 'in:1,2,3,4'],
             'hire_date' => ['required', 'date'],
@@ -354,8 +370,19 @@ class EmployeeController extends Controller
                 ->with('error', 'Employee does not have a user account.');
         }
 
-        $fromDate = isset($validated['from_date']) ? \Carbon\Carbon::parse($validated['from_date']) : now();
-        $toDate = isset($validated['to_date']) ? \Carbon\Carbon::parse($validated['to_date']) : now();
+        $fromDateInput = $validated['from_date'] ?? null;
+        $toDateInput = $validated['to_date'] ?? null;
+
+        $fromDate = $fromDateInput ? \Carbon\Carbon::parse($fromDateInput) : now();
+        $toDate = $toDateInput ? \Carbon\Carbon::parse($toDateInput) : now();
+
+        // Treat date-only values as whole-day access windows.
+        if (is_string($fromDateInput) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDateInput)) {
+            $fromDate->startOfDay();
+        }
+
+        // Temporary access should always remain valid through the selected end date.
+        $toDate->setTime(23, 59, 0);
 
         // Detect if there is an active assignment already (we're editing/updating)
         $hadActive = \App\Models\TemporaryAssignment::where('user_id', $employee->user->id)

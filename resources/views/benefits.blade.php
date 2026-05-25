@@ -2,16 +2,6 @@
     <x-slot:title>Benefits</x-slot:title>
     <x-slot:header>Benefits</x-slot:header>
 
-    @if(session('success'))
-        <div class="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700">
-            <i class="ti ti-check-circle mr-1"></i> {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-            <i class="ti ti-alert-circle mr-1"></i> {{ session('error') }}
-        </div>
-    @endif
 
     <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>

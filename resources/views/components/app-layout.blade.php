@@ -11,8 +11,8 @@
     @php
         $themeSettings = \App\Models\CompanySetting::current();
         $brandPalette = $themeSettings->brand_palette;
-        $faviconUrl = $themeSettings && $themeSettings->logo_path 
-            ? asset('storage/' . $themeSettings->logo_path) 
+        $faviconUrl = $themeSettings && $themeSettings->logo_path
+            ? asset('storage/' . $themeSettings->logo_path)
             : asset('favicon.ico');
     @endphp
     <title>{{ $title ?? 'HR System' }}</title>
@@ -37,12 +37,26 @@
             --brand-text-on-primary: {{ $brandPalette['text_on_primary'] }};
             --brand-text-on-secondary: {{ $brandPalette['text_on_secondary'] }};
             --brand-text-on-accent: {{ $brandPalette['text_on_accent'] }};
+            --sidebar-width: 16.5rem;
+        }
+        .logout-button {
+            transition: all 180ms ease-in-out !important;
+        }
+        .logout-button:hover {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+            color: #dc2626 !important;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.06) !important;
+            transform: translateY(-1px);
+        }
+        .logout-button:hover .sidebar-icon {
+            color: #dc2626 !important;
         }
     </style>
 </head>
 <body class="min-h-screen font-sans text-slate-900 bg-slate-50">
     <!-- Global Toast Container -->
-    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none max-w-sm w-full">
         @if (session('success'))
             <div class="toast-item toast-enter pointer-events-auto flex items-start gap-3 rounded-xl bg-white border border-emerald-100 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)]" data-type="success">
                 <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -93,6 +107,16 @@
 
     @php
         $user = auth()->user();
+        $hasNotificationTable = \Illuminate\Support\Facades\Schema::hasTable('notifications');
+        $hasNotificationMorphColumns = $hasNotificationTable
+            && \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'notifiable_type')
+            && \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'notifiable_id');
+        $recentNotifications = $user
+            ? ($hasNotificationMorphColumns ? $user->notifications()->latest()->limit(5)->get() : collect())
+            : collect();
+        $unreadNotificationCount = $user
+            ? ($hasNotificationMorphColumns ? $user->unreadNotifications()->count() : 0)
+            : 0;
         $navGroups = [
             'Overview' => [
                 ['route' => 'dashboard', 'path' => '/dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard'],
@@ -166,17 +190,17 @@
                 $canAccessSettings = $user && $user->role === 4;
             @endphp
             @if ($canAccessSettings)
-                <a href="{{ $settingsHref }}" class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0 hover:bg-slate-50 border border-transparent hover:border-slate-100/80 rounded-2xl transition duration-150 group">
+                <a href="{{ $settingsHref }}" class="flex items-center gap-3 px-2.5 py-2.5 mb-1.5 shrink-0 hover:bg-slate-50 border border-transparent hover:border-slate-100/80 rounded-2xl transition duration-150 group">
             @else
-                <div class="flex items-center gap-3 px-2.5 py-2.5 mb-4 shrink-0">
+                <div class="flex items-center gap-3 px-2.5 py-2.5 mb-1.5 shrink-0">
             @endif
                 @if ($hasLogo)
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-white shadow-sm transition duration-150 group-hover:border-slate-300">
                         <img src="{{ asset('storage/' . $companySetting->logo_path) }}" alt="Company Logo" class="h-full w-full object-cover">
                     </div>
                 @else
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
-                        <i class="ti ti-building text-lg"></i>
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200/80 shadow-sm transition duration-150 group-hover:border-slate-300" style="background-image: linear-gradient(135deg, {{ $brandPalette['primary_soft'] }} 0%, {{ $brandPalette['secondary_soft'] }} 100%); color: {{ $brandPalette['secondary'] }};">
+                        <i class="ti ti-building text-2xl"></i>
                     </div>
                 @endif
                 <div class="min-w-0 flex-1">
@@ -184,7 +208,7 @@
                         {{ $companySetting->company_name ?: 'Company Name' }}
                     </h2>
                     @if ($companySetting->tagline)
-                        <p class="text-[11px] font-medium text-slate-400 truncate mt-0.5">
+                        <p class="text-[11px] font-medium text-slate-400 truncate mt-0.5" title="{{ $companySetting->tagline }}">
                             {{ $companySetting->tagline }}
                         </p>
                     @endif
@@ -198,7 +222,7 @@
             <div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto pb-3">
                 <nav class="space-y-1">
                     @foreach ($navGroups as $groupName => $items)
-                        <p class="sidebar-group-label px-2 pt-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $groupName }}</p>
+                        <p class="sidebar-group-label px-2 {{ $loop->first ? 'pt-1.5' : 'pt-4' }} pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $groupName }}</p>
 
                         @foreach ($items as $item)
                             @if (isset($item['children']))
@@ -332,9 +356,63 @@
                     </div>
 
                     <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications">
-                            <i class="ti ti-bell text-xl"></i>
-                        </button>
+                        <div class="relative">
+                            <button id="notificationToggle" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:h-10 sm:w-10" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notificationPanel">
+                                <i class="ti ti-bell text-xl"></i>
+                                @if ($unreadNotificationCount > 0)
+                                    <span class="absolute -right-0.5 -top-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[0.65rem] font-bold leading-none text-white">
+                                        {{ $unreadNotificationCount > 9 ? '9+' : $unreadNotificationCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div id="notificationPanel" class="notification-panel fixed left-3 right-3 top-16 z-40 hidden max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 sm:max-h-96 sm:max-w-none">
+                                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">Notifications</p>
+                                        <p class="text-xs text-slate-500">Recent system activity</p>
+                                    </div>
+                                    @if ($unreadNotificationCount > 0)
+                                        <form method="POST" action="{{ route('notifications.read-all') }}">
+                                            @csrf
+                                            <button type="submit" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-[#1a56db] transition hover:bg-blue-50">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div class="max-h-[calc(100vh-10rem)] overflow-y-auto sm:max-h-96">
+                                    @forelse ($recentNotifications as $notification)
+                                        @php
+                                            $notificationData = $notification->data ?? [];
+                                            $notificationTitle = $notificationData['title'] ?? 'Notification';
+                                            $notificationMessage = $notificationData['message'] ?? '';
+                                            $notificationIcon = $notificationData['icon'] ?? 'ti ti-bell';
+                                        @endphp
+                                        <a href="{{ route('notifications.show', $notification->id) }}" class="flex items-start gap-3 border-b border-slate-100 px-4 py-3 transition hover:bg-slate-50 {{ $notification->read_at ? 'opacity-80' : '' }}">
+                                            <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full {{ $notification->read_at ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-[#1a56db]' }}">
+                                                <i class="{{ $notificationIcon }} text-base"></i>
+                                            </span>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <p class="truncate text-sm font-semibold text-slate-900">{{ $notificationTitle }}</p>
+                                                    @if (!$notification->read_at)
+                                                        <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[0.65rem] font-semibold text-[#1a56db]">New</span>
+                                                    @endif
+                                                </div>
+                                                <p class="mt-0.5 text-xs text-slate-500">{{ $notificationMessage }}</p>
+                                                <p class="mt-1 text-[0.7rem] text-slate-400">{{ optional($notification->created_at)->diffForHumans() }}</p>
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="px-4 py-6 text-center text-sm text-slate-500">
+                                            No notifications yet.
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
                         <a href="{{ route('profile.show') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-slate-200 text-sm font-bold shadow-sm transition hover:opacity-90 hover:scale-105 sm:h-10 sm:w-10" style="background-color: var(--brand-primary); color: var(--brand-text-on-primary);" title="View Profile">
                             @if ($user && $user->employee && $user->employee->profile_picture)
                                 <img src="{{ asset('storage/' . $user->employee->profile_picture) }}" alt="Profile" class="h-full w-full object-cover">
@@ -514,9 +592,56 @@
                 });
             }
 
+            const notificationToggle = document.getElementById('notificationToggle');
+            const notificationPanel = document.getElementById('notificationPanel');
+
+            const closeNotificationPanel = function () {
+                if (!notificationPanel || !notificationToggle) {
+                    return;
+                }
+
+                notificationPanel.classList.add('hidden');
+                notificationToggle.setAttribute('aria-expanded', 'false');
+            };
+
+            const toggleNotificationPanel = function () {
+                if (!notificationPanel || !notificationToggle) {
+                    return;
+                }
+
+                const isHidden = notificationPanel.classList.contains('hidden');
+                if (isHidden) {
+                    notificationPanel.classList.remove('hidden');
+                    notificationToggle.setAttribute('aria-expanded', 'true');
+                } else {
+                    closeNotificationPanel();
+                }
+            };
+
+            if (notificationToggle) {
+                notificationToggle.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    toggleNotificationPanel();
+                });
+            }
+
+            if (notificationPanel) {
+                notificationPanel.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                });
+            }
+
+            document.addEventListener('click', function () {
+                closeNotificationPanel();
+            });
+
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape' && logoutModal && logoutModal.classList.contains('flex')) {
                     closeLogoutModal();
+                }
+
+                if (event.key === 'Escape') {
+                    closeNotificationPanel();
                 }
 
                 if (event.key === 'Escape') {

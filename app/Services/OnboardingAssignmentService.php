@@ -6,11 +6,16 @@ use App\Models\Employee;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
 use App\Models\OnboardingTaskTemplate;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class OnboardingAssignmentService
 {
+    public function __construct(private readonly NotificationService $notificationService)
+    {
+    }
+
     public function ensureEmployeeIsOnboarded(Employee $employee, ?int $assignedBy = null): ?OnboardingAssignment
     {
         if (! $this->hasOnboardingTables() || ! $employee->hire_date || in_array((int) $employee->status, [4, 5], true)) {
@@ -49,6 +54,10 @@ class OnboardingAssignmentService
                     'document_type' => $template->document_type,
                     'sequence' => $template->sequence,
                 ]);
+            }
+
+            if ($assignment->employee?->user && $assignedBy && ($actor = User::find($assignedBy))) {
+                $this->notificationService->notifyOnboardingStarted($assignment, $actor);
             }
 
             return $assignment->fresh('tasks');
