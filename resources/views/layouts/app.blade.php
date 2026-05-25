@@ -26,8 +26,8 @@
     .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; }
     .btn-primary { background: var(--primary); color: #fff; padding: .5rem 1rem; border-radius: 8px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none; }
     .btn-primary:hover { opacity: 0.9; }
-    .btn-outline { border: 1px solid var(--border); padding: .5rem 1rem; border-radius: 8px; font-size: .875rem; background: #fff; cursor: pointer; }
-    .btn-outline:hover { background: var(--muted); }
+    .btn-outline { border: 1px solid #c7d2fe; padding: .5rem 1rem; border-radius: 8px; font-size: .875rem; background: #eef2ff; color: var(--primary); cursor: pointer; }
+    .btn-outline:hover { background: #e0e7ff; }
     .nav-link { display: flex; align-items: center; gap: .625rem; padding: .5rem .75rem; border-radius: 8px; color: var(--muted-fg); font-size: .875rem; text-decoration: none; }
     .nav-link:hover { background: var(--muted); color: var(--fg); }
     .nav-link.active { background: #eef2ff; color: var(--primary); font-weight: 500; }

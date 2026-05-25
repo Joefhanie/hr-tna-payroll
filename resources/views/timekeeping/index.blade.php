@@ -27,6 +27,25 @@
                 padding-left: 0 !important;
             }
         }
+
+        .tab-active {
+            border-color: var(--brand-primary-soft) !important;
+            background-color: var(--brand-primary-soft) !important;
+            color: var(--brand-primary) !important;
+            opacity: 1 !important;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .tab-inactive {
+            border-color: transparent !important;
+            background: transparent !important;
+            color: #64748b !important;
+        }
+
+        .tab-inactive:hover {
+            border-color: var(--brand-primary) !important;
+            color: var(--brand-primary) !important;
+        }
     </style>
 
     <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -75,8 +94,8 @@
     <div class="mb-4">
         <div class="border-b border-slate-200">
             <nav class="-mb-px flex gap-6" aria-label="Tabs">
-                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="border-indigo-600 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Calendar View</button>
-                <button type="button" onclick="switchTab('list')" id="tab-list" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">List View</button>
+                <button type="button" onclick="switchTab('calendar')" id="tab-calendar" class="tab-active whitespace-nowrap border-b-2 py-4 px-1 text-sm font-semibold transition">Calendar View</button>
+                <button type="button" onclick="switchTab('list')" id="tab-list" class="tab-inactive whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">List View</button>
             </nav>
         </div>
     </div>
@@ -116,16 +135,16 @@
 
             <!-- Right side Calendar -->
             <div class="order-1 lg:order-2 lg:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col lg:h-[700px]">
-                <div class="bg-[#06112e] text-white p-6 flex justify-center items-center">
+                <div class="bg-brand-primary text-brand-text-on-primary p-6 flex justify-center items-center">
                     <div class="flex items-center justify-between w-[300px]">
                         <a href="{{ route('timekeeping.index') }}?date={{ $prevMonthDate }}&tab=calendar"
-                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
+                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/90 text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white hover:border-slate-900 shrink-0"
                            title="Previous Month">
                             <i class="ti ti-chevron-left text-lg"></i>
                         </a>
                         <h2 class="text-xl font-bold tracking-wider uppercase flex-1 text-center select-none">{{ $monthName }} {{ $year }}</h2>
                         <a href="{{ route('timekeeping.index') }}?date={{ $nextMonthDate }}&tab=calendar"
-                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-white transition hover:bg-slate-700 hover:text-white shrink-0"
+                           class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/40 bg-white/90 text-slate-900 shadow-sm transition hover:bg-slate-900 hover:text-white hover:border-slate-900 shrink-0"
                            title="Next Month">
                             <i class="ti ti-chevron-right text-lg"></i>
                         </a>
@@ -742,28 +761,33 @@
         window.calendarInitialized = false;
 
         function switchTab(tab) {
+            const tabCalendar = document.getElementById('tab-calendar');
+            const tabList = document.getElementById('tab-list');
+
+            if (!tabCalendar || !tabList) return;
+
             if (tab === 'list') {
                 document.getElementById('view-list').classList.remove('hidden');
                 document.getElementById('view-list').classList.add('block');
                 document.getElementById('view-calendar').classList.remove('block');
                 document.getElementById('view-calendar').classList.add('hidden');
 
-                document.getElementById('tab-list').classList.add('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-list').classList.remove('border-transparent', 'text-slate-500');
+                tabList.classList.add('tab-active');
+                tabList.classList.remove('tab-inactive');
 
-                document.getElementById('tab-calendar').classList.remove('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-calendar').classList.add('border-transparent', 'text-slate-500');
+                tabCalendar.classList.remove('tab-active');
+                tabCalendar.classList.add('tab-inactive');
             } else {
                 document.getElementById('view-list').classList.remove('block');
                 document.getElementById('view-list').classList.add('hidden');
                 document.getElementById('view-calendar').classList.remove('hidden');
                 document.getElementById('view-calendar').classList.add('block');
 
-                document.getElementById('tab-calendar').classList.add('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-calendar').classList.remove('border-transparent', 'text-slate-500');
+                tabCalendar.classList.add('tab-active');
+                tabCalendar.classList.remove('tab-inactive');
 
-                document.getElementById('tab-list').classList.remove('border-indigo-600', 'text-indigo-600');
-                document.getElementById('tab-list').classList.add('border-transparent', 'text-slate-500');
+                tabList.classList.remove('tab-active');
+                tabList.classList.add('tab-inactive');
 
                 if (!window.calendarInitialized) {
                     const initialDateStr = '{{ $selectedDate }}';

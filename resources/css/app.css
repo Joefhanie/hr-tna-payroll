@@ -243,8 +243,8 @@ details>summary::-webkit-details-marker {
 }
 
 .badge-gray {
-    background: #e2e8f0;
-    color: #475569;
+    background: var(--brand-primary);
+    color: var(--brand-text-on-primary);
 }
 
 .badge-purple {
@@ -272,6 +272,47 @@ details>summary::-webkit-details-marker {
     border-color: var(--brand-primary);
     background: #fff;
     box-shadow: 0 0 0 3px var(--brand-primary-soft);
+}
+
+.js-table-pagination .btn-prev,
+.js-table-pagination .btn-next,
+.js-table-pagination .pagination-page-btn {
+    transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.js-table-pagination .btn-prev,
+.js-table-pagination .btn-next,
+.js-table-pagination .pagination-page-btn.pagination-page-btn-inactive {
+    border: 1px solid var(--brand-primary-soft);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--brand-primary);
+}
+
+.js-table-pagination .btn-prev:hover,
+.js-table-pagination .btn-next:hover,
+.js-table-pagination .pagination-page-btn.pagination-page-btn-inactive:hover {
+    transform: translateY(-1px);
+    background: var(--brand-primary-soft);
+    border-color: var(--brand-primary-ring);
+    color: var(--brand-primary-hover);
+}
+
+.js-table-pagination .pagination-page-btn.pagination-page-btn-active {
+    background: var(--brand-primary);
+    border: 1px solid var(--brand-primary);
+    color: var(--brand-text-on-primary);
+    box-shadow: 0 12px 24px var(--brand-primary-soft);
+}
+
+.js-table-pagination .pagination-page-btn.pagination-page-btn-active:hover {
+    background: var(--brand-primary-hover);
+    border-color: var(--brand-primary-hover);
+}
+
+.js-table-pagination .btn-prev:disabled,
+.js-table-pagination .btn-next:disabled {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .brand-button-primary {
@@ -472,26 +513,27 @@ details>summary::-webkit-details-marker {
 }
 
 .btn-primary {
-    background: #0f172a;
-    color: #fff;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+    background: var(--brand-primary);
+    color: var(--brand-text-on-primary);
+    box-shadow: 0 12px 24px var(--brand-primary-soft);
 }
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    background: #1e293b;
+    background: var(--brand-primary-hover);
 }
 
 .btn-outline {
-    border: 1px solid #dbe4f0;
-    background: rgba(255, 255, 255, 0.85);
-    color: #334155;
+    border: 1px solid var(--brand-primary-soft);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--brand-primary);
 }
 
 .btn-outline:hover {
     transform: translateY(-1px);
-    background: #fff;
-    border-color: #cbd5e1;
+    background: var(--brand-primary-soft);
+    border-color: var(--brand-primary-ring);
+    color: var(--brand-primary-hover);
 }
 
 .sidebar-group-label {

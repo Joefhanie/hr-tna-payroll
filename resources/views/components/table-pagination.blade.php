@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return Array.from(tbody.querySelectorAll(':scope > tr')).filter(row => {
             if (row.id === 'noResultsRow' || row.id === 'emptyRow') return false;
             if (row.querySelector('td[colspan]')) return false;
-            
+
             // Check if explicitly hidden by a client-side filter
             return row.getAttribute('data-filter-hidden') !== 'true';
         });
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Render page links
         pageButtonsContainer.innerHTML = '';
-        
+
         let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
         let endPage = Math.min(totalPages, startPage + maxPages - 1);
 
@@ -132,11 +132,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.textContent = p;
-            
+
             if (p === currentPage) {
-                btn.className = 'inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white text-xs font-bold shadow-sm select-none';
+                btn.className = 'pagination-page-btn pagination-page-btn-active inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold select-none';
             } else {
-                btn.className = 'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium transition hover:bg-slate-50 hover:text-slate-900 select-none';
+                btn.className = 'pagination-page-btn pagination-page-btn-inactive inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium transition hover:bg-slate-50 hover:text-slate-900 select-none';
             }
 
             btn.addEventListener('click', function () {
