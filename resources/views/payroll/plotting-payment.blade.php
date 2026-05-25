@@ -306,6 +306,9 @@
 
             try {
                 const response = await fetch(`{{ route('payroll.plotting-payment.missed') }}?target_date=${targetDate}`);
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                }
                 const data = await response.json();
                 
                 const listContainer = document.getElementById('missed-results-list');

@@ -337,9 +337,10 @@ class PayrollController extends Controller
             SELECT DISTINCT fr.Date
             FROM field_records fr
             LEFT JOIN employee_plottings ep
-                ON fr.empid = ep.empid
+                ON fr.empid COLLATE utf8mb4_unicode_ci = ep.empid COLLATE utf8mb4_unicode_ci
                 AND fr.Date = ep.date
-                AND COALESCE(ep.location, 'General') = COALESCE(NULLIF(fr.location, ''), 'General')
+                AND COALESCE(ep.location, 'General') COLLATE utf8mb4_unicode_ci =
+                    COALESCE(NULLIF(fr.location, ''), 'General') COLLATE utf8mb4_unicode_ci
             WHERE fr.Date <= ?
               AND (ep.id IS NULL OR ep.posted = 0 OR ep.payment_status != 'paid')
             ORDER BY fr.Date DESC
