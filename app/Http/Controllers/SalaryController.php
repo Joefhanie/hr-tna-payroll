@@ -554,6 +554,21 @@ class SalaryController extends Controller
      */
     public function update(Request $request, SalaryRecord $salaryRecord): RedirectResponse
     {
+        if ($salaryRecord->end_date !== null) {
+            $validated = $request->validate([
+                'reason' => 'nullable|string|max:255',
+                'notes' => 'nullable|string',
+            ]);
+
+            $salaryRecord->update([
+                'reason' => $validated['reason'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            return redirect()->route('salary.show', $salaryRecord->employee)
+                ->with('success', 'Salary record updated successfully.');
+        }
+
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
             'daily_divisor' => 'nullable|numeric|min:1',

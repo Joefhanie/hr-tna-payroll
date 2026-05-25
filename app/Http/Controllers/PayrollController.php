@@ -1016,7 +1016,23 @@ class PayrollController extends Controller
      */
     public function destroy(PayRun $payRun)
     {
+        if ($payRun->status == 3) {
+            return redirect()->route('payroll.index')->with('error', 'Completed payroll runs cannot be deleted.');
+        }
+
+        // Soft delete the payroll run:
         $payRun->update(['status' => 13]);
+
+        // Delete associated payslips (which cascades to payslip line items)
+        $payRun->payslips()->delete();
+
+        // Reset linked claims and disputes so they are credited to the next pay run
+        \App\Models\PreviousClaim::where('pay_run_id', $payRun->id)->update(['pay_run_id' => null]);
+        
+        \App\Models\PayslipDispute::where('adjustment_pay_run_id', $payRun->id)->update([
+            'adjustment_pay_run_id' => null,
+            'adjustment_payslip_id' => null,
+        ]);
 
         return redirect()->route('payroll.index')->with('status', 'Payroll run deleted successfully.');
     }
