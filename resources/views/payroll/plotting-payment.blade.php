@@ -171,8 +171,18 @@
                                                                 <span class="text-slate-600">{{ $dayData['supervisor_code'] ?? '—' }}</span>
                                                             </div>
                                                             <div class="text-xs text-slate-700">
-                                                                <span class="font-semibold text-slate-900">Supervisor's note:</span>
-                                                                <span class="text-slate-600 italic">{{ $dayData['supervisor_note'] ?? 'No note' }}</span>
+                                                                <span class="font-semibold text-slate-900 block mb-0.5">Supervisor's notes:</span>
+                                                                @if(!empty($dayData['supervisor_note']))
+                                                                    <div class="flex flex-col mt-0.5 space-y-0.5">
+                                                                        @foreach(explode("\n", $dayData['supervisor_note']) as $noteLine)
+                                                                            @if(trim($noteLine) !== '')
+                                                                                <span class="text-slate-600 italic">"{{ trim($noteLine) }}"</span>
+                                                                            @endif
+                                                                        @endforeach
+                                                                    </div>
+                                                                @else
+                                                                    <span class="text-slate-600 italic">No note</span>
+                                                                @endif
                                                             </div>
                                                         </div>
 

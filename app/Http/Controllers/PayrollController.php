@@ -291,7 +291,7 @@ class PayrollController extends Controller
                             'location' => $location,
                             'supervisor_name' => $svName,
                             'supervisor_code' => $supervisorCode,
-                            'supervisor_note' => $record->notes ?? ($fieldSupervisor['notes'] ?? null),
+                            'supervisor_note' => $record->notes,
                             'posted' => $plotting ? $plotting->posted : false,
                         ];
                     }
@@ -586,7 +586,7 @@ class PayrollController extends Controller
                         'workplace' => $location,
                         'supervisor' => $supervisorName,
                         'supervisor_code' => $supervisorCode,
-                        'supervisor_note' => $fieldRecord->notes ?? ($fieldSupervisor['notes'] ?? null),
+                        'supervisor_note' => $fieldRecord->notes,
                         'amount' => $amount,
                         'posted' => $plotting ? $plotting->posted : false,
                     ];
