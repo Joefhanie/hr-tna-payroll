@@ -70,17 +70,18 @@
                                 4 => 'badge-red',
                             ];
 
-                            // Only consider active temporary assignments for table display/actions.
-                            // This ensures revoked assignments do not keep showing From/To/Temporary Role.
-                            $temporaryAssignment = $user
-                                ? $user->temporaryAssignments->where('is_active', true)->sortByDesc('to_date')->first()
-                                : null;
-
-                            $latestTemporaryAssignment = $user
-                                ? $user->temporaryAssignments->sortByDesc('id')->first()
-                                : null;
-
                             $now = now();
+                            // Only show assignments that are currently active or still scheduled.
+                            $temporaryAssignment = $user
+                                ? $user->temporaryAssignments
+                                    ->where('is_active', true)
+                                    ->sortByDesc('to_date')
+                                    ->first(function ($assignment) use ($now) {
+                                        return $assignment->from_date
+                                            && $assignment->to_date
+                                            && ($now->between($assignment->from_date, $assignment->to_date) || $assignment->from_date->isFuture());
+                                    })
+                                : null;
                             $isCurrentTemporary = $temporaryAssignment
                                 && $temporaryAssignment->is_active
                                 && $temporaryAssignment->from_date
@@ -103,9 +104,9 @@
                                 $statusColor = 'badge-gray';
                             }
 
-                            if ($latestTemporaryAssignment) {
-                                $tempRoleLabel = $roleLabels[$latestTemporaryAssignment->temporary_role] ?? 'Role';
-                                $tempRoleColor = $roleColors[$latestTemporaryAssignment->temporary_role] ?? 'badge-gray';
+                            if ($temporaryAssignment) {
+                                $tempRoleLabel = $roleLabels[$temporaryAssignment->temporary_role] ?? 'Role';
+                                $tempRoleColor = $roleColors[$temporaryAssignment->temporary_role] ?? 'badge-gray';
                             } else {
                                 $tempRoleLabel = '—';
                                 $tempRoleColor = '';
