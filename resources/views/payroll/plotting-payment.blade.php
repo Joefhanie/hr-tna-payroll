@@ -613,6 +613,16 @@
                 localStorage.removeItem('plotting_payment_draft');
             });
 
+            // The global confirm modal calls form.submit() which bypasses the 'submit' event.
+            // We need to also hook into the global confirmProceed button to remove the warning.
+            const globalConfirmProceed = document.getElementById('confirmProceed');
+            if (globalConfirmProceed) {
+                globalConfirmProceed.addEventListener('click', function () {
+                    window.removeEventListener('beforeunload', onBeforeUnload);
+                    localStorage.removeItem('plotting_payment_draft');
+                });
+            }
+
             // 2. Intercept page-wide link clicks for internal navigation
             let pendingNavigationUrl = null;
 
