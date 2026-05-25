@@ -323,6 +323,33 @@ class PayrollController extends Controller
 
         return view('payroll.plotting-payment', compact('dates', 'gridData', 'resolvedFromDate', 'resolvedToDate'));
     }
+
+    /**
+     * Find dates with field records that don't have paid/posted plottings.
+     */
+    public function findMissedPlottings(Request $request)
+    {
+        $targetDate = $request->input('target_date', date('Y-m-d'));
+
+        // Query distinct dates where an employee has a field record but no paid/posted plotting
+        $missedDates = DB::select("
+            SELECT DISTINCT fr.Date
+            FROM field_records fr
+            LEFT JOIN employee_plottings ep
+                ON fr.empid = ep.empid
+                AND fr.Date = ep.date
+                AND COALESCE(ep.location, 'General') = COALESCE(NULLIF(fr.location, ''), 'General')
+            WHERE fr.Date <= ?
+              AND (ep.id IS NULL OR ep.posted = 0 OR ep.payment_status != 'paid')
+            ORDER BY fr.Date DESC
+        ", [$targetDate]);
+
+        $dates = array_map(function ($row) {
+            return $row->Date;
+        }, $missedDates);
+
+        return response()->json(['dates' => $dates]);
+    }
     /**
      * Display details for a specific date in plotting payment.
      */

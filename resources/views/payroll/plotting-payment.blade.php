@@ -28,6 +28,9 @@
                     <a href="{{ route('payroll.plotting-payment') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition bg-white font-medium flex items-center justify-center">
                         Clear
                     </a>
+                    <button type="button" onclick="openMissedPlottingsModal()" class="px-4 py-2 rounded-lg bg-indigo-600 text-sm text-white hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2 shadow-sm">
+                        <i class="ti ti-search text-base"></i> Find Missed
+                    </button>
                 </div>
             </div>
         </form>
@@ -227,34 +230,112 @@
         </form>
     </div>
 
-    <!-- Discard Changes Modal -->
+    <!-- Discard Confirmation Modal -->
     <div id="discard-modal" style="display: none;"
-        class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm justify-center items-start sm:items-center p-4 overflow-y-auto">
-        <div
-            class="my-auto w-full max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-100 transition-all transform scale-95 duration-200 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center gap-3 text-amber-600">
-                <span
-                    class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                    <i class="ti ti-alert-triangle text-xl"></i>
-                </span>
-                <h3 class="text-lg font-semibold text-slate-900">Unsaved Changes</h3>
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+        <div class="w-full max-w-sm transform overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all scale-95 duration-200 text-center">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <i class="ti ti-alert-triangle text-2xl"></i>
             </div>
-            <p class="mt-3 text-sm text-slate-600 leading-relaxed">You have unsaved changes in your plotting grid. Are
-                you sure you want to discard these changes and leave this page?</p>
-            <div class="mt-6 flex justify-end gap-3">
-                <button id="modal-cancel-btn" type="button"
-                    class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-100">
+            <h3 class="mb-2 text-lg font-bold text-slate-900">Discard Changes?</h3>
+            <p class="mb-6 text-sm text-slate-500">You have unsaved values. Leaving this page will discard them. Are you sure you want to leave?</p>
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="modal-cancel-btn" type="button" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                     Cancel
                 </button>
-                <button id="modal-discard-btn" type="button"
-                    class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20">
-                    Discard Changes
+                <button id="modal-discard-btn" type="button" class="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">
+                    Discard & Leave
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Missed Plottings Modal -->
+    <div id="missed-plottings-modal" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+        <div class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all scale-95 duration-200">
+            <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="ti ti-search text-indigo-600"></i> Find Missed Plottings
+                </h3>
+                <button type="button" onclick="closeMissedPlottingsModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i class="ti ti-x text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-slate-600 mb-4">Select a target date to find all past field records that have not been plotted or paid yet.</p>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Target Date</label>
+                    <input type="date" id="missed-target-date" value="{{ date('Y-m-d') }}"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="button" onclick="fetchMissedPlottings()" class="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-700 transition flex items-center justify-center gap-2">
+                    <i class="ti ti-search"></i> Search Missed Dates
+                </button>
+
+                <div id="missed-results-container" class="mt-6 hidden">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 border-b border-slate-100 pb-2">Results</h4>
+                    <div id="missed-results-list" class="max-h-48 overflow-y-auto space-y-1.5 pr-2">
+                        <!-- JS injected list here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function openMissedPlottingsModal() {
+            const modal = document.getElementById('missed-plottings-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.querySelector('div').classList.replace('scale-95', 'scale-100'), 10);
+            document.getElementById('missed-results-container').classList.add('hidden');
+        }
+
+        function closeMissedPlottingsModal() {
+            const modal = document.getElementById('missed-plottings-modal');
+            modal.querySelector('div').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => modal.style.display = 'none', 150);
+        }
+
+        async function fetchMissedPlottings() {
+            const targetDate = document.getElementById('missed-target-date').value;
+            const btn = document.querySelector('#missed-plottings-modal button[onclick="fetchMissedPlottings()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ti ti-loader animate-spin text-base"></i> Searching...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`{{ route('payroll.plotting-payment.missed') }}?target_date=${targetDate}`);
+                const data = await response.json();
+                
+                const listContainer = document.getElementById('missed-results-list');
+                listContainer.innerHTML = '';
+
+                if (data.dates && data.dates.length > 0) {
+                    data.dates.forEach(date => {
+                        const link = document.createElement('a');
+                        link.href = `{{ route('payroll.plotting-payment') }}?from_date=${date}&to_date=${date}`;
+                        link.className = "flex items-center justify-between px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition group border border-red-100";
+                        link.innerHTML = `
+                            <span class="font-medium text-sm"><i class="ti ti-calendar mr-1"></i> ${date}</span>
+                            <span class="text-xs font-semibold uppercase tracking-wider bg-white rounded px-2 py-0.5 border border-red-200 group-hover:bg-red-600 group-hover:text-white transition shadow-sm">Plot Now &rarr;</span>
+                        `;
+                        listContainer.appendChild(link);
+                    });
+                } else {
+                    listContainer.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">No missed plottings found before this date! 🎉</p>';
+                }
+
+                document.getElementById('missed-results-container').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert("Failed to fetch missed dates.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const GAP = 8;
             const BUBBLE_W = 208; // w-52

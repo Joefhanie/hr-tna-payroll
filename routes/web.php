@@ -326,6 +326,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/export', [PayrollController::class, 'export'])->name('payroll.export');
         Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
         Route::get('/payroll/plotting-payment', [PayrollController::class, 'plottingPayment'])->name('payroll.plotting-payment');
+        Route::get('/payroll/plotting-payment/missed', [PayrollController::class, 'findMissedPlottings'])->name('payroll.plotting-payment.missed');
         Route::get('/payroll/plotting-payment/{employee}', [PayrollController::class, 'showPlottingEmployee'])->name('payroll.plotting-payment.employee');
         Route::get('/payroll/work-location/{date}/{workplace}', [PayrollController::class, 'showWorkLocationDetails'])->name('payroll.work-location-details');
         Route::get('/payroll/per-date/{date}', [PayrollController::class, 'showPerDateDetails'])->name('payroll.per-date');
