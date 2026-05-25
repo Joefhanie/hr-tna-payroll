@@ -68,8 +68,8 @@
 
     <div class="grid gap-6 sm:grid-cols-3">
         <div>
-            <label class="{{ $lbl }}" for="first_name">First Name</label>
-            <input id="first_name" name="first_name" type="text" value="{{ old('first_name', $employee->first_name ?? '') }}" placeholder="e.g. Juan" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="first_name">First Name <span class="text-red-500">*</span></label>
+            <input id="first_name" name="first_name" type="text" value="{{ old('first_name', $employee->first_name ?? '') }}" placeholder="e.g. Juan" class="{{ $inp }}" required>
             @error('first_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
@@ -78,8 +78,8 @@
             @error('middle_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="last_name">Last Name</label>
-            <input id="last_name" name="last_name" type="text" value="{{ old('last_name', $employee->last_name ?? '') }}" placeholder="e.g. Cruz" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="last_name">Last Name <span class="text-red-500">*</span></label>
+            <input id="last_name" name="last_name" type="text" value="{{ old('last_name', $employee->last_name ?? '') }}" placeholder="e.g. Cruz" class="{{ $inp }}" required>
             @error('last_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
@@ -152,8 +152,8 @@
 
     <div class="grid gap-6 sm:grid-cols-2">
         <div>
-            <label class="{{ $lbl }}" for="email">Email Address</label>
-            <input id="email" name="email" type="email" value="{{ old('email', $employee->email ?? ($pendingUser->email ?? '')) }}" placeholder="e.g. juan@company.com" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="email">Email Address <span class="text-red-500">*</span></label>
+            <input id="email" name="email" type="email" value="{{ old('email', $employee->email ?? ($pendingUser->email ?? '')) }}" placeholder="e.g. juan@company.com" class="{{ $inp }}" required>
             @error('email')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
@@ -234,19 +234,19 @@
 
     <div class="grid gap-6 sm:grid-cols-2">
         <div>
-            <label class="{{ $lbl }}" for="employee_code">Employee Code <span class="text-red-500">*</span></label>
-            <input id="employee_code" name="employee_code" type="text" value="{{ old('employee_code', $employee->employee_code ?? '') }}" placeholder="e.g. EMP-001" class="{{ $inp }}" required>
+            <label class="{{ $lbl }}" for="employee_code">Employee Code <span class="font-normal normal-case text-slate-400">(optional, auto-generated if blank)</span></label>
+            <input id="employee_code" name="employee_code" type="text" value="{{ old('employee_code', $employee->employee_code ?? '') }}" placeholder="e.g. EMP-001" class="{{ $inp }}">
             @error('employee_code')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="employment_type">Employment Type</label>
+            <label class="{{ $lbl }}" for="employment_type">Employment Type <span class="text-red-500">*</span></label>
             @php
                 // UI uses numeric codes; DB now stores integer codes for employment_type
                 $employmentOptions = [1 => 'Full-time', 2 => 'Part-time', 3 => 'Contractual', 4 => 'Intern'];
                 $selectedEmployment = old('employment_type', $employee->employment_type ?? '');
             @endphp
-            <select id="employment_type" name="employment_type" class="{{ $sel }}">
-                <option value="" disabled>Select type</option>
+            <select id="employment_type" name="employment_type" class="{{ $sel }}" required>
+                <option value="" disabled @selected($selectedEmployment === '' || $selectedEmployment === null)>Select type</option>
                 @foreach ($employmentOptions as $key => $label)
                     <option value="{{ $key }}" @selected((string)$selectedEmployment === (string)$key)>{{ $label }}</option>
                 @endforeach
@@ -306,8 +306,8 @@
             @error('status')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="hire_date">Hire Date</label>
-            <input id="hire_date" name="hire_date" type="date" value="{{ old('hire_date', optional($employee->hire_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="hire_date">Hire Date <span class="text-red-500">*</span></label>
+            <input id="hire_date" name="hire_date" type="date" value="{{ old('hire_date', optional($employee->hire_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}" required>
             @error('hire_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
@@ -355,6 +355,36 @@
 
         const errors = panel.querySelectorAll('[class*="text-red"]');
         return errors.length === 0; // Completed only if no errors
+    }
+
+    function validateCurrentStep() {
+        const panel = document.querySelector(`.wizard-panel[data-panel="${current}"]`);
+
+        if (!panel) {
+            return true;
+        }
+
+        const fields = Array.from(panel.querySelectorAll('input, select, textarea')).filter((field) => {
+            if (field.disabled) {
+                return false;
+            }
+
+            if (field.type === 'hidden' || field.type === 'button' || field.type === 'submit') {
+                return false;
+            }
+
+            return field.required;
+        });
+
+        const firstInvalidField = fields.find((field) => !field.checkValidity());
+
+        if (firstInvalidField) {
+            firstInvalidField.reportValidity();
+            firstInvalidField.focus({ preventScroll: true });
+            return false;
+        }
+
+        return true;
     }
 
     const colorMap = {
@@ -428,6 +458,10 @@
     }
 
     document.getElementById('wizard-next').addEventListener('click', () => {
+        if (!validateCurrentStep()) {
+            return;
+        }
+
         if (current < TOTAL) { current++; update(); window.scrollTo({top: 0, behavior: 'smooth'}); }
     });
     document.getElementById('wizard-prev').addEventListener('click', () => {
