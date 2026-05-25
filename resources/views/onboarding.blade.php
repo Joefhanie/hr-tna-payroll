@@ -2,52 +2,70 @@
     <x-slot:title>Onboarding</x-slot:title>
     <x-slot:header>Onboarding</x-slot:header>
 
-    <div class="mb-4 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <div class="flex items-center justify-between pb-6 border-b border-slate-200">
         <div>
-            <h1 class="text-[1.65rem] font-bold text-[#06112e]">Onboarding</h1>
-            <p class="mt-1 text-sm text-slate-500">
+            <h1 class="text-3xl font-bold text-slate-900">Onboarding</h1>
+            <p class="mt-1 text-sm text-slate-600">
                 {{ $isEmployeeView ? 'Complete your onboarding requirements here.' : 'Track onboarding progress and assign action items.' }}
             </p>
         </div>
-        @if (!$isEmployeeView)
-            <form method="GET" action="{{ route('onboarding') }}" class="w-full xl:w-auto" id="onboarding-filters-form">
-                <input type="hidden" name="employee" value="{{ $selectedEmployee['id'] ?? '' }}">
-                <div class="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
-                    <div class="relative w-full lg:w-[12rem] xl:w-[13rem]">
-                        <i class="ti ti-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400"></i>
-                        <input
-                            type="search"
-                            name="q"
-                            value="{{ $filters['q'] ?? '' }}"
-                            placeholder="Search name or employee code"
-                            class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100"
-                            data-auto-submit-search
-                        >
+    </div>
+
+    @if (!$isEmployeeView)
+        <form method="GET" action="{{ route('onboarding') }}" class="w-full" id="onboarding-filters-form">
+            <input type="hidden" name="employee" value="{{ $selectedEmployee['id'] ?? '' }}">
+            <input type="hidden" name="export" value="0" id="onboarding-export-input">
+
+            <div class="rounded-[0.8rem] border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="relative">
+                            <i class="ti ti-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400"></i>
+                            <input
+                                type="search"
+                                name="q"
+                                value="{{ $filters['q'] ?? '' }}"
+                                placeholder="Search by name, code, email..."
+                                class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100"
+                                data-auto-submit-search
+                            >
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:w-auto">
-                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[11rem] xl:w-[12rem]" data-auto-submit-filter>
-                            <option value="">All types</option>
-                            @foreach (($filterOptions['employment_types'] ?? []) as $option)
-                                <option value="{{ $option['value'] }}" @selected(($filters['employment_type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
-                            @endforeach
-                        </select>
-                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[12rem] xl:w-[13rem]" data-auto-submit-filter>
-                            <option value="">All employee statuses</option>
+
+                    <div class="mt-2 flex w-full flex-wrap items-center gap-2 md:mt-0 md:w-auto">
+                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                            <option value="">All Statuses</option>
                             @foreach (($filterOptions['employee_statuses'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['employee_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
-                        <select name="onboarding_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 lg:w-[12rem] xl:w-[13rem]" data-auto-submit-filter>
-                            <option value="">All onboarding statuses</option>
-                            @foreach (($filterOptions['onboarding_statuses'] ?? []) as $option)
-                                <option value="{{ $option['value'] }}" @selected(($filters['onboarding_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+
+                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                            <option value="">All Types</option>
+                            @foreach (($filterOptions['employment_types'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['employment_type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+
+                        <select name="department" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-[#1a56db] focus:ring-2 focus:ring-blue-100 md:w-[12rem]" data-auto-submit-filter>
+                            <option value="">All Departments</option>
+                            @foreach (($filterOptions['departments'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['department'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="mt-2 flex items-center gap-2 md:mt-0">
+                        <button type="button" id="onboarding-clear" class="rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50">Clear</button>
+                        <button type="button" id="onboarding-export" class="inline-flex items-center gap-2 rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                            <i class="ti ti-file-text"></i>
+                            Export CSV
+                        </button>
+                    </div>
                 </div>
-            </form>
-        @endif
-    </div>
+            </div>
+        </form>
+    @endif
 
     @php
         $selectedEmployeeName = $selectedEmployee['name'] ?? 'the selected employee';
@@ -229,7 +247,7 @@
     @else
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
             <div class="lg:col-span-1">
-                <div class="flex h-[58rem] min-h-0 flex-col overflow-hidden rounded-[0.8rem] border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:h-[calc(100vh-13rem)]">
+                <div class="flex h-[58rem] min-h-0 flex-col overflow-hidden rounded-[0.8rem] border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)] lg:h-[calc(100vh-17.5rem)]">
                     <div class="min-h-0 flex-1 overflow-y-scroll pr-1">
                         <div class="flex flex-col gap-3">
                         @forelse ($employees as $emp)
@@ -270,7 +288,7 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-2 flex flex-col h-[58rem] min-h-0 lg:h-[calc(100vh-13rem)]">
+            <div class="lg:col-span-2 flex flex-col h-[58rem] min-h-0 lg:h-[calc(100vh-17.5rem)]">
                 <div class="flex h-full flex-col overflow-hidden rounded-[0.8rem] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                     @if ($selectedEmployee)
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -557,10 +575,40 @@
                 }, 250);
             });
 
-            filterForm?.querySelectorAll('[data-auto-submit-filter]').forEach((field) => {
+            filterForm?.querySelectorAll('[data-auto-submit-filter]')?.forEach((field) => {
                 field.addEventListener('change', () => {
                     filterForm.submit();
                 });
+            });
+
+            const clearButton = document.getElementById('onboarding-clear');
+            const exportButton = document.getElementById('onboarding-export');
+            const exportInput = document.getElementById('onboarding-export-input');
+
+            clearButton?.addEventListener('click', () => {
+                if (!filterForm) {
+                    return;
+                }
+
+                filterForm.querySelectorAll('input[type="search"], select').forEach((field) => {
+                    field.value = '';
+                });
+
+                if (exportInput) {
+                    exportInput.value = '0';
+                }
+
+                filterForm.submit();
+            });
+
+            exportButton?.addEventListener('click', () => {
+                if (!filterForm || !exportInput) {
+                    return;
+                }
+
+                exportInput.value = '1';
+                filterForm.submit();
+                exportInput.value = '0';
             });
 
             const form = document.getElementById('onboarding-task-form');
