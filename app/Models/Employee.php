@@ -1,0 +1,254 @@
+<?php
+
+namespace App\Models;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Employee extends Model
+{
+    protected $table = 'employees';
+    public $timestamps = true;
+
+    protected $fillable = [
+        'employee_code',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'email',
+        'profile_picture',
+        'phone',
+        'birth_date',
+        'gender',
+        'nationality',
+        'marital_status',
+        'address_line1',
+        'address_line2',
+        'city',
+        'province',
+        'postal_code',
+        'country',
+        'status',
+        'employment_type',
+        'hire_date',
+        'regularization_date',
+        'termination_date',
+        'termination_reason',
+        'position_id',
+        'department_id',
+        'manager_id',
+    ];
+
+    protected $casts = [
+        'birth_date' => 'date',
+        'hire_date' => 'date',
+        'regularization_date' => 'date',
+        'termination_date' => 'date',
+        'status' => 'integer',
+        'employment_type' => 'integer',
+    ];
+
+    /**
+     * Get the department that the employee belongs to.
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the position of the employee.
+     */
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    /**
+     * Get the manager of the employee.
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Get the subordinates of the employee.
+     */
+    public function subordinates(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'manager_id');
+    }
+
+    /**
+     * Get the emergency contacts for the employee.
+     */
+    public function emergencyContacts(): HasMany
+    {
+        return $this->hasMany(EmergencyContact::class);
+    }
+
+    /**
+     * Get the government IDs for the employee.
+     */
+    public function governmentIds(): HasMany
+    {
+        return $this->hasMany(GovernmentId::class);
+    }
+
+    /**
+     * Get the salary records for the employee.
+     */
+    public function salaryRecords(): HasMany
+    {
+        return $this->hasMany(SalaryRecord::class);
+    }
+
+    /**
+     * Get the documents for the employee.
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class);
+    }
+
+    /**
+     * Get the user account linked to this employee.
+     */
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
+    public function onboardingAssignment(): HasOne
+    {
+        return $this->hasOne(OnboardingAssignment::class);
+    }
+
+    /**
+     * Get the employee's full name.
+     */
+    public function getFullNameAttribute(): string
+    {
+        $middleName = trim((string) $this->middle_name);
+        $middleInitial = $middleName !== ''
+            ? strtoupper(substr($middleName, 0, 1)) . '.'
+            : null;
+
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $middleInitial,
+            $this->last_name,
+        ])));
+    }
+
+    public function currentShift(): HasOne
+    {
+        return $this->hasOne(ShiftAssignment::class)
+            ->where('effective_from', '<=', now()->toDateString())
+            ->where(function ($query) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', now()->toDateString());
+            })
+            ->latest('effective_from');
+    }
+
+    public function currentShifts(): HasMany
+    {
+        return $this->hasMany(ShiftAssignment::class)
+            ->where('effective_from', '<=', now()->toDateString())
+            ->where(function ($query) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', now()->toDateString());
+            });
+    }
+
+    public function shiftAssignments()
+    {
+        return $this->hasMany(ShiftAssignment::class);
+    }
+
+    public function getActiveShiftForDate($date): ?Shift
+    {
+        $date = $date instanceof Carbon ? $date : Carbon::parse($date);
+        $dayOfWeek = $date->format('D'); // 'Mon', 'Tue', etc.
+
+        $assignments = $this->shiftAssignments()
+            ->with('shift')
+            ->where('effective_from', '<=', $date->toDateString())
+            ->where(function ($query) use ($date) {
+                $query->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', $date->toDateString());
+            })
+            ->orderByDesc('effective_from')
+            ->get();
+
+        foreach ($assignments as $assignment) {
+            if ($assignment->shift && is_array($assignment->shift->days_of_week)) {
+                if (in_array($dayOfWeek, $assignment->shift->days_of_week)) {
+                    return $assignment->shift;
+                }
+            }
+        }
+
+        return $assignments->first()?->shift;
+    }
+
+    /**
+     * Get the employee's full name with full middle name.
+     */
+    public function getFullNameWithMiddleNameAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name,
+        ])));
+    }
+
+    /**
+     * Tax brackets assigned to this employee.
+     */
+    public function taxBrackets(): BelongsToMany
+    {
+        return $this->belongsToMany(TaxBracket::class, 'employee_tax_bracket')->withTimestamps();
+    }
+
+
+    /**
+     * Deduction rules assigned to this employee.
+     */
+    public function deductionRules(): BelongsToMany
+    {
+        return $this->belongsToMany(DeductionRule::class, 'employee_deduction_rule')->withTimestamps();
+    }
+
+    /**
+     * Benefit enrollments for this employee.
+     */
+    public function benefitEnrollments(): HasMany
+    {
+        return $this->hasMany(BenefitEnrollment::class, 'employee_id');
+    }
+
+    /**
+     * Benefit plans enrolled by this employee.
+     */
+    public function benefitPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(BenefitPlan::class, 'benefit_enrollments', 'employee_id', 'plan_id')
+            ->withPivot(['id', 'enrollment_date', 'coverage_start', 'coverage_end', 'status']);
+    }
+
+    /**
+     * Get the payslips for the employee.
+     */
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
+    }
+}

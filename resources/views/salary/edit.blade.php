@@ -1,0 +1,184 @@
+<x-app-layout>
+    @php
+        $isInactive = $salaryRecord->end_date !== null;
+    @endphp
+    <x-slot:title>Edit Salary Record - {{ $employee->full_name }}</x-slot:title>
+    <x-slot:header>Edit Salary Record</x-slot:header>
+
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold">Edit Salary Record</h1>
+            <p class="text-sm text-slate-500">Update salary information for {{ $employee->full_name }}</p>
+        </div>
+        <a href="{{ route('salary.show', $employee) }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
+    </div>
+
+    <form method="POST" action="{{ route('salary.update', $salaryRecord) }}" class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+        @csrf
+        @method('PUT')
+
+        <div class="grid gap-6 sm:grid-cols-2">
+            @if ($isInactive)
+                <div class="mb-2 sm:col-span-2 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">Notice:</span> This is an inactive salary record. Only the <strong>Reason</strong> and <strong>Notes</strong> fields can be edited.
+                    </div>
+                </div>
+            @endif
+            <!-- Salary Amount -->
+            <div>
+                <label for="amount" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Salary Amount *</label>
+                <input type="number" id="amount" name="amount" step="0.01" min="0" value="{{ old('amount', $salaryRecord->amount) }}" @required(!$isInactive) @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" placeholder="50000.00">
+                @error('amount')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Pay Frequency -->
+            <div>
+                <label for="pay_frequency" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Pay Frequency *</label>
+                <select id="pay_frequency" name="pay_frequency" @required(!$isInactive) @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                    <option value="">Select frequency...</option>
+                    @foreach ($payFrequencies as $key => $label)
+                        <option value="{{ $key }}" @selected(old('pay_frequency', $salaryRecord->pay_frequency) == $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('pay_frequency')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Daily Rate Divisor -->
+            <div>
+                <label for="daily_divisor" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Daily Rate Divisor</label>
+                <input type="number" id="daily_divisor" name="daily_divisor" step="0.01" min="1" value="{{ old('daily_divisor', isset($salaryRecord->daily_divisor) ? number_format($salaryRecord->daily_divisor, 2, '.', '') : '') }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" placeholder="21.80">
+                <p class="mt-1 text-xs text-slate-500">Usually 21.80 (5-day week) or 26.17 (6-day week). <strong>Leave blank for Fixed Rate (no bonuses or deductions).</strong></p>
+                @error('daily_divisor')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Attendance Rate Overrides toggle --}}
+            <div class="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                @php
+                    $hasCustomOverrides = old('attendance_overtime_multiplier') !== null
+                        || $salaryRecord->attendance_overtime_multiplier !== null
+                        || $salaryRecord->attendance_night_differential_multiplier !== null
+                        || $salaryRecord->attendance_late_deduction_multiplier !== null
+                        || $salaryRecord->attendance_undertime_deduction_multiplier !== null
+                        || $salaryRecord->attendance_absence_deduction_multiplier !== null;
+                @endphp
+
+                <label class="flex items-center justify-between gap-4 {{ !$isInactive ? 'cursor-pointer' : 'cursor-not-allowed' }}">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">Attendance Rate Overrides</p>
+                        <p class="mt-0.5 text-xs text-slate-500">Set employee-specific multipliers. Leave the defaults unless this employee needs a custom policy.</p>
+                    </div>
+                    <input type="checkbox" id="attendance_overrides_toggle"
+                           class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 {{ !$isInactive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50' }}"
+                           @if($hasCustomOverrides) checked @endif
+                           @disabled($isInactive)
+                           onchange="document.getElementById('attendance_overrides_fields').classList.toggle('hidden', !this.checked)">
+                </label>
+
+                <div id="attendance_overrides_fields"
+                     class="mt-4 grid gap-4 sm:grid-cols-2 {{ $hasCustomOverrides ? '' : 'hidden' }}">
+                    <div>
+                        <label for="attendance_overtime_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Overtime Pay Multiplier</label>
+                        <input type="number" id="attendance_overtime_multiplier" name="attendance_overtime_multiplier" step="0.01" min="0" value="{{ old('attendance_overtime_multiplier', isset($salaryRecord->attendance_overtime_multiplier) ? number_format($salaryRecord->attendance_overtime_multiplier, 2, '.', '') : (isset($global->attendance_overtime_multiplier) ? number_format($global->attendance_overtime_multiplier, 2, '.', '') : '1.25')) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.25 = 125% of hourly rate.</p>
+                        @error('attendance_overtime_multiplier')
+                            <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="attendance_night_differential_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Night Differential Multiplier</label>
+                        <input type="number" id="attendance_night_differential_multiplier" name="attendance_night_differential_multiplier" step="0.01" min="0" value="{{ old('attendance_night_differential_multiplier', isset($salaryRecord->attendance_night_differential_multiplier) ? number_format($salaryRecord->attendance_night_differential_multiplier, 2, '.', '') : (isset($global->attendance_night_differential_multiplier) ? number_format($global->attendance_night_differential_multiplier, 2, '.', '') : '0.10')) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                        <p class="mt-1 text-xs text-slate-500">Default 0.10 = 10% of hourly rate.</p>
+                        @error('attendance_night_differential_multiplier')
+                            <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="attendance_late_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Late Deduction Multiplier</label>
+                        <input type="number" id="attendance_late_deduction_multiplier" name="attendance_late_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_late_deduction_multiplier', isset($salaryRecord->attendance_late_deduction_multiplier) ? number_format($salaryRecord->attendance_late_deduction_multiplier, 2, '.', '') : (isset($global->attendance_late_deduction_multiplier) ? number_format($global->attendance_late_deduction_multiplier, 2, '.', '') : '1.00')) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full late deduction.</p>
+                        @error('attendance_late_deduction_multiplier')
+                            <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="attendance_undertime_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Undertime Deduction Multiplier</label>
+                        <input type="number" id="attendance_undertime_deduction_multiplier" name="attendance_undertime_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_undertime_deduction_multiplier', isset($salaryRecord->attendance_undertime_deduction_multiplier) ? number_format($salaryRecord->attendance_undertime_deduction_multiplier, 2, '.', '') : (isset($global->attendance_undertime_deduction_multiplier) ? number_format($global->attendance_undertime_deduction_multiplier, 2, '.', '') : '1.00')) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full undertime deduction.</p>
+                        @error('attendance_undertime_deduction_multiplier')
+                            <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="attendance_absence_deduction_multiplier" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Absence Deduction Multiplier</label>
+                        <input type="number" id="attendance_absence_deduction_multiplier" name="attendance_absence_deduction_multiplier" step="0.01" min="0" value="{{ old('attendance_absence_deduction_multiplier', isset($salaryRecord->attendance_absence_deduction_multiplier) ? number_format($salaryRecord->attendance_absence_deduction_multiplier, 2, '.', '') : (isset($global->attendance_absence_deduction_multiplier) ? number_format($global->attendance_absence_deduction_multiplier, 2, '.', '') : '1.00')) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                        <p class="mt-1 text-xs text-slate-500">Default 1.00 = full absence deduction.</p>
+                        @error('attendance_absence_deduction_multiplier')
+                            <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Effective Date -->
+            <div>
+                <label for="effective_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Effective From *</label>
+                <input type="date" id="effective_date" name="effective_date" value="{{ old('effective_date', $salaryRecord->effective_date->toDateString()) }}" @required(!$isInactive) @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                @error('effective_date')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- End Date -->
+            <div>
+                <label for="end_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">End Date (Optional)</label>
+                <input type="date" id="end_date" name="end_date" value="{{ old('end_date', $salaryRecord->end_date?->toDateString()) }}" @disabled($isInactive) class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                <p class="mt-1 text-xs text-slate-500">Leave empty if this salary is currently active</p>
+                @error('end_date')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Reason -->
+            <div class="sm:col-span-2">
+                <label for="reason" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Reason (Optional)</label>
+                <input type="text" id="reason" name="reason" value="{{ old('reason', $salaryRecord->reason) }}" placeholder="e.g., Raise, Promotion, Adjustment" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                @error('reason')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Notes -->
+            <div class="sm:col-span-2">
+                <label for="notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Notes (Optional)</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="Additional notes..." class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">{{ old('notes', $salaryRecord->notes) }}</textarea>
+                @error('notes')
+                    <p class="mt-2 text-xs text-red-500">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-8 flex items-center gap-3">
+            <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                Update Salary Record
+            </button>
+            <a href="{{ route('salary.show', $employee) }}" class="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                Cancel
+            </a>
+        </div>
+    </form>
+</x-app-layout>

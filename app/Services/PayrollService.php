@@ -1,0 +1,882 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\GovernmentContribution;
+use App\Models\PayRun;
+use App\Models\Payslip;
+use App\Models\PayslipDispute;
+use App\Models\PayslipLineItem;
+use App\Models\PayrollSetting;
+use App\Models\GovernmentPremium;
+use App\Models\PreviousClaim;
+use App\Models\SalaryRecord;
+use App\Models\EmployeePlotting;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class PayrollService
+{
+    /**
+     * Get the active salary record for an employee on a given date.
+     */
+    public function getSalaryRecordForDate(Employee $employee, ?Carbon $date = null): ?SalaryRecord
+    {
+        $date = $date ?? Carbon::now();
+        return $employee->salaryRecords()
+            ->where('effective_date', '<=', $date->toDateString())
+            ->where(function ($q) use ($date) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', $date->toDateString());
+            })
+            ->orderByDesc('effective_date')
+            ->first();
+    }
+
+    /**
+     * Compute gross pay for a salary record across a period.
+     */
+    public function computeGrossForPeriod(SalaryRecord $record, Carbon $periodStart, Carbon $periodEnd): float
+    {
+        $days = $periodStart->diffInDays($periodEnd) + 1;
+
+        // pay_frequency uses integers: 1=Hourly, 2=Daily, 3=Weekly, 4=Bi-weekly, 5=Monthly, 6=Annual
+        $type = (int) ($record->pay_frequency ?? 3);
+        $base = (float) $record->amount;
+
+        switch ($type) {
+            case 1:
+                return round($base * ($days * 8), 2);
+            case 2:
+                return round($base * $days, 2);
+            case 3:
+                return round($base * ($days / 7), 2);
+            case 4:
+                return round($base * ($days / 14), 2);
+            case 5: // Monthly
+                // Standard Philippine Semi-Monthly Period (typically 13-17 calendar days)
+                if ($days >= 13 && $days <= 17) {
+                    return round($base / 2, 2);
+                }
+
+                // Standard Full Month Period (typically 28-31 calendar days)
+                if ($days >= 28 && $days <= 31) {
+                    return round($base, 2);
+                }
+
+                // For custom periods (e.g. final pay or mid-cycle hiring)
+                // Use the employee's configured daily rate divisor (21.8 for 5-day, 26.1667 for 6-day)
+                $divisor = (float) ($record->daily_divisor ?? 21.8);
+                $dailyRate = $base / $divisor;
+                return round($dailyRate * $days, 2);
+
+            case 6:
+                return round($base * ($days / 365), 2);
+            default:
+                // fallback: use the employee's configured divisor
+                $divisor = (float) ($record->daily_divisor ?? 21.8);
+                return round(($base / $divisor) * $days, 2);
+        }
+    }
+
+    /**
+     * Calculate tax using the employee's assigned tax brackets.
+     * Falls back to zero if no brackets are assigned.
+     */
+    public function calculateTax(float $taxableAmount, Employee $employee): float
+    {
+        $activeSalary = $this->getSalaryRecordForDate($employee);
+        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+            return 0.0;
+        }
+
+        $brackets = $employee->taxBrackets()
+            ->where('is_active', true)
+            ->orderBy('threshold', 'asc')
+            ->get();
+
+        if ($brackets->isEmpty()) {
+            return 0.0;
+        }
+
+        $tax = 0.0;
+        $remaining = $taxableAmount;
+
+        // Progressive calculation: for each bracket, tax the portion above its threshold
+        for ($i = $brackets->count() - 1; $i >= 0; $i--) {
+            $threshold = (float) $brackets[$i]->threshold;
+            $rate = (float) $brackets[$i]->rate;
+
+            if ($remaining > $threshold) {
+                $amountInBracket = $remaining - $threshold;
+                $tax += $amountInBracket * $rate;
+                $remaining = $threshold;
+            }
+        }
+
+        return round($tax, 2);
+    }
+
+
+
+    /**
+     * Calculate deductions from the employee's assigned deduction rules.
+     * Returns an array of individual deductions with names.
+     */
+    public function calculateDeductionRules(float $gross, Employee $employee): array
+    {
+        $activeSalary = $this->getSalaryRecordForDate($employee);
+        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+            return [];
+        }
+
+        $rules = $employee->deductionRules()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $items = [];
+        foreach ($rules as $rule) {
+            $amount = 0.0;
+            switch ($rule->type) {
+                case 'Fixed':
+                    $amount = (float) $rule->amount;
+                    break;
+                case 'Percentage':
+                    $amount = round($gross * ((float) $rule->amount / 100), 2);
+                    break;
+                case 'Prorated':
+                    $amount = (float) $rule->amount; // Prorated logic can be refined later
+                    break;
+            }
+
+            if ($amount > 0) {
+                $items[] = [
+                    'name' => $rule->name,
+                    'amount' => $amount,
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Calculate active government premium deductions and employer shares.
+     */
+    public function calculateGovernmentPremiums(float $gross, float $taxable, float $monthlyCompensation): array
+    {
+        $premiums = GovernmentPremium::active();
+        $items = [];
+
+        foreach ($premiums as $premium) {
+            $bracket = $premium->brackets
+                ->first(function ($row) use ($monthlyCompensation) {
+                    $min = (float) $row->min_compensation;
+                    $max = $row->max_compensation === null ? null : (float) $row->max_compensation;
+
+                    return $monthlyCompensation >= $min && ($max === null || $monthlyCompensation <= $max);
+                });
+
+            if ($bracket) {
+                $basisAmount = match ($bracket->basis) {
+                    'Taxable Pay' => $taxable,
+                    'Gross Pay' => $gross,
+                    default => $monthlyCompensation,
+                };
+                $calculationType = $bracket->calculation_type;
+                $employeeValue = (float) $bracket->employee_value;
+                $employerValue = (float) $bracket->employer_value;
+                $employerExtraValue = (float) $bracket->employer_extra_value;
+            } else {
+                $basisAmount = $premium->basis === 'Taxable Pay' ? $taxable : $gross;
+                $calculationType = $premium->calculation_type;
+                $employeeValue = (float) $premium->employee_value;
+                $employerValue = (float) $premium->employer_value;
+                $employerExtraValue = 0.0;
+            }
+
+            if ($calculationType === 'Percentage') {
+                $employeeShare = round($basisAmount * ($employeeValue / 100), 2);
+                $employerShare = round($basisAmount * ($employerValue / 100), 2);
+            } else {
+                $employeeShare = round($employeeValue, 2);
+                $employerShare = round($employerValue, 2);
+            }
+
+            $employerShare = round($employerShare + $employerExtraValue, 2);
+
+            if ($employeeShare > 0 || $employerShare > 0) {
+                $items[] = [
+                    'name' => $premium->name,
+                    'employee_share' => $employeeShare,
+                    'employer_share' => $employerShare,
+                    'is_taxable' => (bool) $premium->is_taxable,
+                    'matched_bracket' => $bracket?->label,
+                ];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Apply bonuses/incentives array to create line items and return total bonus amount.
+     * Bonuses: array of ['description' => '', 'amount' => float, 'is_taxable' => bool]
+     */
+    public function applyBonuses(Payslip $payslip, array $bonuses = []): float
+    {
+        $employee = $payslip->employee;
+        if ($employee) {
+            $activeSalary = $this->getSalaryRecordForDate($employee);
+            if ($activeSalary && is_null($activeSalary->daily_divisor)) {
+                return 0.0;
+            }
+        }
+
+        $total = 0.0;
+        foreach ($bonuses as $b) {
+            $amount = (float) ($b['amount'] ?? 0);
+            if ($amount == 0) {
+                continue;
+            }
+            PayslipLineItem::create([
+                'payslip_id' => $payslip->id,
+                'component_type' => 1,
+                'description' => $b['description'] ?? 'Bonus',
+                'amount' => $amount,
+                'is_taxable' => $b['is_taxable'] ?? true,
+            ]);
+            $total += $amount;
+        }
+        return round($total, 2);
+    }
+
+    /**
+     * Calculate attendance-based bonuses and deductions for a pay period.
+     */
+    public function calculateAttendanceAdjustments(Employee $employee, Carbon $periodStart, Carbon $periodEnd, float $baseGross, ?SalaryRecord $salaryRecord = null): array
+    {
+        $employee->loadMissing('user');
+
+        $empty = [
+            'earnings' => [],
+            'deductions' => [],
+            'earnings_total' => 0.0,
+            'deductions_total' => 0.0,
+            'summary' => [
+                'absent_days' => 0,
+                'late_minutes' => 0,
+                'undertime_minutes' => 0,
+                'overtime_minutes' => 0,
+                'premium_minutes' => 0,
+            ],
+        ];
+
+        if (!$employee->user) {
+            return $empty;
+        }
+
+        $attendanceRecords = Attendance::where('user_id', $employee->user->id)
+            ->whereBetween('attendance_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->orderBy('attendance_date')
+            ->get();
+
+        // Fetch all approved leave requests and their paid/unpaid status overlapping this period
+        $leaves = DB::table('leave_requests')
+            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+            ->where('leave_requests.employee_id', $employee->id)
+            ->where('leave_requests.status', 2) // Approved
+            ->where(function ($q) use ($periodStart, $periodEnd) {
+                $q->whereBetween('leave_requests.start_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                  ->orWhereBetween('leave_requests.end_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                  ->orWhere(function ($q2) use ($periodStart, $periodEnd) {
+                      $q2->where('leave_requests.start_date', '<=', $periodStart->toDateString())
+                         ->where('leave_requests.end_date', '>=', $periodEnd->toDateString());
+                  });
+            })
+            ->select('leave_requests.start_date', 'leave_requests.end_date', 'leave_types.is_paid')
+            ->get();
+
+        if ($attendanceRecords->isEmpty()) {
+            return $empty;
+        }
+
+        $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
+        $dailyRate = round($baseGross / $periodDays, 2);
+
+        // Get active shift to determine scheduled daily working hours (default to 8)
+        $shift = $employee->getActiveShiftForDate($periodStart);
+        $workingHoursPerDay = 8.0;
+        if ($shift) {
+            $workingHoursPerDay = max(0.1, $shift->getWorkingHoursPerDay());
+        }
+        $hourlyRate = round($dailyRate / $workingHoursPerDay, 2);
+
+        $global = PayrollSetting::first();
+
+        $overtimeMultiplier = $salaryRecord && $salaryRecord->attendance_overtime_multiplier !== null
+            ? (float) $salaryRecord->attendance_overtime_multiplier
+            : (float) ($global->attendance_overtime_multiplier ?? 1.25);
+
+        $nightDifferentialMultiplier = $salaryRecord && $salaryRecord->attendance_night_differential_multiplier !== null
+            ? (float) $salaryRecord->attendance_night_differential_multiplier
+            : (float) ($global->attendance_night_differential_multiplier ?? 0.10);
+
+        $lateDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_late_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_late_deduction_multiplier
+            : (float) ($global->attendance_late_deduction_multiplier ?? 1.00);
+
+        $undertimeDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_undertime_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_undertime_deduction_multiplier
+            : (float) ($global->attendance_undertime_deduction_multiplier ?? 1.00);
+
+        $absenceDeductionMultiplier = $salaryRecord && $salaryRecord->attendance_absence_deduction_multiplier !== null
+            ? (float) $salaryRecord->attendance_absence_deduction_multiplier
+            : (float) ($global->attendance_absence_deduction_multiplier ?? 1.00);
+
+        $summary = [
+            'absent_days' => 0,
+            'late_minutes' => 0,
+            'undertime_minutes' => 0,
+            'overtime_minutes' => 0,
+            'premium_minutes' => 0,
+        ];
+
+        $totalLateDeductionHours = 0.0;
+
+        $cursor = $periodStart->copy();
+        while ($cursor->lte($periodEnd)) {
+            $attendanceDate = $cursor->copy();
+            $dateStr = $attendanceDate->toDateString();
+            $dayOfWeek = $attendanceDate->format('D');
+
+            // Find if there is an attendance record for this day
+            $attendance = $attendanceRecords->first(function ($a) use ($dateStr) {
+                $aDate = $a->attendance_date instanceof Carbon ? $a->attendance_date : Carbon::parse($a->attendance_date);
+                return $aDate->toDateString() === $dateStr;
+            });
+
+            // Fetch shift dynamically per attendance date
+            $dayShift = $attendance?->shift ?? $employee->getActiveShiftForDate($attendanceDate);
+
+            // Is the employee scheduled to work on this day?
+            $isScheduledWorkDay = $dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week);
+
+            // Check if this date has an approved leave request
+            $approvedLeave = $leaves->first(function ($leave) use ($dateStr) {
+                return $dateStr >= $leave->start_date && $dateStr <= $leave->end_date;
+            });
+
+            if ($attendance) {
+                if ($approvedLeave) {
+                    if ((int) $approvedLeave->is_paid === 1) {
+                        // Paid leave: no deduction, skip late and undertime calculation for this day
+                        $cursor->addDay();
+                        continue;
+                    } else {
+                        // Unpaid leave: counts as absent (1 full day deduction), skip late and undertime
+                        $summary['absent_days']++;
+                        $cursor->addDay();
+                        continue;
+                    }
+                }
+
+                if ($dayShift) {
+                    $shiftStart = $dayShift->getShiftStartDateTime($attendanceDate);
+                    $shiftEnd = $dayShift->getShiftEndDateTime($attendanceDate);
+                } else {
+                    $shiftStart = $attendanceDate->copy()->setTime(8, 0, 0);
+                    $shiftEnd = $attendanceDate->copy()->setTime(17, 0, 0);
+                }
+
+                $premiumStart = $attendanceDate->copy()->setTime(18, 0, 0);
+                $premiumEnd = $attendanceDate->copy()->setTime(22, 0, 0);
+
+                $checkIn = null;
+                if ($attendance->check_in) {
+                    $timeStr = $attendance->check_in instanceof Carbon ? $attendance->check_in->format('H:i:s') : Carbon::parse($attendance->check_in)->format('H:i:s');
+                    $checkIn = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+                }
+
+                $checkOut = null;
+                if ($attendance->check_out) {
+                    $timeStr = $attendance->check_out instanceof Carbon ? $attendance->check_out->format('H:i:s') : Carbon::parse($attendance->check_out)->format('H:i:s');
+                    $checkOut = Carbon::parse($attendanceDate->toDateString() . ' ' . $timeStr);
+                }
+
+                if ($checkIn && $checkOut && $checkOut->lt($checkIn) && $dayShift?->crosses_midnight) {
+                    $checkOut->addDay();
+                }
+
+                $isAbsent = (int) $attendance->status === 3 || (!$checkIn && !$checkOut);
+
+                if ($isAbsent) {
+                    if ($approvedLeave) {
+                        if ((int) $approvedLeave->is_paid === 1) {
+                            // It is a paid leave, so no absence deduction is applied
+                            $cursor->addDay();
+                            continue;
+                        } else {
+                            // It is an unpaid leave, so absence deduction is applied
+                            $summary['absent_days']++;
+                            $cursor->addDay();
+                            continue;
+                        }
+                    }
+
+                    if ($isScheduledWorkDay) {
+                        $summary['absent_days']++;
+                    }
+                    $cursor->addDay();
+                    continue;
+                }
+
+                if ($checkIn && $checkIn->gt($shiftStart)) {
+                    $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
+                    $summary['late_minutes'] += $dayLateMinutes;
+
+                    // Apply late policy thresholds from LateDeductionService
+                    $lateDeductionService = app(\App\Services\LateDeductionService::class);
+                    $deduction = $lateDeductionService->getDeductionForLateMinutes($dayLateMinutes);
+                    $totalLateDeductionHours += (float) ($deduction['deduction_hours'] ?? 0.0);
+                }
+
+                if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
+                    if ($checkOut->lt($shiftEnd)) {
+                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
+                    }
+
+                    if ($checkOut->gt($shiftEnd)) {
+                        $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+                    }
+
+                    if ($checkOut->gt($premiumStart)) {
+                        $nightStart = $checkIn->gt($premiumStart) ? $checkIn->copy() : $premiumStart->copy();
+                        $nightEnd = $checkOut->lt($premiumEnd) ? $checkOut->copy() : $premiumEnd->copy();
+
+                        if ($nightEnd->gt($nightStart)) {
+                            $summary['premium_minutes'] += $nightStart->diffInMinutes($nightEnd);
+                        }
+                    }
+                }
+            } else {
+                // If there's no attendance record for this day:
+                // Only count as absent if it's a scheduled work day and not an approved paid leave
+                if ($isScheduledWorkDay) {
+                    if ($approvedLeave) {
+                        if ((int) $approvedLeave->is_paid === 1) {
+                            // Paid leave: no deduction
+                        } else {
+                            // Unpaid leave: deduction applies
+                            $summary['absent_days']++;
+                        }
+                    } else {
+                        // Unscheduled absence: deduction applies
+                        $summary['absent_days']++;
+                    }
+                }
+            }
+
+            $cursor->addDay();
+        }
+
+        $activeSalary = $salaryRecord ?? $this->getSalaryRecordForDate($employee, $periodStart);
+        $isFixedRate = $activeSalary && is_null($activeSalary->daily_divisor);
+
+        $lateDeduction = $isFixedRate ? 0.0 : round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
+        $undertimeDeduction = $isFixedRate ? 0.0 : round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
+        $absenceDeduction = $isFixedRate ? 0.0 : round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
+
+        $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * $overtimeMultiplier, 2);
+        $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * $nightDifferentialMultiplier, 2);
+
+        $earnings = [];
+        if ($overtimePay > 0) {
+            $earnings[] = ['description' => 'Attendance: Overtime Pay', 'amount' => $overtimePay, 'is_taxable' => true];
+        }
+        if ($nightDifferential > 0) {
+            $earnings[] = ['description' => 'Attendance: Night Differential', 'amount' => $nightDifferential, 'is_taxable' => true];
+        }
+
+        $deductions = [];
+        if ($lateDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Late Deduction', 'amount' => $lateDeduction, 'is_taxable' => false];
+        }
+        if ($undertimeDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Undertime Deduction', 'amount' => $undertimeDeduction, 'is_taxable' => false];
+        }
+        if ($absenceDeduction > 0) {
+            $deductions[] = ['description' => 'Attendance: Absence Deduction', 'amount' => $absenceDeduction, 'is_taxable' => false];
+        }
+
+        return [
+            'earnings' => $earnings,
+            'deductions' => $deductions,
+            'earnings_total' => round($overtimePay + $nightDifferential, 2),
+            'deductions_total' => round($lateDeduction + $undertimeDeduction + $absenceDeduction, 2),
+            'summary' => $summary,
+        ];
+    }
+
+    /**
+     * Generate a payslip for an employee within a pay run.
+     *
+     * Component Type: 1=Earning, 2=Deduction, 3=Tax, 4=Government
+     * Payslip Status: 1=Draft, 2=Approved, 3=Released
+     */
+    public function generatePayslip(PayRun $payRun, Employee $employee, array $options = []): Payslip
+    {
+        return DB::transaction(function () use ($payRun, $employee, $options) {
+            $periodStart = Carbon::parse($payRun->period_start);
+            $periodEnd = Carbon::parse($payRun->period_end);
+
+            // Load employee pivot assignments
+            $employee->load('taxBrackets', 'deductionRules');
+
+            $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
+            $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
+            $gross = 0.0;
+            if ($salaryRecord) {
+                $gross = $this->computeGrossForPeriod($salaryRecord, $periodStart, $periodEnd);
+            }
+
+            $attendanceAdjustments = $this->calculateAttendanceAdjustments($employee, $periodStart, $periodEnd, $gross, $salaryRecord);
+            $attendanceEarningsTotal = $attendanceAdjustments['earnings_total'];
+            $attendanceDeductionsTotal = $attendanceAdjustments['deductions_total'];
+
+            $payslip = Payslip::create([
+                'pay_run_id' => $payRun->id,
+                'employee_id' => $employee->id,
+                'gross_pay' => $gross,
+                'total_deductions' => 0,
+                'net_pay' => 0,
+                'currency' => $options['currency'] ?? 'PHP',
+                'status' => 1,
+            ]);
+
+            // Add base salary line item
+            PayslipLineItem::create([
+                'payslip_id' => $payslip->id,
+                'component_type' => 1,
+                'description' => 'Base salary',
+                'amount' => $gross,
+                'is_taxable' => true,
+            ]);
+
+            foreach ($attendanceAdjustments['earnings'] as $earning) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 1,
+                    'description' => $earning['description'],
+                    'amount' => $earning['amount'],
+                    'is_taxable' => $earning['is_taxable'] ?? true,
+                ]);
+            }
+
+            foreach ($attendanceAdjustments['deductions'] as $deduction) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 2,
+                    'description' => $deduction['description'],
+                    'amount' => $deduction['amount'],
+                    'is_taxable' => $deduction['is_taxable'] ?? false,
+                ]);
+            }
+
+            // Bonuses (manually passed in options)
+            $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
+            $bonusTotal = $isFixedRate ? 0.0 : $this->applyBonuses($payslip, $bonuses);
+
+            // ── Previous Claims assigned to this pay run ──────────────────────
+            // 1. Claims explicitly assigned to this specific pay run
+            // 2. Approved claims with no pay run yet ("next pay run") — include
+            //    them and stamp them with this pay_run_id so they're not double-counted.
+            $previousClaimsTotal = 0.0;
+
+            $previousClaims = PreviousClaim::where('employee_id', $employee->id)
+                ->where('status', 2) // Approved
+                ->where(function ($q) use ($payRun) {
+                    $q->where('pay_run_id', $payRun->id)       // explicitly assigned
+                      ->orWhereNull('pay_run_id');             // "next pay run"
+                })
+                ->get();
+
+            foreach ($previousClaims as $claim) {
+                $claimAmount = (float) $claim->amount;
+                
+                if ($claim->claim_type === 'Late Plotted Payment') {
+                    $location = 'Unspecified';
+                    if (preg_match('/at\s+(.+)$/i', $claim->description, $matches)) {
+                        $location = trim($matches[1]);
+                    }
+                    $description = 'Previous Claim (Plotted Payment): ' . $location
+                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                } else {
+                    $description = 'Previous Claim: ' . $claim->claim_type
+                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                }
+
+                PayslipLineItem::create([
+                    'payslip_id'     => $payslip->id,
+                    'component_type' => 1, // Earning
+                    'description'    => $description,
+                    'amount'         => $claimAmount,
+                    'is_taxable'     => true,
+                ]);
+                $previousClaimsTotal += $claimAmount;
+
+                // Stamp "next pay run" claims so they don't appear in future runs
+                if (is_null($claim->pay_run_id)) {
+                    $claim->pay_run_id = $payRun->id;
+                    $claim->save();
+                }
+            }
+            $previousClaimsTotal = round($previousClaimsTotal, 2);
+
+            $approvedDisputesTotal = 0.0;
+
+            $approvedDisputes = PayslipDispute::with('lineItem')
+                ->where('employee_id', $employee->id)
+                ->where('status', 2)
+                ->where(function ($q) use ($payRun) {
+                    $q->where('adjustment_pay_run_id', $payRun->id)
+                      ->orWhereNull('adjustment_pay_run_id');
+                })
+                ->get();
+
+            foreach ($approvedDisputes as $dispute) {
+                $disputeAmount = round((float) $dispute->dispute_amount, 2);
+
+                if ($disputeAmount <= 0) {
+                    continue;
+                }
+
+                $referenceLabel = $dispute->lineItem?->description
+                    ?: Str::limit($dispute->dispute_reason, 50);
+
+                PayslipLineItem::create([
+                    'payslip_id'     => $payslip->id,
+                    'component_type' => 1,
+                    'description'    => 'Disputes: ' . $referenceLabel,
+                    'amount'         => $disputeAmount,
+                    'is_taxable'     => true,
+                ]);
+
+                $approvedDisputesTotal += $disputeAmount;
+                if (is_null($dispute->adjustment_pay_run_id)) {
+                    $dispute->adjustment_pay_run_id = $payRun->id;
+                    $dispute->adjustment_payslip_id = $payslip->id;
+                    $dispute->save();
+                }
+            }
+
+            $approvedDisputesTotal = round($approvedDisputesTotal, 2);
+            // ─────────────────────────────────────────────────────────────────
+
+            // Include any posted plotted payments that fall within this pay period
+            $plottedPayments = EmployeePlotting::where('empid', $employee->employee_code)
+                ->where('posted', true)
+                ->whereBetween('date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+                ->get();
+
+            $plottedTotal = 0.0;
+            $plottedByLocation = $plottedPayments
+                ->groupBy(function ($plotting) {
+                    return $plotting->location ?: 'Unspecified';
+                })
+                ->sortKeys();
+
+            foreach ($plottedByLocation as $location => $records) {
+                $locationTotal = round($records->sum(function ($plotting) {
+                    return (float) $plotting->amount;
+                }), 2);
+
+                if ($locationTotal <= 0) {
+                    continue;
+                }
+
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 1,
+                    'description' => 'Plotted Payment: ' . $location,
+                    'amount' => $locationTotal,
+                    'is_taxable' => true,
+                ]);
+
+                $plottedTotal += $locationTotal;
+            }
+
+            $plottedTotal = round($plottedTotal, 2);
+
+            // Calculate taxable amount
+            $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal + $plottedTotal, 2);
+            $taxable = $totalGross;
+
+            // Tax — using employee's assigned brackets
+            $tax = $this->calculateTax($taxable, $employee);
+            if ($tax > 0) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 3,
+                    'description' => 'Income Tax',
+                    'amount' => $tax,
+                    'is_taxable' => false,
+                ]);
+            }
+
+            // Government contributions — using government premium bracket tables
+            $totalGovEmployee = 0.0;
+            $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+            $premiumItems = $isFixedRate ? [] : $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation);
+            foreach ($premiumItems as $premium) {
+                GovernmentContribution::create([
+                    'payslip_id' => $payslip->id,
+                    'contribution_type' => $premium['name'],
+                    'employee_share' => $premium['employee_share'],
+                    'employer_share' => $premium['employer_share'],
+                ]);
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 4,
+                    'description' => $premium['name'],
+                    'amount' => $premium['employee_share'],
+                    'is_taxable' => $premium['is_taxable'],
+                ]);
+                $totalGovEmployee += $premium['employee_share'];
+            }
+
+            // Deduction rules — using employee's assigned rules
+            $deductionItems = $this->calculateDeductionRules($gross, $employee);
+            $totalDeductionRules = 0.0;
+            foreach ($deductionItems as $ded) {
+                PayslipLineItem::create([
+                    'payslip_id' => $payslip->id,
+                    'component_type' => 2,
+                    'description' => $ded['name'],
+                    'amount' => $ded['amount'],
+                    'is_taxable' => false,
+                ]);
+                $totalDeductionRules += $ded['amount'];
+            }
+
+            // Finalize totals
+            $totalDeductions = $tax + $totalGovEmployee + $totalDeductionRules + $attendanceDeductionsTotal;
+            $net = round($totalGross - $totalDeductions, 2);
+
+            $payslip->gross_pay = $totalGross;
+            $payslip->total_deductions = $totalDeductions;
+            $payslip->net_pay = $net;
+            $payslip->save();
+
+            return $payslip;
+        });
+    }
+
+    /**
+     * Final pay computation (e.g., termination) — simple aggregation.
+     */
+    public function computeFinalPay(Employee $employee, array $options = []): array
+    {
+        $employee->load('taxBrackets', 'deductionRules');
+
+        $date = Carbon::now();
+        $salaryRecord = $this->getSalaryRecordForDate($employee, $date);
+        $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
+        $gross = $salaryRecord ? $salaryRecord->amount : 0.0;
+
+        $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
+        $bonusTotal = $isFixedRate ? 0.0 : array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
+
+        $tax = $this->calculateTax($gross + $bonusTotal, $employee);
+        $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+        $premiumItems = $isFixedRate ? [] : $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation);
+        $deductionItems = $this->calculateDeductionRules($gross, $employee);
+
+        $totalPremiumEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $premiumItems));
+        $totalDeductionRules = array_sum(array_map(fn($d) => $d['amount'], $deductionItems));
+
+        $totalDeductions = $tax + $totalPremiumEmployee + $totalDeductionRules;
+        $net = round($gross + $bonusTotal - $totalDeductions, 2);
+
+        return [
+            'gross' => round($gross, 2),
+            'bonuses' => round($bonusTotal, 2),
+            'tax' => $tax,
+            'government_premiums' => $premiumItems,
+            'deductions' => $deductionItems,
+            'total_deductions' => $totalDeductions,
+            'net' => $net,
+        ];
+    }
+
+    /**
+     * Direct deposit stub — integrate with payment provider later.
+     */
+    public function processDirectDeposit(Payslip $payslip): bool
+    {
+        // mark as pending/sent depending on provider response
+        $payslip->status = 2; // e.g., 2 = completed
+        $payslip->save();
+        return true;
+    }
+
+    private function estimateMonthlyCompensation(?SalaryRecord $record, float $periodGross): float
+    {
+        if (!$record) {
+            return $periodGross;
+        }
+
+        $amount = (float) $record->amount;
+        $dailyDivisor = (float) ($record->daily_divisor ?? 21.8);
+
+        return match ((int) ($record->pay_frequency ?? 5)) {
+            1 => round($amount * 8 * $dailyDivisor, 2),
+            2 => round($amount * $dailyDivisor, 2),
+            3 => round($amount * 52 / 12, 2),
+            4 => round($amount * 26 / 12, 2),
+            5 => round($amount, 2),
+            6 => round($amount / 12, 2),
+            default => round($periodGross, 2),
+        };
+    }
+
+    /**
+     * Generate draft payslips for all active employees to allow previewing.
+     */
+    public function generateDraftPayRun(PayRun $payRun, ?array $employeeIds = null): void
+    {
+        $query = Employee::whereNull('termination_date');
+        if ($employeeIds) {
+            $query->whereIn('id', $employeeIds);
+        }
+        $employees = $query->get();
+
+        foreach ($employees as $employee) {
+            assert($employee instanceof Employee);
+            // Prevent duplicate payslips if regenerated
+            if (!Payslip::where('pay_run_id', $payRun->id)->where('employee_id', $employee->id)->exists()) {
+                $this->generatePayslip($payRun, $employee);
+            }
+        }
+        $payRun->status = 2; // Processing / Draft Review
+        $payRun->save();
+    }
+
+    /**
+     * Finalize an entire pay run after review.
+     *
+     * PayRun Status: 1=Draft, 2=Processing, 3=Completed, 4=Cancelled
+     */
+    public function finalizePayRun(PayRun $payRun): void
+    {
+        // Approve all payslips
+        $payRun->payslips()->update(['status' => 2]); // Payslip Status: 2=Approved
+
+        $payRun->status = 3; // PayRun Status: 3=Completed
+        $payRun->finalized_at = Carbon::now();
+        $payRun->save();
+    }
+}

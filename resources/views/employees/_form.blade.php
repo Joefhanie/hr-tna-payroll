@@ -1,0 +1,691 @@
+@php
+    $employee = $employee ?? null;
+    $isEdit   = $isEdit ?? false;
+
+    $inp = 'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20';
+    $sel = 'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20';
+    $lbl = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2';
+    $err = 'mt-2 text-xs text-red-500';
+
+    $steps = [
+        ['label' => 'Personal',    'color' => 'indigo'],
+        ['label' => 'Contact',     'color' => 'sky'],
+        ['label' => 'Employment',  'color' => 'emerald'],
+    ];
+
+    // Pre-calculate all descendant department IDs for each department
+    $departmentChildrenMap = [];
+    foreach ($departments as $dept) {
+        $childrenIds = [];
+        $getDescendants = function($parentId) use (&$getDescendants, $departments, &$childrenIds) {
+            foreach ($departments as $d) {
+                if ($d->parent_dept_id == $parentId) {
+                    $childrenIds[] = (string) $d->id;
+                    $getDescendants($d->id);
+                }
+            }
+        };
+        $getDescendants($dept->id);
+        $departmentChildrenMap[$dept->id] = $childrenIds;
+    }
+@endphp
+
+{{-- ── Step Progress Bar ─────────────────────────────────────────────── --}}
+<div class="mb-10">
+    {{-- Steps --}}
+    <div class="relative flex items-center justify-between">
+        {{-- Connecting line behind steps --}}
+        <div class="absolute left-0 top-6 h-1 w-full bg-slate-300 -z-10"></div>
+        <div id="wizard-progress-line" class="absolute left-0 top-6 h-1 bg-indigo-600 -z-10 transition-all duration-500" style="width:0%"></div>
+
+        @foreach ($steps as $i => $step)
+        <div class="wizard-step-indicator flex flex-col items-center gap-3" data-step="{{ $i + 1 }}" data-color="{{ $step['color'] }}">
+            <div class="step-circle flex h-12 w-12 items-center justify-center rounded-full border-2.5 border-slate-300 bg-white text-base font-bold text-slate-500 shadow-sm transition-all duration-300">
+                <span class="step-num">{{ $i + 1 }}</span>
+                <svg class="step-check hidden h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <span class="step-label text-sm font-semibold text-slate-600 transition-colors duration-300">{{ $step['label'] }}</span>
+        </div>
+        @endforeach
+    </div>
+</div>
+
+{{-- ── Step 1: Personal Information ─────────────────────────────────── --}}
+<div class="wizard-panel" data-panel="1">
+    <div class="mb-7 flex items-center gap-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-base font-semibold text-slate-800">Personal Information</h3>
+            <p class="text-xs text-slate-400">Basic identity details of the employee</p>
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-3">
+        <div>
+            <label class="{{ $lbl }}" for="first_name">First Name <span class="text-red-500">*</span></label>
+            <input id="first_name" name="first_name" type="text" value="{{ old('first_name', $employee->first_name ?? '') }}" placeholder="e.g. Juan" class="{{ $inp }}" required>
+            @error('first_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="middle_name">Middle Name <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+            <input id="middle_name" name="middle_name" type="text" value="{{ old('middle_name', $employee->middle_name ?? '') }}" placeholder="e.g. Dela" class="{{ $inp }}">
+            @error('middle_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="last_name">Last Name <span class="text-red-500">*</span></label>
+            <input id="last_name" name="last_name" type="text" value="{{ old('last_name', $employee->last_name ?? '') }}" placeholder="e.g. Cruz" class="{{ $inp }}" required>
+            @error('last_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="gender">Gender</label>
+            <select id="gender" name="gender" class="{{ $sel }}">
+                <option value="">Select gender</option>
+                @foreach (['Male', 'Female', 'Non-binary', 'Prefer not to say'] as $gender)
+                    <option value="{{ $gender }}" @selected(old('gender', $employee->gender ?? '') === $gender)>{{ $gender }}</option>
+                @endforeach
+            </select>
+            @error('gender')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="birth_date">Birth Date</label>
+            <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', optional($employee->birth_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}">
+            @error('birth_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="nationality">Nationality</label>
+            <select id="nationality" name="nationality" class="{{ $sel }}">
+                <option value="">Select nationality</option>
+                @foreach ([
+                    'Filipino',
+                    'American',
+                    'Australian',
+                    'British',
+                    'Canadian',
+                    'Chinese',
+                    'Indian',
+                    'Indonesian',
+                    'Japanese',
+                    'Korean',
+                    'Malaysian',
+                    'Singaporean',
+                    'Thai',
+                    'Vietnamese',
+                    'Other'
+                ] as $nationality)
+                    <option value="{{ $nationality }}" @selected(old('nationality', $employee->nationality ?? '') === $nationality)>{{ $nationality }}</option>
+                @endforeach
+            </select>
+            @error('nationality')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="marital_status">Marital Status</label>
+            <select id="marital_status" name="marital_status" class="{{ $sel }}">
+                <option value="">Select status</option>
+                @foreach (['Single', 'Married', 'Widowed', 'Divorced', 'Separated'] as $status)
+                    <option value="{{ $status }}" @selected(old('marital_status', $employee->marital_status ?? '') === $status)>{{ $status }}</option>
+                @endforeach
+            </select>
+            @error('marital_status')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+    </div>
+</div>
+
+{{-- ── Step 2: Contact & Address ─────────────────────────────────────── --}}
+<div class="wizard-panel hidden" data-panel="2">
+    <div class="mb-7 flex items-center gap-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-white shadow-sm">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-base font-semibold text-slate-800">Contact & Address</h3>
+            <p class="text-xs text-slate-400">Reachability and location details</p>
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+            <label class="{{ $lbl }}" for="email">Email Address <span class="text-red-500">*</span></label>
+            <input id="email" name="email" type="email" value="{{ old('email', $employee->email ?? ($pendingUser->email ?? '')) }}" placeholder="e.g. juan@company.com" class="{{ $inp }}" required>
+            @error('email')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="phone_display">Phone Number</label>
+            <div class="relative flex rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20">
+                <div class="flex items-center border-r border-slate-200 bg-slate-100/50 rounded-l-lg overflow-hidden">
+                    <select id="phone_country" class="bg-transparent px-3 py-3 text-sm font-semibold text-slate-700 outline-none border-none cursor-pointer focus:ring-0 focus:outline-none">
+                        <option value="PH">🇵🇭 +63</option>
+                        <option value="US">🇺🇸 +1</option>
+                        <option value="SG">🇸🇬 +65</option>
+                        <option value="JP">🇯🇵 +81</option>
+                        <option value="AU">🇦🇺 +61</option>
+                        <option value="GB">🇬🇧 +44</option>
+                        <option value="AE">🇦🇪 +971</option>
+                        <option value="CA">🇨🇦 +1</option>
+                    </select>
+                </div>
+                <input id="phone_display" type="text" placeholder="e.g. 917 123 4567" class="w-full bg-transparent px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none">
+                <input id="phone" name="phone" type="hidden" value="{{ old('phone', $employee->phone ?? '') }}">
+            </div>
+            @error('phone')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div class="sm:col-span-2">
+            <label class="{{ $lbl }}" for="address_line1">Address Line 1</label>
+            <input id="address_line1" name="address_line1" type="text" value="{{ old('address_line1', $employee->address_line1 ?? '') }}" placeholder="Street / Barangay" class="{{ $inp }}">
+            @error('address_line1')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div class="sm:col-span-2">
+            <label class="{{ $lbl }}" for="address_line2">Address Line 2 <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+            <input id="address_line2" name="address_line2" type="text" value="{{ old('address_line2', $employee->address_line2 ?? '') }}" placeholder="Subdivision / Building / Unit" class="{{ $inp }}">
+            @error('address_line2')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="city">City / Municipality</label>
+            <input id="city" name="city" type="text" value="{{ old('city', $employee->city ?? '') }}" placeholder="e.g. Quezon City" class="{{ $inp }}">
+            @error('city')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="province">Province / State</label>
+            <input id="province" name="province" type="text" value="{{ old('province', $employee->province ?? '') }}" placeholder="e.g. Metro Manila" class="{{ $inp }}">
+            @error('province')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="postal_code">Postal Code</label>
+            <input id="postal_code" name="postal_code" type="text" value="{{ old('postal_code', $employee->postal_code ?? '') }}" placeholder="e.g. 1100" class="{{ $inp }}">
+            @error('postal_code')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="country">Country</label>
+            <select id="country" name="country" class="{{ $sel }}">
+                <option value="Philippines" @selected(old('country', $employee->country ?? 'Philippines') === 'Philippines')>Philippines</option>
+                <option value="United States" @selected(old('country', $employee->country ?? '') === 'United States')>United States</option>
+                <option value="Singapore" @selected(old('country', $employee->country ?? '') === 'Singapore')>Singapore</option>
+                <option value="Japan" @selected(old('country', $employee->country ?? '') === 'Japan')>Japan</option>
+                <option value="Australia" @selected(old('country', $employee->country ?? '') === 'Australia')>Australia</option>
+                <option value="United Kingdom" @selected(old('country', $employee->country ?? '') === 'United Kingdom')>United Kingdom</option>
+                <option value="United Arab Emirates" @selected(old('country', $employee->country ?? '') === 'United Arab Emirates')>United Arab Emirates</option>
+                <option value="Canada" @selected(old('country', $employee->country ?? '') === 'Canada')>Canada</option>
+            </select>
+            @error('country')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+    </div>
+</div>
+
+{{-- ── Step 3: Employment Details ────────────────────────────────────── --}}
+<div class="wizard-panel hidden" data-panel="3">
+    <div class="mb-7 flex items-center gap-4">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-base font-semibold text-slate-800">Employment Details</h3>
+            <p class="text-xs text-slate-400">Role, assignment, and employment status</p>
+        </div>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+            <label class="{{ $lbl }}" for="employee_code">Employee Code <span class="font-normal normal-case text-slate-400">(optional, auto-generated if blank)</span></label>
+            <input id="employee_code" name="employee_code" type="text" value="{{ old('employee_code', $employee->employee_code ?? '') }}" placeholder="e.g. EMP-001" class="{{ $inp }}">
+            @error('employee_code')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="employment_type">Employment Type <span class="text-red-500">*</span></label>
+            @php
+                // UI uses numeric codes; DB now stores integer codes for employment_type
+                $employmentOptions = [1 => 'Full-time', 2 => 'Part-time', 3 => 'Contractual', 4 => 'Intern'];
+                $selectedEmployment = old('employment_type', $employee->employment_type ?? '');
+            @endphp
+            <select id="employment_type" name="employment_type" class="{{ $sel }}" required>
+                <option value="" disabled @selected($selectedEmployment === '' || $selectedEmployment === null)>Select type</option>
+                @foreach ($employmentOptions as $key => $label)
+                    <option value="{{ $key }}" @selected((string)$selectedEmployment === (string)$key)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('employment_type')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="department_id">Department</label>
+            <select id="department_id" name="department_id" class="{{ $sel }}">
+                <option value="">Select department</option>
+                @foreach ($departments as $department)
+                    <option value="{{ $department->id }}" @selected(old('department_id', $employee->department_id ?? '') == $department->id)>{{ $department->name }}</option>
+                @endforeach
+            </select>
+            @error('department_id')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="position_id">Position</label>
+            <select id="position_id" name="position_id" class="{{ $sel }} disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                <option value="">Select position</option>
+                @foreach ($positions as $position)
+                    <option value="{{ $position->id }}" data-department-id="{{ $position->department_id }}" @selected(old('position_id', $employee->position_id ?? '') == $position->id)>{{ $position->title }}</option>
+                @endforeach
+            </select>
+            @error('position_id')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="manager_id">Direct Manager <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+            <select id="manager_id" name="manager_id" class="{{ $sel }}">
+                <option value="">Select manager</option>
+                @foreach ($managers as $manager)
+                    <option value="{{ $manager->id }}" @selected(old('manager_id', $employee->manager_id ?? '') == $manager->id)>
+                        {{ $manager->full_name ?? $manager->name ?? 'Employee #' . $manager->id }}
+                    </option>
+                @endforeach
+            </select>
+            @error('manager_id')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="status">Employment Status <span class="text-red-500">*</span></label>
+            @php
+                $statusOptions = [
+                    1 => 'Active',
+                    2 => 'Probationary',
+                    3 => 'On Leave',
+                    4 => 'Resigned',
+                    5 => 'Terminated',
+                ];
+                $selectedStatus = old('status', $employee->status ?? '');
+            @endphp
+            <select id="status" name="status" required class="{{ $sel }}">
+                <option value="" disabled selected>Select status</option>
+                @foreach ($statusOptions as $key => $label)
+                    <option value="{{ $key }}" @selected((string)$selectedStatus == (string)$key)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('status')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="{{ $lbl }}" for="hire_date">Hire Date <span class="text-red-500">*</span></label>
+            <input id="hire_date" name="hire_date" type="date" value="{{ old('hire_date', optional($employee->hire_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}" required>
+            @error('hire_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+        @php
+            $regularizationDateValue = old('regularization_date', optional($employee->regularization_date ?? null)->format('Y-m-d'));
+            if ((string) $selectedEmployment === '1' && blank($regularizationDateValue)) {
+                $regularizationDateValue = now()->toDateString();
+            }
+        @endphp
+        <div id="regularization_date_group" class="{{ (string) $selectedEmployment === '1' ? '' : 'hidden' }}">
+            <label class="{{ $lbl }}" for="regularization_date">Regularization Date <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+            <input id="regularization_date" name="regularization_date" type="date" value="{{ $regularizationDateValue }}" class="{{ $inp }}">
+            @error('regularization_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
+        </div>
+    </div>
+</div>
+
+{{-- ── Navigation Buttons ────────────────────────────────────────────── --}}
+<div class="mt-10 flex items-center justify-between border-t border-slate-100 pt-8">
+    <button type="button" id="wizard-prev"
+            class="hidden rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+        ← Previous
+    </button>
+    <div class="ml-auto flex items-center gap-3">
+        <a href="{{ route('employees.index') }}"
+           class="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+            Cancel
+        </a>
+        <button type="button" id="wizard-next"
+                class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+            Next →
+        </button>
+        <button type="submit" id="wizard-submit"
+                class="hidden rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            {{ $isEdit ? 'Save Changes' : 'Create Employee' }}
+        </button>
+    </div>
+</div>
+
+{{-- ── Wizard Script ─────────────────────────────────────────────────── --}}
+<script>
+(function () {
+    const TOTAL = 3;
+    let current = 1;
+
+    function isStepCompleted(stepNum) {
+        // A step is only completed if it has been passed and has no error fields
+        if (stepNum >= current) return false; // Future or current steps are not completed
+
+        const panel = document.querySelector(`.wizard-panel[data-panel="${stepNum}"]`);
+        if (!panel) return false;
+
+        const errors = panel.querySelectorAll('[class*="text-red"]');
+        return errors.length === 0; // Completed only if no errors
+    }
+
+    function validateCurrentStep() {
+        const panel = document.querySelector(`.wizard-panel[data-panel="${current}"]`);
+
+        if (!panel) {
+            return true;
+        }
+
+        const fields = Array.from(panel.querySelectorAll('input, select, textarea')).filter((field) => {
+            if (field.disabled) {
+                return false;
+            }
+
+            if (field.type === 'hidden' || field.type === 'button' || field.type === 'submit') {
+                return false;
+            }
+
+            return field.required;
+        });
+
+        const firstInvalidField = fields.find((field) => !field.checkValidity());
+
+        if (firstInvalidField) {
+            firstInvalidField.reportValidity();
+            firstInvalidField.focus({ preventScroll: true });
+            return false;
+        }
+
+        return true;
+    }
+
+    function toggleRegularizationField() {
+        const employmentType = document.getElementById('employment_type');
+        const regularizationGroup = document.getElementById('regularization_date_group');
+        const regularizationInput = document.getElementById('regularization_date');
+
+        if (!employmentType || !regularizationGroup) {
+            return;
+        }
+
+        const isFullTime = String(employmentType.value) === '1';
+        regularizationGroup.classList.toggle('hidden', !isFullTime);
+
+        if (isFullTime && regularizationInput && !regularizationInput.value) {
+            regularizationInput.value = new Date().toISOString().slice(0, 10);
+        }
+
+        if (!isFullTime && regularizationInput) {
+            regularizationInput.value = '';
+        }
+    }
+
+    const colorMap = {
+        'indigo': { border: 'border-indigo-600', bg: 'bg-indigo-600', bgLight: 'bg-indigo-50', text: 'text-indigo-600' },
+        'sky': { border: 'border-sky-600', bg: 'bg-sky-600', bgLight: 'bg-sky-50', text: 'text-sky-600' },
+        'emerald': { border: 'border-emerald-600', bg: 'bg-emerald-600', bgLight: 'bg-emerald-50', text: 'text-emerald-600' },
+    };
+
+    function update() {
+        // Panels
+        document.querySelectorAll('.wizard-panel').forEach(p => {
+            p.classList.toggle('hidden', parseInt(p.dataset.panel) !== current);
+        });
+
+        // Step indicators
+        document.querySelectorAll('.wizard-step-indicator').forEach(ind => {
+            const s     = parseInt(ind.dataset.step);
+            const color = ind.dataset.color || 'indigo';
+            const circle = ind.querySelector('.step-circle');
+            const num    = ind.querySelector('.step-num');
+            const check  = ind.querySelector('.step-check');
+            const label  = ind.querySelector('.step-label');
+
+            // Remove all color classes
+            Object.values(colorMap).forEach(colors => {
+                ['border', 'bg', 'bgLight', 'text'].forEach(key => {
+                    if (colors[key]) circle.classList.remove(colors[key]);
+                });
+            });
+            circle.classList.remove('border-slate-200', 'bg-white', 'text-slate-400');
+
+            const colors = colorMap[color] || colorMap.indigo;
+
+            if (s < current) {
+                // Completed
+                circle.classList.add(colors.border, colors.bg, 'text-white');
+                num.classList.add('hidden'); check.classList.remove('hidden');
+                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
+            } else if (s === current) {
+                // Active
+                circle.classList.add(colors.border, colors.bgLight, colors.text);
+                num.classList.remove('hidden'); check.classList.add('hidden');
+                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
+            } else {
+                // Future
+                circle.classList.add('border-slate-200', 'bg-white', 'text-slate-400');
+                num.classList.remove('hidden'); check.classList.add('hidden');
+                label.classList.add('text-slate-400');
+            }
+        });
+
+        // Progress line
+        const pct = ((current - 1) / (TOTAL - 1)) * 100;
+        const progressLine = document.getElementById('wizard-progress-line');
+        progressLine.style.width = pct + '%';
+
+        // Update progress line color based on current step
+        const currentStep = document.querySelector(`.wizard-step-indicator[data-step="${current}"]`);
+        if (currentStep) {
+            const color = currentStep.dataset.color || 'indigo';
+            progressLine.classList.remove('bg-indigo-600', 'bg-sky-600', 'bg-emerald-600');
+            if (color === 'sky') progressLine.classList.add('bg-sky-600');
+            else if (color === 'emerald') progressLine.classList.add('bg-emerald-600');
+            else progressLine.classList.add('bg-indigo-600');
+        }
+
+        // Buttons
+        document.getElementById('wizard-prev').classList.toggle('hidden', current === 1);
+        document.getElementById('wizard-next').classList.toggle('hidden', current === TOTAL);
+        document.getElementById('wizard-submit').classList.toggle('hidden', current !== TOTAL);
+    }
+
+    document.getElementById('wizard-next').addEventListener('click', () => {
+        if (!validateCurrentStep()) {
+            return;
+        }
+
+        if (current < TOTAL) { current++; update(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    });
+    document.getElementById('wizard-prev').addEventListener('click', () => {
+        if (current > 1) { current--; update(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+    });
+
+    document.getElementById('employment_type')?.addEventListener('change', toggleRegularizationField);
+
+    update();
+    toggleRegularizationField();
+
+    // Position Dropdown Filtering Logic
+    const deptSelect = document.getElementById('department_id');
+    const posSelect = document.getElementById('position_id');
+    const departmentChildrenMap = @json($departmentChildrenMap);
+
+    function updatePositionDropdown() {
+        const deptId = String(deptSelect.value);
+        const currentPosId = posSelect.value;
+
+        if (!deptId) {
+            posSelect.disabled = true;
+            posSelect.value = '';
+        } else {
+            posSelect.disabled = false;
+            let isValidSelection = false;
+
+            const validDeptIds = [deptId];
+            if (departmentChildrenMap[deptId]) {
+                validDeptIds.push(...departmentChildrenMap[deptId]);
+            }
+
+            Array.from(posSelect.options).forEach(opt => {
+                if (opt.value === '') return;
+
+                const optDeptId = String(opt.dataset.departmentId);
+
+                if (optDeptId === '' || validDeptIds.includes(optDeptId)) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    if (opt.value === currentPosId) isValidSelection = true;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            });
+
+            if (!isValidSelection) {
+                posSelect.value = '';
+            }
+        }
+    }
+
+    if (deptSelect && posSelect) {
+        deptSelect.addEventListener('change', updatePositionDropdown);
+        posSelect.addEventListener('change', () => {
+            const selectedOpt = posSelect.options[posSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                const optDeptId = selectedOpt.dataset.departmentId;
+                if (optDeptId && deptSelect.value !== optDeptId) {
+                    deptSelect.value = optDeptId;
+                    updatePositionDropdown();
+                }
+            }
+        });
+    }
+
+    // --- Country Flag and Phone Prefix Logic ---
+    const phoneCountrySelect = document.getElementById('phone_country');
+    const phoneDisplay = document.getElementById('phone_display');
+    const phoneHidden = document.getElementById('phone');
+
+    const phoneConfigs = {
+        'PH': { prefix: '+63', format: formatPh, placeholder: '917 123 4567' },
+        'US': { prefix: '+1', format: formatUs, placeholder: '(555) 000-0000' },
+        'CA': { prefix: '+1', format: formatUs, placeholder: '(555) 000-0000' },
+        'SG': { prefix: '+65', format: formatSg, placeholder: '8123 4567' },
+        'JP': { prefix: '+81', format: formatJp, placeholder: '90-1234-5678' },
+        'AU': { prefix: '+61', format: formatAu, placeholder: '412 345 678' },
+        'GB': { prefix: '+44', format: formatUk, placeholder: '7123 456789' },
+        'AE': { prefix: '+971', format: formatUae, placeholder: '50 123 4567' }
+    };
+
+    function formatPh(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+
+    function formatUs(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    }
+
+    function formatSg(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 8)}`;
+    }
+
+    function formatJp(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+        return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+    }
+
+    function formatAu(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 1) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 1)} ${digits.slice(1)}`;
+        return `${digits.slice(0, 1)} ${digits.slice(1, 5)} ${digits.slice(5, 9)}`;
+    }
+
+    function formatUk(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 4) return digits;
+        return `${digits.slice(0, 4)} ${digits.slice(4, 10)}`;
+    }
+
+    function formatUae(val) {
+        const digits = val.replace(/\D/g, '').replace(/^0+/, '');
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
+        return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
+    }
+
+    function updatePhonePrefix() {
+        const code = phoneCountrySelect.value;
+        const config = phoneConfigs[code] || phoneConfigs['PH'];
+        phoneDisplay.placeholder = config.placeholder;
+        phoneDisplay.value = config.format(phoneDisplay.value);
+        updateHiddenValue();
+    }
+
+    function updateHiddenValue() {
+        const code = phoneCountrySelect.value;
+        const config = phoneConfigs[code] || phoneConfigs['PH'];
+        const prefix = config.prefix;
+        const rawBody = phoneDisplay.value.trim();
+        if (rawBody === '') {
+            phoneHidden.value = '';
+        } else {
+            phoneHidden.value = `${prefix} ${rawBody}`;
+        }
+    }
+
+    function parseExistingPhone() {
+        const initialVal = phoneHidden.value.trim();
+        if (initialVal.startsWith('+')) {
+            let matchedCode = null;
+            let matchedPrefix = '';
+            const sortedCodes = Object.keys(phoneConfigs).sort((a, b) => {
+                return phoneConfigs[b].prefix.length - phoneConfigs[a].prefix.length;
+            });
+            for (const code of sortedCodes) {
+                const prefix = phoneConfigs[code].prefix;
+                if (initialVal.startsWith(prefix)) {
+                    matchedCode = code;
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+            if (matchedCode) {
+                phoneCountrySelect.value = matchedCode;
+                const config = phoneConfigs[matchedCode];
+                phoneDisplay.placeholder = config.placeholder;
+                let body = initialVal.slice(matchedPrefix.length).trim();
+                phoneDisplay.value = config.format(body);
+            } else {
+                phoneDisplay.value = initialVal;
+            }
+        } else {
+            const code = phoneCountrySelect.value || 'PH';
+            const config = phoneConfigs[code] || phoneConfigs['PH'];
+            phoneDisplay.value = config.format(initialVal);
+        }
+        updatePhonePrefix();
+    }
+
+    if (phoneCountrySelect && phoneDisplay && phoneHidden) {
+        phoneCountrySelect.addEventListener('change', updatePhonePrefix);
+        phoneDisplay.addEventListener('input', (e) => {
+            const code = phoneCountrySelect.value;
+            const config = phoneConfigs[code] || phoneConfigs['PH'];
+            const selectionStart = e.target.selectionStart;
+            const prevLength = e.target.value.length;
+            e.target.value = config.format(e.target.value);
+            const postLength = e.target.value.length;
+            const diff = postLength - prevLength;
+            e.target.setSelectionRange(selectionStart + diff, selectionStart + diff);
+            updateHiddenValue();
+        });
+        parseExistingPhone();
+    }
+})();
+</script>
