@@ -72,35 +72,35 @@ class TimekeepingController extends Controller
             $endDate = $endDate ?: $startDate;
             $start = Carbon::parse($startDate);
             $end = Carbon::parse($endDate);
-            
+
             $existingMap = [];
             foreach ($attendanceCollection as $att) {
                 $dateStr = $att->attendance_date->toDateString();
                 $existingMap[$dateStr][$att->user_id] = true;
             }
-            
+
             $virtualRecords = [];
             $nowManila = now('Asia/Manila');
-            
+
             $cursor = $start->copy();
             while ($cursor->lte($end)) {
                 $dateStr = $cursor->toDateString();
                 $dayOfWeek = $cursor->format('D');
-                
+
                 foreach ($employees as $employee) {
                     $user = $employee->user;
                     if (!$user) continue;
-                    
+
                     if (isset($existingMap[$dateStr][$user->id])) {
                         continue;
                     }
-                    
+
                     $dayShift = $employee->getActiveShiftForDate($cursor);
-                    
+
                     if ($dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week)) {
                         $isFutureDate = $cursor->gt(now('Asia/Manila')->startOfDay());
                         $isToday = $cursor->isToday();
-                        
+
                         $hasNotStarted = false;
                         if ($isFutureDate) {
                             $hasNotStarted = true;
@@ -110,7 +110,7 @@ class TimekeepingController extends Controller
                                 $hasNotStarted = true;
                             }
                         }
-                        
+
                         $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
                             ->where('employee_id', $employee->id)
                             ->where('status', 2) // Approved
@@ -149,7 +149,7 @@ class TimekeepingController extends Controller
                 }
                 $cursor->addDay();
             }
-            
+
             return $attendanceCollection->concat($virtualRecords);
         };
 
@@ -184,7 +184,7 @@ class TimekeepingController extends Controller
                 $dateStr = $att->attendance_date->toDateString();
                 $isPaidLeave = isset($paidLeaveLookup[$employee->id][$dateStr]);
                 $isAnyLeave = isset($leaveLookup[$employee->id][$dateStr]);
-                
+
                 $shouldOverride = false;
                 // If no check-in/out, always override with leave
                 if (is_null($att->check_in) && is_null($att->check_out) && $isAnyLeave) {
@@ -274,35 +274,35 @@ class TimekeepingController extends Controller
             $endDate = $endDate ?: $startDate;
             $start = Carbon::parse($startDate);
             $end = Carbon::parse($endDate);
-            
+
             $existingMap = [];
             foreach ($attendanceCollection as $att) {
                 $dateStr = $att->attendance_date->toDateString();
                 $existingMap[$dateStr][$att->user_id] = true;
             }
-            
+
             $virtualRecords = [];
             $nowManila = now('Asia/Manila');
-            
+
             $cursor = $start->copy();
             while ($cursor->lte($end)) {
                 $dateStr = $cursor->toDateString();
                 $dayOfWeek = $cursor->format('D');
-                
+
                 foreach ($employees as $employee) {
                     $user = $employee->user;
                     if (!$user) continue;
-                    
+
                     if (isset($existingMap[$dateStr][$user->id])) {
                         continue;
                     }
-                    
+
                     $dayShift = $employee->getActiveShiftForDate($cursor);
-                    
+
                     if ($dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week)) {
                         $isFutureDate = $cursor->gt(now('Asia/Manila')->startOfDay());
                         $isToday = $cursor->isToday();
-                        
+
                         $hasNotStarted = false;
                         if ($isFutureDate) {
                             $hasNotStarted = true;
@@ -312,7 +312,7 @@ class TimekeepingController extends Controller
                                 $hasNotStarted = true;
                             }
                         }
-                        
+
                         $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
                             ->where('employee_id', $employee->id)
                             ->where('status', 2) // Approved
@@ -351,14 +351,14 @@ class TimekeepingController extends Controller
                 }
                 $cursor->addDay();
             }
-            
+
             return $attendanceCollection->concat($virtualRecords);
         };
 
         $calendarDataRecords = $addVirtualShiftNotStarted(
-            $calendarDataRecords, 
-            $employees, 
-            $selectedDateCarbon->copy()->startOfMonth()->toDateString(), 
+            $calendarDataRecords,
+            $employees,
+            $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
             $selectedDateCarbon->copy()->endOfMonth()->toDateString()
         );
 
@@ -391,7 +391,7 @@ class TimekeepingController extends Controller
                     $dateStr = $att->attendance_date->toDateString();
                     $isPaidLeave = isset($paidLeaveLookup[$employee->id][$dateStr]);
                     $isAnyLeave = isset($leaveLookup[$employee->id][$dateStr]);
-                    
+
                     $shouldOverride = false;
                     if (is_null($att->check_in) && is_null($att->check_out) && $isAnyLeave) {
                         $shouldOverride = true;
@@ -544,10 +544,10 @@ class TimekeepingController extends Controller
 
         return response()->stream(function () use ($todayAttendance, $selectedDate) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, [
                 'Date',
                 'Employee Code',
@@ -571,7 +571,7 @@ class TimekeepingController extends Controller
                 $employee = $att->user?->employee;
                 $shift = $att->shift ?? $employee?->currentShift?->shift;
                 $displayShiftTime = $shift ? $shift->getDisplayTimeRange() : 'N/A';
-                
+
                 fputcsv($file, [
                     $selectedDate,
                     $employee->employee_code ?? 'N/A',
@@ -625,8 +625,34 @@ class TimekeepingController extends Controller
         $attendanceDate = Carbon::parse($validated['attendance_date']);
         $shift = $employee->getActiveShiftForDate($attendanceDate);
 
+        // If there's no assigned shift for the date, allow manual time-in as long as
+        // the attendance date is not before the employee's hire date. Additionally,
+        // if the employee has any shift assignment (past or future) whose
+        // days_of_week includes the attendance weekday, use that shift to derive
+        // status/late calculations even if its effective_from is different.
+        $candidateShift = null;
         if (!$shift) {
-            return back()->withErrors(['employee_id' => 'No active shift schedule was found for this employee on the selected date.'])->withInput();
+            $hireDate = $employee->hire_date ? Carbon::parse($employee->hire_date) : null;
+
+            if ($hireDate && $attendanceDate->lt($hireDate)) {
+                return back()->withErrors(['employee_id' => 'No active shift schedule was found for this employee on the selected date.'])->withInput();
+            }
+
+            $dayOfWeek = $attendanceDate->format('D');
+            $assignments = $employee->shiftAssignments()->with('shift')->get();
+            foreach ($assignments as $assignment) {
+                if ($assignment->shift && is_array($assignment->shift->days_of_week)) {
+                    if (in_array($dayOfWeek, $assignment->shift->days_of_week)) {
+                        $candidateShift = $assignment->shift;
+                        break;
+                    }
+                }
+            }
+
+            // No active shift but date is >= hire date — allow creation. We'll
+            // use $candidateShift (if found) for status calculations, but we don't
+            // set shift_id on the attendance row unless there's an actual active
+            // shift for the date.
         }
 
         $checkInDateTime = Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_in']);
@@ -662,14 +688,22 @@ class TimekeepingController extends Controller
 
         // Auto-determine status from the assigned shift if not explicitly provided
         if (empty($validated['status'])) {
-            $validated['status'] = $shift->getAttendanceStatusForClockIn($checkInDateTime)['key'];
+            if ($shift) {
+                $validated['status'] = $shift->getAttendanceStatusForClockIn($checkInDateTime)['key'];
+            } elseif ($candidateShift) {
+                $validated['status'] = $candidateShift->getAttendanceStatusForClockIn($checkInDateTime)['key'];
+            } else {
+                // No shift available to calculate lateness — default to Present.
+                $validated['status'] = 1;
+            }
         }
 
         $checkOutDateTime = !empty($validated['check_out'])
             ? Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_out'])
             : null;
 
-        if ($checkOutDateTime && $checkOutDateTime->lt($checkInDateTime) && $shift->crosses_midnight) {
+        $shiftForMidnight = $shift ?? $candidateShift;
+        if ($checkOutDateTime && $shiftForMidnight && $checkOutDateTime->lt($checkInDateTime) && $shiftForMidnight->crosses_midnight) {
             $checkOutDateTime->addDay();
         }
 
@@ -680,7 +714,8 @@ class TimekeepingController extends Controller
             'notes'     => $validated['notes'] ?? null,
         ];
 
-        if (Schema::hasColumn('attendance', 'shift_id')) {
+        if (Schema::hasColumn('attendance', 'shift_id') && $shift) {
+            // Only set shift_id when there is an active shift for the attendance date.
             $attendanceData['shift_id'] = $shift->id;
         }
 
@@ -693,12 +728,15 @@ class TimekeepingController extends Controller
         );
 
         if ($attendance) {
-            $lateDeductionService->recordAttendanceLateDeduction(
-                $attendance->loadMissing('user.employee'),
-                $shift,
-                $checkInDateTime,
-                true
-            );
+            $shiftForLate = $shift ?? $candidateShift;
+            if ($shiftForLate) {
+                $lateDeductionService->recordAttendanceLateDeduction(
+                    $attendance->loadMissing('user.employee'),
+                    $shiftForLate,
+                    $checkInDateTime,
+                    true
+                );
+            }
         }
 
         return redirect()->route('timekeeping.index')
