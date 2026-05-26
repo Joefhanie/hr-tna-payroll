@@ -246,9 +246,7 @@
                 </tbody>
             </table>
 
-            <div class="bg-white px-6 py-4 border-t border-slate-200 uppercase">
-                {{ $employees->links() }}
-            </div>
+            <x-table-pagination target="ta-table" itemsPerPage="10" />
         @else
             <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>
         @endif

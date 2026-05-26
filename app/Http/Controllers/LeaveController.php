@@ -145,12 +145,9 @@ class LeaveController extends Controller
             'end_date'   => trim((string) $request->string('end_date')),
         ];
 
-        // Paginate the query
-        $leaveRequestsPaginated = $this->buildQuery($request)
-            ->paginate(15)
-            ->appends($request->query());
-
-        $leaveRequests = collect($leaveRequestsPaginated->items())->map(function (Leave $leave) use ($leaveTypes) {
+        $leaveRequests = $this->buildQuery($request)
+            ->get()
+            ->map(function (Leave $leave) use ($leaveTypes) {
             $leaveTypeName = collect($leaveTypes)->firstWhere('id', $leave->leave_type_id)?->name ?? 'Leave Request';
             $employee = $leave->employee;
 
@@ -175,7 +172,6 @@ class LeaveController extends Controller
         return view('leave', [
             'balances'               => $balances,
             'leaveRequests'          => $leaveRequests,
-            'leaveRequestsPaginated' => $leaveRequestsPaginated,
             'leaveTypes'             => $leaveTypes,
             'filters'                => $filters,
             'employees'              => $user && $user->role !== 1

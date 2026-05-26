@@ -453,7 +453,7 @@ class EmployeeController extends Controller
                 $query->whereIn('role', [2, 4]);
             })
             ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
-            ->paginate(15);
+            ->get();
 
         $allEmployees = Employee::whereDoesntHave('user', function ($query) {
                 $query->whereIn('role', [2, 4]);

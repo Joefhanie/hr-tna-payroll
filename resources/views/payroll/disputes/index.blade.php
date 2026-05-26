@@ -79,7 +79,6 @@
         <p id="filterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
     </div>
 
-    <x-table-pagination target="disputesTable" />
     {{-- Claims Table --}}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
@@ -184,6 +183,8 @@
             </table>
         </div>
     </div>
+
+    <x-table-pagination target="disputesTable" />
 
     {{-- ===== FILE DISPUTE MODAL ===== --}}
     <div id="disputeModal" class="fixed inset-0 z-50 hidden justify-center items-start sm:items-center bg-slate-950/40 p-4 backdrop-blur-sm overflow-y-auto">

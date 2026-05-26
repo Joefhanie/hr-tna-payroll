@@ -76,7 +76,7 @@
     <!-- Employees Table -->
     <div class="card overflow-hidden">
         @if ($employees->count() > 0)
-            <table class="w-full text-sm">
+            <table id="salaryRecordsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Employee</th>
@@ -158,11 +158,8 @@
                     @endforeach
                 </tbody>
             </table>
-            @if ($employees->hasPages())
-                <div class="border-t border-slate-100 px-6 py-4">
-                    {{ $employees->links() }}
-                </div>
-            @endif
+
+            <x-table-pagination target="salaryRecordsTable" itemsPerPage="10" />
         @else
             <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>
         @endif

@@ -24,7 +24,6 @@
 
 
     <section class="card p-6">
-        <x-table-pagination target="usersTable" />
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
             <table id="usersTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
@@ -83,6 +82,8 @@
                     @endforelse
                 </tbody>
             </table>
+
+            <x-table-pagination target="usersTable" />
         </div>
     </section>
 

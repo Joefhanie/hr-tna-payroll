@@ -52,7 +52,7 @@
         <!-- Desktop View -->
         <div class="hidden lg:block overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table id="shiftScheduleTable" class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">CODE</th>
@@ -240,6 +240,8 @@
                     </tbody>
                 </table>
             </div>
+
+            <x-table-pagination target="shiftScheduleTable" />
         </div>
 
         <!-- Mobile View (Cards) -->

@@ -60,8 +60,7 @@ class SalaryController extends Controller
         ]);
 
         $employees = $this->buildQuery($request)
-            ->paginate(15)
-            ->appends($request->query());
+            ->get();
 
         $departments = \App\Models\Department::all();
         $filters = $request->only(['q', 'department_id', 'pay_frequency']);

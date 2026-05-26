@@ -360,7 +360,6 @@
                 })();
             </script>
             <!-- Desktop View -->
-            <x-table-pagination target="attendanceTable" />
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
                 <table id="attendanceTable" class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
@@ -473,6 +472,8 @@
                         @endforelse
                     </tbody>
                 </table>
+
+                <x-table-pagination target="attendanceTable" />
             </div>
 
             <!-- Mobile View -->

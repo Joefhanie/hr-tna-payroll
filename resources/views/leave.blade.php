@@ -120,7 +120,7 @@
     {{-- Leave Requests Table --}}
     <div class="rounded-[0.8rem] border border-slate-200 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden">
         <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table id="leaveRequestsTable" class="w-full text-sm">
             <thead class="bg-slate-50 text-left text-[0.75rem] font-bold text-slate-500 border-b border-slate-100">
                 <tr>
                     <th class="px-5 py-4 font-bold">Employee</th>
@@ -208,11 +208,8 @@
             </tbody>
         </table>
         </div>{{-- /overflow-x-auto --}}
-        @if ($leaveRequestsPaginated->hasPages())
-            <div class="bg-white px-6 py-4 border-t border-slate-200">
-                {{ $leaveRequestsPaginated->links() }}
-            </div>
-        @endif
+
+        <x-table-pagination target="leaveRequestsTable" itemsPerPage="15" />
     </div>
 
     {{-- =========================================================

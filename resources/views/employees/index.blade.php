@@ -75,9 +75,6 @@
             @endif
         </div>
     </form>
-
-
-    <x-table-pagination target="emp-table" />
     <!-- Employees Table -->
     <div class="card overflow-hidden">
         @if ($employees->count() > 0)
@@ -188,6 +185,8 @@
                     @endforeach
                 </tbody>
             </table>
+
+            <x-table-pagination target="emp-table" />
 
         @else
             <div class="px-6 py-12 text-center text-sm text-slate-500">No employees found.</div>

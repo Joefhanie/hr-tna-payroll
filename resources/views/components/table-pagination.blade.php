@@ -4,16 +4,16 @@
     'maxPages' => 5
 ])
 
-<div id="pagination-{{ $target }}" class="js-table-pagination mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border border-slate-200/80 bg-white px-4 py-3 rounded-xl shadow-sm hidden" data-target="{{ $target }}" data-items-per-page="{{ $itemsPerPage }}" data-max-pages="{{ $maxPages }}">
-    <nav class="flex items-center gap-1 self-end sm:self-auto select-none" aria-label="Pagination">
-        <button type="button" class="btn-prev inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 disabled:pointer-events-none" title="Previous Page">
-            <i class="ti ti-chevron-left text-sm font-semibold"></i>
+<div id="pagination-{{ $target }}" class="js-table-pagination flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-200/80 bg-white px-4 py-3 hidden" data-target="{{ $target }}" data-items-per-page="{{ $itemsPerPage }}" data-max-pages="{{ $maxPages }}">
+    <nav class="flex items-center self-end sm:self-auto select-none" aria-label="Pagination">
+        <button type="button" class="btn-prev inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-100 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 disabled:pointer-events-none" title="Previous Page">
+            <i class="ti ti-chevron-left text-base font-semibold"></i>
         </button>
-        <div class="page-buttons flex items-center gap-1">
+        <div class="page-buttons flex items-center">
             <!-- Dynamic page buttons -->
         </div>
-        <button type="button" class="btn-next inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 disabled:pointer-events-none" title="Next Page">
-            <i class="ti ti-chevron-right text-sm font-semibold"></i>
+        <button type="button" class="btn-next inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-100 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 disabled:pointer-events-none" title="Next Page">
+            <i class="ti ti-chevron-right text-base font-semibold"></i>
         </button>
     </nav>
     <div class="text-xs text-slate-500 font-medium select-none">
@@ -134,9 +134,9 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.textContent = p;
 
             if (p === currentPage) {
-                btn.className = 'pagination-page-btn pagination-page-btn-active inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold select-none';
+                btn.className = 'pagination-page-btn pagination-page-btn-active inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold select-none';
             } else {
-                btn.className = 'pagination-page-btn pagination-page-btn-inactive inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium transition hover:bg-slate-50 hover:text-slate-900 select-none';
+                btn.className = 'pagination-page-btn pagination-page-btn-inactive inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-medium transition hover:bg-slate-50 hover:text-slate-900 select-none';
             }
 
             btn.addEventListener('click', function () {

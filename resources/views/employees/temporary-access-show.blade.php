@@ -173,7 +173,7 @@
         </div>
 
         @if ($tempAssignment && $tempAssignment->count() > 0)
-            <table class="w-full text-sm">
+            <table id="ta-history-table" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-6 py-3.5">Temporary Role</th>
@@ -232,6 +232,8 @@
                     @endforeach
                 </tbody>
             </table>
+
+            <x-table-pagination target="ta-history-table" />
         @else
             <div class="px-6 py-12 text-center text-sm text-slate-500">No temporary access history found.</div>
         @endif
