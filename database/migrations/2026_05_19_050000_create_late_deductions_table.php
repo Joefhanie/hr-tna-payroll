@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('late_deductions')) {
+            return;
+        }
+
         Schema::create('late_deductions', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('time_log_id')->nullable()->comment('Reference to time_logs table');
