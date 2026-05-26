@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Database\Schema\Grammars\LegacyMySqlGrammar;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureLegacyMysqlSchema();
         Schema::defaultStringLength(191);
         $publicUploadRoot = config('filesystems.disks.public.root');
 
@@ -204,6 +207,26 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Throwable $e) {
                 // Silently ignore to avoid breaking early migrations/installs
             }
+        }
+    }
+
+    private function configureLegacyMysqlSchema(): void
+    {
+        $connection = DB::connection();
+
+        if ($connection->getDriverName() !== 'mysql') {
+            return;
+        }
+
+        try {
+            $version = $connection->getServerVersion();
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        if (version_compare($version, '5.7', '<')) {
+            // MySQL 5.6 lacks generation_expression in information_schema.columns.
+            $connection->setSchemaGrammar(new LegacyMySqlGrammar($connection));
         }
     }
 }
