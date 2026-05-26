@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return Array.from(tbody.querySelectorAll(':scope > tr')).filter(row => {
             if (row.id === 'noResultsRow' || row.id === 'emptyRow') return false;
             if (row.querySelector('td[colspan]')) return false;
+            if (row.style.display === 'none') return false;
 
             // Check if explicitly hidden by a client-side filter
             return row.getAttribute('data-filter-hidden') !== 'true';

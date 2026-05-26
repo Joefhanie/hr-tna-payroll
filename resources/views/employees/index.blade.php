@@ -278,14 +278,26 @@
         document.getElementById('filterEmploymentType')?.addEventListener('change', updateExportUrl);
         document.getElementById('filterDepartment')?.addEventListener('change', updateExportUrl);
 
-        // Auto-filter search input with debounce
-        let debounceTimer;
-        document.getElementById('filterSearch')?.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function() {
-                document.getElementById('filterForm')?.submit();
-            }, 500);
+        // Client-side search filtering
+        function filterEmployeeRows() {
+            const term = (document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('#emp-table .emp-row').forEach((row) => {
+                if (!term) {
+                    row.style.display = '';
+                    return;
+                }
+
+                const searchable = row.textContent.toLowerCase();
+                row.style.display = searchable.includes(term) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('filterSearch')?.addEventListener('input', function () {
+            filterEmployeeRows();
+            updateExportUrl();
         });
+
+        filterEmployeeRows();
 
         // Run once on load
         updateExportUrl();
