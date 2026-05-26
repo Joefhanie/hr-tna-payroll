@@ -17,27 +17,62 @@
 
     {{-- Tabs removed --}}
 
-    {{-- ── Toolbar ── --}}
-    <div class="mb-6 flex items-center gap-3">
-        <div class="relative flex-1 max-w-xs bg-white">
-            <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input id="ta-search" type="search" placeholder="Search by name or code…"
-                   class="w-full rounded-lg border border-slate-300 py-2 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-700 bg-white"
-                   style="padding-left:2.25rem" />
+    {{-- ── Filters ── --}}
+    <form id="taFilterForm" method="GET" action="{{ route('employees.temporary-access') }}" class="card p-4 mb-6">
+        <div class="flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
+                <div class="relative">
+                    <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input id="ta-search" name="q" type="search" value="{{ $filters['q'] ?? '' }}" placeholder="Search by name, code, email, position…"
+                           class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+
+            <div class="min-w-[160px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+                <input type="date" name="from_date" id="taFromDate" value="{{ $filters['from_date'] ?? '' }}" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="min-w-[160px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+                <input type="date" name="to_date" id="taToDate" value="{{ $filters['to_date'] ?? '' }}" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="min-w-[180px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Position</label>
+                <select name="position_id" id="taPosition" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Positions</option>
+                    @foreach ($positions as $position)
+                        <option value="{{ $position->id }}" {{ ($filters['position_id'] ?? '') == $position->id ? 'selected' : '' }}>{{ $position->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="min-w-[180px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
+                <select name="department_id" id="taDepartment" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Departments</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}" {{ ($filters['department_id'] ?? '') == $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <a href="{{ route('employees.temporary-access') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                Clear
+            </a>
+
+            @if(auth()->user()->role === 4)
+                <a href="{{ route('employees.temporary-access.export') }}" id="btnTaExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export CSV
+                </a>
+            @endif
         </div>
-        <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Filter
-        </button>
-        <button class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export
-        </button>
-    </div>
+    </form>
 
 
 
@@ -205,19 +240,18 @@
                                         <button type="button"
                                                 class="text-blue-600 hover:text-blue-800 transition"
                                                 title="Grant / Edit Temporary Role"
-                                                onclick="openRoleModal(
-                                                    {{ $employee->id }},
-                                                    '{{ addslashes($employee->full_name) }}',
-                                                    '{{ $temporaryAssignment ? ($temporaryAssignment->from_date?->format('Y-m-d\TH:i') ?? '') : '' }}',
-                                                    '{{ $temporaryAssignment ? ($temporaryAssignment->to_date?->format('Y-m-d\TH:i') ?? '') : '' }}'
-                                                )">
+                                                data-role-id="{{ $employee->id }}"
+                                                data-role-name="{{ $employee->full_name }}"
+                                                data-role-from="{{ $temporaryAssignment ? ($temporaryAssignment->from_date?->format('Y-m-d\TH:i') ?? '') : '' }}"
+                                                data-role-to="{{ $temporaryAssignment ? ($temporaryAssignment->to_date?->format('Y-m-d\TH:i') ?? '') : '' }}">
                                             <i class="ti ti-edit text-base"></i>
                                         </button>
                                     @else
                                         <button type="button"
                                             class="text-slate-400 hover:text-red-500 transition"
                                             title="User Account Required"
-                                                onclick="openNoUserModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}')">
+                                                data-no-user-id="{{ $employee->id }}"
+                                                data-no-user-name="{{ $employee->full_name }}">
                                             <i class="ti ti-edit text-base"></i>
                                         </button>
                                     @endif
@@ -626,14 +660,62 @@
             window.location.href = url;
         }
 
-        /* ── Client-side Table Search ── */
-        document.getElementById('ta-search').addEventListener('input', function () {
-            const term = this.value.toLowerCase();
-            document.querySelectorAll('#ta-table .ta-row').forEach(row => {
-                const name = row.querySelector('.ta-name')?.textContent.toLowerCase() ?? '';
-                const code = row.querySelector('td:first-child')?.textContent.toLowerCase() ?? '';
-                row.style.display = (name.includes(term) || code.includes(term)) ? '' : 'none';
+        function updateTaExportUrl() {
+            const q = document.getElementById('ta-search')?.value || '';
+            const fromDate = document.getElementById('taFromDate')?.value || '';
+            const toDate = document.getElementById('taToDate')?.value || '';
+            const positionId = document.getElementById('taPosition')?.value || '';
+            const departmentId = document.getElementById('taDepartment')?.value || '';
+
+            let url = "{{ route('employees.temporary-access.export') }}";
+            const params = new URLSearchParams();
+
+            if (q) params.set('q', q);
+            if (fromDate) params.set('from_date', fromDate);
+            if (toDate) params.set('to_date', toDate);
+            if (positionId) params.set('position_id', positionId);
+            if (departmentId) params.set('department_id', departmentId);
+
+            if ([...params].length) {
+                url += '?' + params.toString();
+            }
+
+            const exportBtn = document.getElementById('btnTaExport');
+            if (exportBtn) exportBtn.href = url;
+        }
+
+        let taSearchTimer = null;
+        document.getElementById('ta-search')?.addEventListener('input', function () {
+            updateTaExportUrl();
+
+            clearTimeout(taSearchTimer);
+            taSearchTimer = setTimeout(() => {
+                document.getElementById('taFilterForm')?.submit();
+            }, 300);
+        });
+
+        document.getElementById('taFromDate')?.addEventListener('change', updateTaExportUrl);
+        document.getElementById('taToDate')?.addEventListener('change', updateTaExportUrl);
+        document.getElementById('taPosition')?.addEventListener('change', updateTaExportUrl);
+        document.getElementById('taDepartment')?.addEventListener('change', updateTaExportUrl);
+
+        document.querySelectorAll('[data-role-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                openRoleModal(
+                    button.dataset.roleId,
+                    button.dataset.roleName,
+                    button.dataset.roleFrom || '',
+                    button.dataset.roleTo || ''
+                );
             });
         });
+
+        document.querySelectorAll('[data-no-user-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                openNoUserModal(button.dataset.noUserId, button.dataset.noUserName || '');
+            });
+        });
+
+        updateTaExportUrl();
     </script>
 </x-app-layout>

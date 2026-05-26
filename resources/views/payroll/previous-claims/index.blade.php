@@ -92,7 +92,6 @@
         <p id="filterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
     </div>
 
-    <x-table-pagination target="claimsTable" />
     {{-- Claims Table --}}
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
@@ -207,6 +206,8 @@
                 </tbody>
             </table>
         </div>
+
+        <x-table-pagination target="claimsTable" itemsPerPage="10" />
     </div>
 
     {{-- ===== FILE CLAIM MODAL ===== --}}

@@ -78,7 +78,7 @@
 
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="payRunsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Pay Period</th>
@@ -165,11 +165,8 @@
                 </tbody>
             </table>
         </div>
-        @if ($payRuns->hasPages())
-            <div class="border-t border-slate-100 px-6 py-4">
-                {{ $payRuns->links() }}
-            </div>
-        @endif
+
+        <x-table-pagination target="payRunsTable" itemsPerPage="10" />
     </div>
 
     <script>

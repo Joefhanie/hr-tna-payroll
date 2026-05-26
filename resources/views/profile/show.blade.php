@@ -392,7 +392,7 @@
                     </div>
 
                     <div class="overflow-x-auto rounded-xl border border-slate-100">
-                        <table class="w-full text-left text-sm">
+                        <table id="profileLeaveRequestsTable" class="w-full text-left text-sm">
                             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                                 <tr>
                                     <th class="px-4 py-3.5">Type</th>
@@ -423,6 +423,8 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <x-table-pagination target="profileLeaveRequestsTable" itemsPerPage="10" />
                 </div>
             </div>
 
@@ -440,7 +442,7 @@
                     </div>
 
                     <div class="overflow-x-auto rounded-xl border border-slate-100">
-                        <table class="w-full text-left text-sm">
+                        <table id="profilePayslipsTable" class="w-full text-left text-sm">
                             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                                 <tr>
                                     <th class="px-4 py-3.5">Period</th>
@@ -494,6 +496,8 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <x-table-pagination target="profilePayslipsTable" itemsPerPage="10" />
                 </div>
             </div>
 
@@ -511,7 +515,7 @@
                     </div>
 
                     <div class="overflow-x-auto rounded-xl border border-slate-100">
-                        <table class="w-full text-left text-sm">
+                        <table id="profileAttendanceLogsTable" class="w-full text-left text-sm">
                             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
                                 <tr>
                                     <th class="px-4 py-3.5">Name</th>
@@ -553,6 +557,8 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <x-table-pagination target="profileAttendanceLogsTable" itemsPerPage="10" />
                 </div>
             </div>
 

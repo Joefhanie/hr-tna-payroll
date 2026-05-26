@@ -449,19 +449,136 @@ class EmployeeController extends Controller
     {
         abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access management.');
 
-        $employees = Employee::whereDoesntHave('user', function ($query) {
-                $query->whereIn('role', [2, 4]);
-            })
-            ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
-            ->get();
+        $request = request();
 
-        $allEmployees = Employee::whereDoesntHave('user', function ($query) {
-                $query->whereIn('role', [2, 4]);
-            })
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+
+        $filters = $this->temporaryAccessFilters($request);
+
+        $employees = $this->temporaryAccessEmployeesQuery()
+            ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
+            ->get()
+            ->filter(fn (Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
+            ->values();
+
+        $allEmployees = $this->temporaryAccessEmployeesQuery()
             ->with(['user'])
             ->get();
 
-        return view('employees.temporary-access', compact('employees', 'allEmployees'));
+        $positions = Position::orderBy('title')->get();
+        $departments = Department::orderBy('name')->get();
+
+        return view('employees.temporary-access', compact('employees', 'allEmployees', 'filters', 'positions', 'departments'));
+    }
+
+    /**
+     * Export temporary access records to CSV.
+     */
+    public function exportTemporaryAccess(Request $request)
+    {
+        abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access management.');
+
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+
+        $filters = $this->temporaryAccessFilters($request);
+
+        $employees = $this->temporaryAccessEmployeesQuery()
+            ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
+            ->get()
+            ->filter(fn (Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
+            ->values();
+
+        $filename = 'temporary_access_' . now()->format('Ymd_His') . '.csv';
+
+        $responseHeaders = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () use ($employees) {
+            $file = fopen('php://output', 'w');
+
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, [
+                'ID',
+                'Employee Code',
+                'Name',
+                'Email',
+                'Department',
+                'Position',
+                'From Date',
+                'To Date',
+                'Status',
+                'Base Role',
+                'Temporary Role',
+                'Granted By',
+            ]);
+
+            $roleLabels = [1 => 'Employee', 2 => 'Supervisor', 4 => 'HR'];
+
+            foreach ($employees as $employee) {
+                $user = $employee->user;
+                $now = now();
+                $temporaryAssignment = $user
+                    ? $user->temporaryAssignments
+                        ->where('is_active', true)
+                        ->sortByDesc('to_date')
+                        ->first(function ($assignment) use ($now) {
+                            return $assignment->from_date
+                                && $assignment->to_date
+                                && ($now->between($assignment->from_date, $assignment->to_date) || $assignment->from_date->isFuture());
+                        })
+                    : null;
+
+                $status = 'None';
+                if ($temporaryAssignment) {
+                    $status = $temporaryAssignment->from_date && $temporaryAssignment->to_date && $now->between($temporaryAssignment->from_date, $temporaryAssignment->to_date)
+                        ? 'Active'
+                        : 'Scheduled';
+                }
+
+                $baseRole = $temporaryAssignment
+                    ? ($roleLabels[(int) $temporaryAssignment->original_role] ?? 'N/A')
+                    : ($user ? ($roleLabels[(int) $user->role] ?? 'N/A') : 'N/A');
+
+                $temporaryRole = $temporaryAssignment
+                    ? ($roleLabels[(int) $temporaryAssignment->temporary_role] ?? 'Role')
+                    : '—';
+
+                fputcsv($file, [
+                    $employee->id,
+                    $employee->employee_code,
+                    $employee->full_name,
+                    $employee->email ?? '',
+                    $employee->department?->name ?? 'N/A',
+                    $employee->position?->title ?? 'N/A',
+                    optional($temporaryAssignment?->from_date)->format('Y-m-d') ?? '',
+                    optional($temporaryAssignment?->to_date)->format('Y-m-d') ?? '',
+                    $status,
+                    $baseRole,
+                    $temporaryRole,
+                    $temporaryAssignment?->grantedBy?->display_name ?? $temporaryAssignment?->grantedBy?->name ?? '—',
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     /**
@@ -476,6 +593,102 @@ class EmployeeController extends Controller
         }]);
 
         return view('employees.temporary-access-show', compact('employee'));
+    }
+
+    /**
+     * Build the base employee query for temporary access management.
+     */
+    private function temporaryAccessEmployeesQuery()
+    {
+        return Employee::whereDoesntHave('user', function ($query) {
+                $query->whereIn('role', [2, 4]);
+            });
+    }
+
+    /**
+     * Normalize temp access filters from the request.
+     */
+    private function temporaryAccessFilters(Request $request): array
+    {
+        return [
+            'q' => trim((string) $request->string('q')),
+            'from_date' => trim((string) $request->string('from_date')),
+            'to_date' => trim((string) $request->string('to_date')),
+            'position_id' => trim((string) $request->string('position_id')),
+            'department_id' => trim((string) $request->string('department_id')),
+        ];
+    }
+
+    /**
+     * Determine whether an employee matches the current temporary access filters.
+     */
+    private function matchesTemporaryAccessFilters(Employee $employee, array $filters): bool
+    {
+        $user = $employee->user;
+        $temporaryAssignment = $this->currentTemporaryAssignment($user?->temporaryAssignments);
+
+        if ($filters['q'] !== '') {
+            $needle = mb_strtolower($filters['q']);
+            $searchable = mb_strtolower(implode(' ', array_filter([
+                (string) $employee->full_name,
+                (string) $employee->employee_code,
+                (string) ($employee->email ?? ''),
+                (string) ($employee->position->title ?? ''),
+                (string) ($employee->department->name ?? ''),
+            ])));
+
+            if (!str_contains($searchable, $needle)) {
+                return false;
+            }
+        }
+
+        if ($filters['position_id'] !== '' && (string) $employee->position_id !== $filters['position_id']) {
+            return false;
+        }
+
+        if ($filters['department_id'] !== '' && (string) $employee->department_id !== $filters['department_id']) {
+            return false;
+        }
+
+        $filterFrom = $filters['from_date'] !== '' ? \Carbon\Carbon::parse($filters['from_date'])->startOfDay() : null;
+        $filterTo = $filters['to_date'] !== '' ? \Carbon\Carbon::parse($filters['to_date'])->endOfDay() : null;
+
+        if ($filterFrom || $filterTo) {
+            if (!$temporaryAssignment || !$temporaryAssignment->from_date || !$temporaryAssignment->to_date) {
+                return false;
+            }
+
+            if ($filterFrom && $temporaryAssignment->to_date->lt($filterFrom)) {
+                return false;
+            }
+
+            if ($filterTo && $temporaryAssignment->from_date->gt($filterTo)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Find the active or scheduled temporary assignment that should be displayed.
+     */
+    private function currentTemporaryAssignment($temporaryAssignments)
+    {
+        if (!$temporaryAssignments) {
+            return null;
+        }
+
+        $now = now();
+
+        return $temporaryAssignments
+            ->where('is_active', true)
+            ->sortByDesc('to_date')
+            ->first(function ($assignment) use ($now) {
+                return $assignment->from_date
+                    && $assignment->to_date
+                    && ($now->between($assignment->from_date, $assignment->to_date) || $assignment->from_date->isFuture());
+            });
     }
 
     /**

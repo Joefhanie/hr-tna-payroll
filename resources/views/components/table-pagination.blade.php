@@ -17,7 +17,7 @@
         </button>
     </nav>
     <div class="text-xs text-slate-500 font-medium select-none">
-        Showing <span class="font-semibold text-slate-900 pagination-start">0</span> to <span class="font-semibold text-slate-900 pagination-end">0</span> of <span class="font-semibold text-slate-900 pagination-total">0</span> entries
+        Showing <span class="font-semibold text-slate-900 pagination-start">0</span> out of <span class="font-semibold text-slate-900 pagination-total">0</span> entries
     </div>
 </div>
 
@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnNext = paginatorEl.querySelector('.btn-next');
     const pageButtonsContainer = paginatorEl.querySelector('.page-buttons');
     const txtStart = paginatorEl.querySelector('.pagination-start');
-    const txtEnd = paginatorEl.querySelector('.pagination-end');
     const txtTotal = paginatorEl.querySelector('.pagination-total');
 
     let currentPage = 1;
@@ -110,8 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (observer) observer.observe(tbody, observerConfig);
 
         // Update statistics
-        txtStart.textContent = totalItems === 0 ? 0 : startIdx + 1;
-        txtEnd.textContent = Math.min(endIdx, totalItems);
+        txtStart.textContent = totalItems === 0 ? 0 : Math.min(endIdx, totalItems);
         txtTotal.textContent = totalItems;
 
         // Update navigation buttons status

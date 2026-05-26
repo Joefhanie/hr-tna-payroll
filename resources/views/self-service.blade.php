@@ -50,7 +50,7 @@
 
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="selfServiceTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Code</th>
@@ -106,6 +106,8 @@
                 </tbody>
             </table>
         </div>
+
+        <x-table-pagination target="selfServiceTable" itemsPerPage="10" />
     </div>
 
     <script>

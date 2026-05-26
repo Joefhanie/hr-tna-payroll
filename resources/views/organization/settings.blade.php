@@ -271,7 +271,7 @@
                 </div>
             @else
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table id="companyFilesTable" class="w-full text-sm">
                         <thead>
                             <tr class="border-b border-slate-200">
                                 <th class="px-4 py-3 text-left font-medium text-slate-700">File</th>
@@ -330,6 +330,8 @@
                         </tbody>
                     </table>
                 </div>
+
+                <x-table-pagination target="companyFilesTable" itemsPerPage="10" />
             @endif
 
             <div class="mt-4 text-center text-sm text-slate-500">

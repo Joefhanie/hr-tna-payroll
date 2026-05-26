@@ -368,7 +368,7 @@
     <div id="leave-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Leave Requests</h2>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="selfServiceLeaveRequestsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-3 py-2">Type</th>
@@ -395,12 +395,14 @@
                 </tbody>
             </table>
         </div>
+
+        <x-table-pagination target="selfServiceLeaveRequestsTable" itemsPerPage="10" />
     </div>
 
     <div id="profile-update-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Profile Update Requests</h2>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="selfServiceProfileUpdatesTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-3 py-2">Requested Fields</th>
@@ -454,12 +456,14 @@
                 </tbody>
             </table>
         </div>
+
+        <x-table-pagination target="selfServiceProfileUpdatesTable" itemsPerPage="10" />
     </div>
 
     <div id="payslips" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
         <h2 class="mb-4 text-base font-semibold text-slate-900">Payslips</h2>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table id="selfServicePayslipsTable" class="w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-3 py-2">Period</th>
@@ -508,6 +512,8 @@
                 </tbody>
             </table>
         </div>
+
+        <x-table-pagination target="selfServicePayslipsTable" itemsPerPage="10" />
     </div>
 
     <div id="payslipModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center">

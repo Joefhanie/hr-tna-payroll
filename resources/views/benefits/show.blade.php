@@ -132,7 +132,7 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table id="benefitsEnrolledEmployeesTable" class="w-full text-sm">
                         <thead class="bg-slate-50 text-left text-[0.75rem] font-bold text-slate-500 border-b border-slate-100">
                             <tr>
                                 <th class="px-5 py-3 font-bold">Employee</th>
@@ -192,6 +192,8 @@
                         </tbody>
                     </table>
                 </div>
+
+                <x-table-pagination target="benefitsEnrolledEmployeesTable" itemsPerPage="10" />
             </div>
 
         </div>

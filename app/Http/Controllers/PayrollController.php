@@ -54,10 +54,8 @@ class PayrollController extends Controller
 
         $currentYear = now()->year;
 
-        // Paginate the filtered pay runs
         $payRuns = $this->buildQuery($request)
-            ->paginate(15)
-            ->appends($request->query());
+            ->get();
 
         $filters = $request->only(['start_date', 'end_date', 'status']);
 
@@ -124,10 +122,10 @@ class PayrollController extends Controller
 
         return response()->stream(function () use ($payRuns) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, [
                 'Pay Run ID',
                 'Period Start',
@@ -249,12 +247,12 @@ class PayrollController extends Controller
                     $seenSessions = [];
                     foreach ($records as $record) {
                         $locName = $record->location ?: 'General';
-                        
+
                         // Deduplication logic
-                        $dedupKey = $record->session_id 
-                            ? 'session_' . $record->session_id 
+                        $dedupKey = $record->session_id
+                            ? 'session_' . $record->session_id
                             : 'loc_' . $locName;
-                            
+
                         if (isset($seenSessions[$dedupKey])) {
                             continue; // Skip duplicates for the same session or same location (if no session)
                         }
@@ -375,16 +373,16 @@ class PayrollController extends Controller
             ->get();
 
         [$fieldRecordMap, $fieldSupervisorMap] = $this->fieldRecordMaps([$date]);
-        
+
         $employeeMap = $employees->keyBy('id');
         $employeeCodeMap = $employees->keyBy('employee_code');
-        
+
         $employeeLocations = [];
         $recordsForUniqueLocs = DB::table('field_records')
             ->select('empid', 'location')
             ->where('Date', $date)
             ->get();
-        
+
         foreach ($recordsForUniqueLocs as $r) {
             $loc = $r->location ?: 'General';
             $employeeLocations[$r->empid][$loc] = true;
@@ -401,12 +399,12 @@ class PayrollController extends Controller
         $employeeData = [];
         foreach ($employees as $employee) {
             $locs = array_keys($employeeLocations[$employee->employee_code] ?? ['General' => true]);
-            
+
             foreach ($locs as $locName) {
                 $fieldRecord = $fieldRecordMap[$employee->employee_code][$locName][$date] ?? null;
                 $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord['sup_id']][$date] ?? null) : null;
                 $supervisorCode = $fieldRecord['sup_id'] ?? ($employee->manager?->employee_code ?? null);
-                
+
                 $isSupervisor = $employee->user && $employee->user->role === 2;
                 $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
 
@@ -580,20 +578,20 @@ class PayrollController extends Controller
             if ($recordsForDate && $recordsForDate->isNotEmpty()) {
                 // Unique locations worked on this date
                 $uniqueLocs = $recordsForDate->pluck('location')->unique()->all();
-                
+
                 foreach ($uniqueLocs as $loc) {
                     $locName = $loc ?: 'General';
-                    
+
                     // Find a record for this specific location to get the supervisor & notes
                     $fieldRecord = $recordsForDate->first(fn($r) => ($r->location ?: 'General') === $locName);
-                    
+
                     $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord->sup_id][$dateString] ?? null) : null;
                     $supervisorCode = $fieldRecord ? $fieldRecord->sup_id : ($employee->manager?->employee_code ?? null);
                     $supervisor = $supervisorCode ? ($employeeCodeMap[$supervisorCode] ?? Employee::where('employee_code', $supervisorCode)->first()) : null;
-                    
+
                     $location = $locName;
                     $supervisorName = 'None';
-                    
+
                     $isSupervisor = $employee->user && $employee->user->role === 2;
                     if ($isSupervisor) {
                         $supervisorName = 'None';
@@ -724,7 +722,7 @@ class PayrollController extends Controller
 
         foreach ($allEmployees as $emp) {
             $isSupervisor = $emp->user && $emp->user->role === 2;
-            
+
             // Get this employee's records for this day
             $records = $employeeRecords->get($emp->employee_code);
 
@@ -737,7 +735,7 @@ class PayrollController extends Controller
                     if ($locName === $workplaceName) {
                         // Find the first record for this location to get supervisor code
                         $record = $records->first(fn($r) => ($r->location ?: 'General') === $locName);
-                        
+
                         $plotting = EmployeePlotting::where('empid', $emp->employee_code)
                             ->where('date', $date)
                             ->where('location', $workplaceName)
@@ -1082,7 +1080,7 @@ class PayrollController extends Controller
 
         // Reset linked claims and disputes so they are credited to the next pay run
         \App\Models\PreviousClaim::where('pay_run_id', $payRun->id)->update(['pay_run_id' => null]);
-        
+
         \App\Models\PayslipDispute::where('adjustment_pay_run_id', $payRun->id)->update([
             'adjustment_pay_run_id' => null,
             'adjustment_payslip_id' => null,
