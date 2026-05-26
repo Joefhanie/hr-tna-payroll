@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
 use App\Services\TapRecordAttendanceService;
 
-Route::redirect('/', 'hr-tools/hr-tna-payroll/dashboard');
+Route::redirect('/', 'hr-tools/hr-tna-payroll/public');
 
 // Machine-independent media URL for files stored on the public disk.
 Route::get('/media/{path}', [PublicStorageController::class, 'show'])
