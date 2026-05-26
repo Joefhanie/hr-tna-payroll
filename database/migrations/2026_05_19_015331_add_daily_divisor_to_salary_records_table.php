@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('salary_records') || Schema::hasColumn('salary_records', 'daily_divisor')) {
+            return;
+        }
+
         Schema::table('salary_records', function (Blueprint $table) {
             $table->decimal('daily_divisor', 8, 4)->default(21.8)->after('pay_frequency');
         });
@@ -21,8 +25,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('salary_records') || !Schema::hasColumn('salary_records', 'daily_divisor')) {
+            return;
+        }
+
         Schema::table('salary_records', function (Blueprint $table) {
-            //
+            $table->dropColumn('daily_divisor');
         });
     }
 };
