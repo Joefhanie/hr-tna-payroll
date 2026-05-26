@@ -123,7 +123,7 @@ class EmployeeController extends Controller
             ]);
 
             $statusLabels = [
-                1 => 'Active',
+                1 => 'Regular',
                 2 => 'Probationary',
                 3 => 'On Leave',
                 4 => 'Resigned',

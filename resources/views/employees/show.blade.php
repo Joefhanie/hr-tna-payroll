@@ -12,7 +12,7 @@
         $empCode = (int) ($employee->employment_type ?? 0);
         $empLabel = $empLabels[$empCode] ?? ($employee->employment_type ?? 'N/A');
 
-        $statusLabels = [1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
+        $statusLabels = [1 => 'Regular', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
         $statusLabel = $statusLabels[(int) ($employee->status ?? 0)] ?? ($employee->status ?? 'N/A');
     @endphp
 

@@ -52,6 +52,49 @@ class Employee extends Model
         'employment_type' => 'integer',
     ];
 
+    private function normalizeNamePart(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    public function getFirstNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = $this->normalizeNamePart($value);
+    }
+
+    public function getMiddleNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setMiddleNameAttribute($value): void
+    {
+        $this->attributes['middle_name'] = $this->normalizeNamePart($value);
+    }
+
+    public function getLastNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setLastNameAttribute($value): void
+    {
+        $this->attributes['last_name'] = $this->normalizeNamePart($value);
+    }
+
     /**
      * Get the department that the employee belongs to.
      */

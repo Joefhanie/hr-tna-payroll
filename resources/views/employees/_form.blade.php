@@ -289,7 +289,7 @@
             <label class="{{ $lbl }}" for="status">Employment Status <span class="text-red-500">*</span></label>
             @php
                 $statusOptions = [
-                    1 => 'Active',
+                    1 => 'Regular',
                     2 => 'Probationary',
                     3 => 'On Leave',
                     4 => 'Resigned',
