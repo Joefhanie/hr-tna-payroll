@@ -274,8 +274,32 @@
 
                 <div>
                     <label class="block text-xs font-medium text-slate-700 mb-1">Supporting Document <span class="text-slate-400">(PDF, image, Word — max 5MB)</span></label>
-                    <input type="file" name="supporting_document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        class="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-slate-200 transition">
+                    <label for="claimDocumentFileInput" id="claimDocumentDropZone"
+                        class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 px-4 py-5 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
+                        <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="mt-1.5 text-sm text-slate-700">
+                            <span class="font-medium text-blue-600">Click to upload</span> or drag and drop
+                        </p>
+                        <p class="text-xs text-slate-400">PDF, JPG, PNG, DOC, DOCX</p>
+                    </label>
+                    <input type="file" id="claimDocumentFileInput" name="supporting_document"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="sr-only">
+                    {{-- Selected file pill --}}
+                    <div id="claimDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+                        <svg class="h-4 w-4 shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span id="claimDocumentFileName" class="flex-1 truncate font-medium text-blue-700 text-xs"></span>
+                        <button type="button" id="claimDocumentFileRemove"
+                            class="ml-1 rounded p-0.5 text-blue-400 hover:bg-blue-100 hover:text-blue-700 transition" title="Remove file">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="claimDocumentFileError" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2 border-t border-slate-100">
@@ -498,6 +522,156 @@
         closeBtn?.addEventListener('click', () => closeModal(claimModal));
         cancelBtn?.addEventListener('click', () => closeModal(claimModal));
         claimModal?.addEventListener('click', e => { if (e.target === claimModal) closeModal(claimModal); });
+
+        // ===== Claim Document File Picker =====
+        (() => {
+            const fileInput  = document.getElementById('claimDocumentFileInput');
+            const dropZone   = document.getElementById('claimDocumentDropZone');
+            const filePill   = document.getElementById('claimDocumentFilePill');
+            const fileName   = document.getElementById('claimDocumentFileName');
+            const fileRemove = document.getElementById('claimDocumentFileRemove');
+            const fileError  = document.getElementById('claimDocumentFileError');
+
+            if (!fileInput) return;
+
+            const ACCEPTED_EXTS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+
+            const getExt = (name) => {
+                const match = name.toLowerCase().match(/\.[^.]+$/);
+                return match ? match[0] : '';
+            };
+
+            const showError = (msg) => {
+                if (!fileError) return;
+                fileError.textContent = msg;
+                fileError.classList.remove('hidden');
+            };
+
+            const clearError = () => {
+                if (!fileError) return;
+                fileError.textContent = '';
+                fileError.classList.add('hidden');
+            };
+
+            const showPill = (file) => {
+                if (fileName) fileName.textContent = file.name;
+                filePill?.classList.remove('hidden');
+                filePill?.classList.add('flex');
+                dropZone?.classList.add('border-blue-400', 'bg-blue-50/60');
+            };
+
+            const clearPill = () => {
+                if (fileName) fileName.textContent = '';
+                filePill?.classList.add('hidden');
+                filePill?.classList.remove('flex');
+                dropZone?.classList.remove('border-blue-400', 'bg-blue-50/60');
+            };
+
+            const applyFile = (file) => {
+                clearError();
+                const ext = getExt(file.name);
+                if (!ACCEPTED_EXTS.includes(ext)) {
+                    showError(`Invalid file type "${ext || file.name}". Accepted: ${ACCEPTED_EXTS.join(', ')}`);
+                    fileInput.value = '';
+                    clearPill();
+                    return;
+                }
+                showPill(file);
+            };
+
+            if (dropZone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); });
+                });
+                ['dragenter', 'dragover'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => dropZone.classList.add('border-blue-400', 'bg-blue-50'));
+                });
+                ['dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => {
+                        if (!fileInput.files?.length) dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+                    });
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer?.files;
+                    if (!files || files.length === 0) return;
+                    fileInput.files = files;
+                    applyFile(files[0]);
+                });
+            }
+
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                if (file) applyFile(file);
+                else { clearPill(); clearError(); }
+            });
+
+            fileRemove?.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.value = '';
+                clearPill();
+                clearError();
+            });
+
+            // Also clear the file picker when the modal is closed/re-opened
+            [closeBtn, cancelBtn].forEach((btn) => {
+                btn?.addEventListener('click', () => {
+                    fileInput.value = '';
+                    clearPill();
+                    clearError();
+                });
+            });
+
+            // AJAX Form Submission to retain form inputs & selected file on validation error
+            const form = fileInput?.closest('form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                    `;
+                }
+
+                clearError();
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        window.location.href = response.url || window.location.href;
+                    } else {
+                        const data = await response.json();
+                        const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Upload failed. Please check form values.');
+                        showError(errMsg);
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                        }
+                    }
+                } catch (error) {
+                    showError('An unexpected network error occurred.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                }
+            });
+        })();
 
         @if($isHR)
         const approveModal    = document.getElementById('approveModal');
