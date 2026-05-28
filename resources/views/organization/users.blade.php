@@ -576,6 +576,7 @@
 
     <script>
         let activeUserRole = null;
+        const userPermissionsUrlTemplate = @json(route('organization.users.permissions.update', ['user' => '__USER__']));
         const roleDefaults = {
             2: [
                 'employees.view', 'onboarding.view', 'onboarding.edit',
@@ -621,7 +622,7 @@
             badgeEl.textContent = roleLabels[role] || 'Unknown';
 
             // Set Form action
-            document.getElementById('userPermissionsForm').action = '/organization/users/' + userId + '/permissions';
+            document.getElementById('userPermissionsForm').action = userPermissionsUrlTemplate.replace('__USER__', userId);
 
             // Show HR Warning or Custom Override Banner
             const hrBanner = document.getElementById('hr_warning_banner');

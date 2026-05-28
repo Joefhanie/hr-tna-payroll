@@ -247,12 +247,30 @@ class NotificationService
             $recipients->push($managerUser);
         }
 
+        $notifType = 'previous-claim-request';
+        $title = $claim->claim_type . ' request submitted';
+        $icon = 'ti ti-file-dollar';
+        $link = route('payroll.previous-claims.index', ['type' => $claim->claim_type], false);
+
+        // Use separate notification types for overtime and night differential
+        if (strtolower($claim->claim_type) === 'overtime') {
+            $notifType = 'overtime-request';
+            $title = 'Overtime request submitted';
+            $link = route('payroll.previous-claims.index', ['type' => 'Overtime'], false);
+            $icon = 'ti ti-clock';
+        } elseif (strtolower($claim->claim_type) === 'night differential' || strtolower($claim->claim_type) === 'night_differential') {
+            $notifType = 'night-differential-request';
+            $title = 'Night differential request submitted';
+            $link = route('payroll.previous-claims.index', ['type' => 'Night Differential'], false);
+            $icon = 'ti ti-moon';
+        }
+
         $this->send($recipients, new SystemNotification(
-            'previous-claim-request',
-            $claim->claim_type . ' request submitted',
+            $notifType,
+            $title,
             trim((string) ($claim->employee?->full_name ?? 'An employee')) . ' submitted a ' . strtolower($claim->claim_type) . ' request for ' . optional($claim->claim_date)->format('M d, Y') . '.',
-            route('payroll.previous-claims.index', ['type' => $claim->claim_type], false),
-            'ti ti-file-dollar',
+            $link,
+            $icon,
             [
                 'previous_claim_id' => $claim->id,
                 'employee_id' => $claim->employee_id,
@@ -278,9 +296,20 @@ class NotificationService
             $message .= ' Note: ' . $note;
         }
 
+        $notifType = 'previous-claim-' . $decisionLabel;
+        $notifTitle = 'Claim request ' . $decisionLabel;
+
+        if (strtolower($claim->claim_type) === 'overtime') {
+            $notifType = 'overtime-' . $decisionLabel;
+            $notifTitle = 'Overtime request ' . $decisionLabel;
+        } elseif (strtolower($claim->claim_type) === 'night differential' || strtolower($claim->claim_type) === 'night_differential') {
+            $notifType = 'night-differential-' . $decisionLabel;
+            $notifTitle = 'Night differential request ' . $decisionLabel;
+        }
+
         $this->send(collect([$employeeUser]), new SystemNotification(
-            'previous-claim-' . $decisionLabel,
-            'Claim request ' . $decisionLabel,
+            $notifType,
+            $notifTitle,
             $message,
             route('self-service.profile', $claim->employee_id, false),
             $icon,

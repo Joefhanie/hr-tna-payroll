@@ -417,6 +417,12 @@
     </div>
 
     <script>
+        const grantRoleUrlTemplate = @json(route('employees.grant-role', ['employee' => '__EMPLOYEE__']));
+
+        function buildGrantRoleUrl(employeeId) {
+            return grantRoleUrlTemplate.replace('__EMPLOYEE__', employeeId);
+        }
+
         let currentEmployeeId = null;
         let currentEmployeeName = null;
 
@@ -491,7 +497,7 @@
             document.getElementById('roleEmployeeSearchWrap').classList.add('hidden');
             document.getElementById('roleModalSubtitle').textContent = name;
             document.getElementById('roleEmpId').value = id;
-            document.getElementById('grantRoleForm').action = `/employees/${id}/grant-role`;
+            document.getElementById('grantRoleForm').action = buildGrantRoleUrl(id);
 
             const fromInput = document.getElementById('fromDate');
             const toInput = document.getElementById('toDate');
@@ -619,7 +625,7 @@
 
                 searchInput.value  = employeeName;
                 hiddenId.value     = employeeId;
-                document.getElementById('grantRoleForm').action = `/employees/${employeeId}/grant-role`;
+                document.getElementById('grantRoleForm').action = buildGrantRoleUrl(employeeId);
 
                 suggestBox.classList.add('hidden');
             });
@@ -650,7 +656,7 @@
         }
 
         function redirectToUsers(employeeId, employeeName) {
-            let url = '/organization/users?action=create';
+            let url = "{{ route('organization.users.index') }}?action=create";
             if (employeeId) {
                 url += `&employee_id=${employeeId}`;
             }

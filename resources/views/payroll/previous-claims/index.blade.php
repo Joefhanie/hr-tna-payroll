@@ -494,6 +494,12 @@
     <x-slot:scripts>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const previousClaimApproveUrlTemplate = @json(route('payroll.previous-claims.approve', ['previousClaim' => '__CLAIM__']));
+        const previousClaimDeclineUrlTemplate = @json(route('payroll.previous-claims.decline', ['previousClaim' => '__CLAIM__']));
+
+        function buildPreviousClaimActionUrl(template, claimId) {
+            return template.replace('__CLAIM__', claimId);
+        }
 
         // ===== LIVE FILTERING =====
         const searchInput  = document.getElementById('filterSearch');
@@ -777,7 +783,7 @@
             const form = fileInput?.closest('form');
             form?.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
                 if (submitBtn) {
@@ -833,7 +839,7 @@
         document.querySelectorAll('.btn-approve').forEach(btn => {
             btn.addEventListener('click', function () {
                 approveSubtitle.textContent = `${this.dataset.employee} — ${this.dataset.amount}`;
-                approveForm.action = `/payroll/previous-claims/${this.dataset.id}/approve`;
+                approveForm.action = buildPreviousClaimActionUrl(previousClaimApproveUrlTemplate, this.dataset.id);
                 openModal(approveModal);
             });
         });
@@ -848,7 +854,7 @@
         document.querySelectorAll('.btn-decline').forEach(btn => {
             btn.addEventListener('click', function () {
                 declineSubtitle.textContent = this.dataset.employee;
-                declineForm.action = `/payroll/previous-claims/${this.dataset.id}/decline`;
+                declineForm.action = buildPreviousClaimActionUrl(previousClaimDeclineUrlTemplate, this.dataset.id);
                 openModal(declineModal);
             });
         });
