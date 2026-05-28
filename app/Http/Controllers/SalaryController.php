@@ -497,7 +497,7 @@ class SalaryController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
-            'daily_divisor' => 'nullable|numeric|min:1',
+            'daily_divisor' => 'nullable|numeric|min:0',
             'attendance_overtime_multiplier' => 'nullable|numeric|min:0',
             'attendance_night_differential_multiplier' => 'nullable|numeric|min:0',
             'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
@@ -511,6 +511,11 @@ class SalaryController extends Controller
         ]);
 
         $validated = $this->normalizeAttendanceMultipliers($validated);
+
+        // Treat daily_divisor of 0 or blank as null → marks employee as fixed-rate
+        if (array_key_exists('daily_divisor', $validated) && (is_null($validated['daily_divisor']) || (string) $validated['daily_divisor'] === '0' || $validated['daily_divisor'] === '')) {
+            $validated['daily_divisor'] = null;
+        }
 
         DB::transaction(function () use ($request, $employee, $validated): void {
             $validated['employee_id'] = $employee->id;
@@ -570,7 +575,7 @@ class SalaryController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
-            'daily_divisor' => 'nullable|numeric|min:1',
+            'daily_divisor' => 'nullable|numeric|min:0',
             'attendance_overtime_multiplier' => 'nullable|numeric|min:0',
             'attendance_night_differential_multiplier' => 'nullable|numeric|min:0',
             'attendance_late_deduction_multiplier' => 'nullable|numeric|min:0',
@@ -584,6 +589,11 @@ class SalaryController extends Controller
         ]);
 
         $validated = $this->normalizeAttendanceMultipliers($validated);
+
+        // Treat daily_divisor of 0 or blank as null → marks employee as fixed-rate
+        if (array_key_exists('daily_divisor', $validated) && (is_null($validated['daily_divisor']) || (string) $validated['daily_divisor'] === '0' || $validated['daily_divisor'] === '')) {
+            $validated['daily_divisor'] = null;
+        }
 
         if (isset($validated['pay_frequency'])) {
             $validated['pay_frequency'] = (int) $validated['pay_frequency'];
