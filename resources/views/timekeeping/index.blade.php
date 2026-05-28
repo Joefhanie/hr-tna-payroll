@@ -415,7 +415,10 @@
                                 ];
                                 $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
-                                $employeeDisplayName = trim((string) ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown'));
+                                $employeeDisplayName = trim((string) (
+                                    optional($attendance->user->employee)->full_name
+                                    ?? ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown')
+                                ));
                                 $employeeNameParts = preg_split('/\s+/', $employeeDisplayName, -1, PREG_SPLIT_NO_EMPTY);
                                 if (count($employeeNameParts) >= 3) {
                                     $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
@@ -519,7 +522,10 @@
                         ];
                         $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
-                        $employeeDisplayName = trim((string) ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown'));
+                        $employeeDisplayName = trim((string) (
+                            optional($attendance->user->employee)->full_name
+                            ?? ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown')
+                        ));
                         $employeeNameParts = preg_split('/\s+/', $employeeDisplayName, -1, PREG_SPLIT_NO_EMPTY);
                         if (count($employeeNameParts) >= 3) {
                             $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
@@ -884,7 +890,9 @@
                 const statusClass = calendarStatusClasses[statusKey] || 'bg-slate-100 text-slate-700 border-slate-200';
 
                 // Get name - Eloquent accessors aren't serialized by default, so we fallback to .name
-                const rawEmployeeName = record.user ? (record.user.display_name || record.user.name) : 'Unknown';
+                const rawEmployeeName = record.employee_display_name || (record.user ? (
+                    (record.user.employee && record.user.employee.full_name) || record.user.display_name || record.user.name
+                ) : 'Unknown');
                 const employeeName = formatEmployeeName(rawEmployeeName);
 
                 // Get shift details for cross-day / half day badges

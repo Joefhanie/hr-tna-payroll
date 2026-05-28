@@ -19,6 +19,21 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int,string>
+     */
+    protected $fillable = [
+        'name',
+        'username',
+        'email',
+        'password',
+        'employee_id',
+        'role',
+        'status',
+        'permissions',
+    ];
+    /**
      * Model attribute defaults.
      *
      * @var array<string,mixed>

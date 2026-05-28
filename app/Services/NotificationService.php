@@ -225,22 +225,11 @@ class NotificationService
             DB::table('notifications')->insert([
                 'recipient_id' => $recipient->id,
                 'type' => $notification->type(),
-                'notifiable_type' => User::class,
-                'notifiable_id' => $recipient->id,
-                'data' => json_encode([
-                    'type' => $notification->type(),
-                    'title' => $notification->title(),
-                    'message' => $notification->message(),
-                    'url' => $notification->url(),
-                    'icon' => $notification->icon(),
-                    'meta' => $notification->meta(),
-                ]),
                 'title' => $notification->title(),
                 'message' => $notification->message(),
                 'link' => $notification->url(),
                 'is_read' => 0,
                 'created_at' => now(),
-                'updated_at' => now(),
                 'read_at' => null,
             ]);
         }

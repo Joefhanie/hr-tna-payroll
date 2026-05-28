@@ -410,6 +410,19 @@ class TimekeepingController extends Controller
 
         $enforceLeavePriority($calendarDataRecords);
 
+        // Ensure each record's user has a precomputed `display_name` attribute
+        // so client-side code can rely on `record.user.display_name` existing.
+        foreach ($calendarDataRecords as $att) {
+            $user = $att->user;
+            if ($user) {
+                $computed = optional($user->employee)->full_name ?? ($user->display_name ?? $user->name ?? 'Unknown');
+                $user->setAttribute('display_name', $computed);
+            }
+            // Also set a top-level computed display name on the attendance record
+            $attDisplay = optional($att->user?->employee)->full_name ?? ($att->user?->display_name ?? $att->user?->name ?? 'Unknown');
+            $att->setAttribute('employee_display_name', $attDisplay);
+        }
+
         $calendarData = $calendarDataRecords->groupBy(function ($attendance) {
             return $attendance->attendance_date->toDateString();
         });
@@ -593,9 +606,9 @@ class TimekeepingController extends Controller
         $lateDeductionService = app(LateDeductionService::class);
 
         $validated = $request->validate([
-            'employee_id'     => 'required|exists:employees,id',
-            'attendance_date' => 'required|date',
-            'check_in'        => 'required|date_format:H:i',
+                'employee_id'     => 'required|exists:employees,id',
+                'attendance_date' => 'required|date',
+                'check_in'        => 'required|date_format:H:i',
             'check_out'       => 'nullable|date_format:H:i',
             'status'          => 'nullable|integer|in:1,2,3,4',
             'notes'           => 'nullable|string|max:500',
@@ -611,15 +624,30 @@ class TimekeepingController extends Controller
         $employee = Employee::with('user', 'shiftAssignments.shift')->findOrFail($validated['employee_id']);
         $user = $employee->user;
 
-        // Auto-create user account if employee doesn't have one
-        if (!$user) {
-            $user = User::create([
-                'name' => $employee->full_name,
-                'employee_id' => $employee->id,
-                'email' => $employee->email ?? 'employee.' . $employee->id . '@system.local',
-                'username' => $employee->employee_code ?? ('emp_' . $employee->id),
-                'password' => bcrypt('default_password_' . $employee->id),
-            ]);
+        // Auto-create or link user account if employee doesn't have one
+        if (! $user) {
+            // Prefer linking to an existing user with the same email to avoid duplicate key errors
+            $found = null;
+            if (! empty($employee->email)) {
+                $found = User::where('email', $employee->email)->first();
+            }
+
+            if ($found) {
+                $user = $found;
+                // Link the existing user to this employee only if it's not already linked
+                if (empty($user->employee_id)) {
+                    $user->employee_id = $employee->id;
+                    $user->save();
+                }
+            } else {
+                $user = User::create([
+                    'name' => $employee->full_name,
+                    'employee_id' => $employee->id,
+                    'email' => $employee->email ?? 'employee.' . $employee->id . '@system.local',
+                    'username' => $employee->employee_code ?? ('emp_' . $employee->id),
+                    'password' => bcrypt('default_password_' . $employee->id),
+                ]);
+            }
         }
 
         $attendanceDate = Carbon::parse($validated['attendance_date']);
@@ -634,9 +662,9 @@ class TimekeepingController extends Controller
         if (!$shift) {
             $hireDate = $employee->hire_date ? Carbon::parse($employee->hire_date) : null;
 
-            if ($hireDate && $attendanceDate->lt($hireDate)) {
-                return back()->withErrors(['employee_id' => 'No active shift schedule was found for this employee on the selected date.'])->withInput();
-            }
+                if ($hireDate && $attendanceDate->lt($hireDate)) {
+                    return back()->withErrors(['employee_id' => 'Cannot create attendance before the employee\'s hire date.'])->withInput();
+                }
 
             $dayOfWeek = $attendanceDate->format('D');
             $assignments = $employee->shiftAssignments()->with('shift')->get();
@@ -649,10 +677,16 @@ class TimekeepingController extends Controller
                 }
             }
 
-            // No active shift but date is >= hire date — allow creation. We'll
-            // use $candidateShift (if found) for status calculations, but we don't
-            // set shift_id on the attendance row unless there's an actual active
-            // shift for the date.
+                // No active shift — determine if there is any candidate assignment that
+                // matches the attendance weekday. If none exist, disallow manual time-in
+                // to keep attendance tied to a shift schedule.
+                // No active shift but date is >= hire date — previously this allowed
+                // manual time-ins; change behaviour to require a shift schedule or an
+                // assignment that covers the weekday.
+
+                if (! $shift && ! $candidateShift) {
+                    return back()->withErrors(['employee_id' => 'No shift schedule was found for this employee on the selected date.'])->withInput();
+                }
         }
 
         $checkInDateTime = Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_in']);
