@@ -70,6 +70,9 @@ class PayrollService
                 // For custom periods (e.g. final pay or mid-cycle hiring)
                 // Use the employee's configured daily rate divisor (21.8 for 5-day, 26.1667 for 6-day)
                 $divisor = (float) ($record->daily_divisor ?? 21.8);
+                if ($divisor <= 0) {
+                    $divisor = 21.8;
+                }
                 $dailyRate = $base / $divisor;
                 return round($dailyRate * $days, 2);
 
@@ -78,6 +81,9 @@ class PayrollService
             default:
                 // fallback: use the employee's configured divisor
                 $divisor = (float) ($record->daily_divisor ?? 21.8);
+                if ($divisor <= 0) {
+                    $divisor = 21.8;
+                }
                 return round(($base / $divisor) * $days, 2);
         }
     }
@@ -106,7 +112,8 @@ class PayrollService
     private function computeAttendanceBasedGross(SalaryRecord $record, Employee $employee, Carbon $periodStart, Carbon $periodEnd): float
     {
         $baseAmount = (float) $record->amount;
-        $isFixedRate = is_null($record->daily_divisor);
+        $divisorValue = (float) ($record->daily_divisor ?? 0);
+        $isFixedRate = $divisorValue === 0.0;
 
         if ($isFixedRate) {
             return round($baseAmount, 2);
@@ -115,7 +122,14 @@ class PayrollService
         $workedDays = $this->countWorkedAttendanceDays($employee, $periodStart, $periodEnd);
 
         return match ((int) ($record->pay_frequency ?? 5)) {
-            5 => round(($baseAmount / (float) ($record->daily_divisor ?? 21.8)) * $workedDays, 2),
+            5 =>
+                (function () use ($baseAmount, $record, $workedDays) {
+                    $divisor = (float) ($record->daily_divisor ?? 21.8);
+                    if ($divisor <= 0) {
+                        $divisor = 21.8;
+                    }
+                    return round(($baseAmount / $divisor) * $workedDays, 2);
+                })(),
             default => $this->computeGrossForPeriod($record, $periodStart, $periodEnd),
         };
     }
@@ -195,8 +209,13 @@ class PayrollService
      */
     public function calculateDeductionRules(float $gross, Employee $employee): array
     {
-        // Apply deduction rules for all employees including fixed-rate ones
+        // Fixed-rate employees should not receive deductions from deduction rules
         $activeSalary = $this->getSalaryRecordForDate($employee);
+        $isFixedRate = $activeSalary && ((float) ($activeSalary->daily_divisor ?? 0) === 0.0);
+
+        if ($isFixedRate) {
+            return [];
+        }
 
         $rules = $employee->deductionRules()
             ->where('is_active', true)
@@ -294,7 +313,18 @@ class PayrollService
      */
     public function applyBonuses(Payslip $payslip, array $bonuses = []): float
     {
-        // Bonuses are applied to all employees regardless of salary divisor
+        // Fixed-rate employees should not receive bonuses
+        $employee = $payslip->employee;
+        $periodStart = $payslip->payRun?->period_start ?? null;
+        $salaryRecord = null;
+        if ($employee) {
+            $salaryRecord = $this->getSalaryRecordForDate($employee, $periodStart);
+        }
+
+        $isFixedRate = $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) === 0.0);
+        if ($isFixedRate) {
+            return 0.0;
+        }
 
         $total = 0.0;
         foreach ($bonuses as $b) {
@@ -582,7 +612,7 @@ class PayrollService
         }
 
         $activeSalary = $salaryRecord ?? $this->getSalaryRecordForDate($employee, $periodStart);
-        $isFixedRate = $activeSalary && is_null($activeSalary->daily_divisor);
+        $isFixedRate = $activeSalary && ((float) ($activeSalary->daily_divisor ?? 0) === 0.0);
 
         // Always compute attendance-based deductions; keep proratedGross behavior for absence
         $lateDeduction = round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
@@ -678,7 +708,7 @@ class PayrollService
             $employee->load('deductionRules');
 
             $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
-            $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
+            $isFixedRate = $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) === 0.0);
             $applyGovernmentContributions = (bool) ($payRun->deduct_government_contributions ?? false);
             $gross = 0.0;
             if ($salaryRecord) {
@@ -691,10 +721,18 @@ class PayrollService
                 $periodEnd,
                 $salaryRecord ? (float) $salaryRecord->amount : $gross,
                 $salaryRecord,
-                $salaryRecord && !is_null($salaryRecord->daily_divisor) && (int) ($salaryRecord->pay_frequency ?? 5) === 5
+                $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) > 0) && (int) ($salaryRecord->pay_frequency ?? 5) === 5
             );
             $attendanceEarningsTotal = $attendanceAdjustments['earnings_total'];
             $attendanceDeductionsTotal = $attendanceAdjustments['deductions_total'];
+
+            // If employee is fixed-rate, ignore attendance earnings/deductions
+            if ($isFixedRate) {
+                $attendanceAdjustments['earnings'] = [];
+                $attendanceAdjustments['deductions'] = [];
+                $attendanceEarningsTotal = 0.0;
+                $attendanceDeductionsTotal = 0.0;
+            }
 
             $payslip = Payslip::create([
                 'pay_run_id' => $payRun->id,
@@ -887,28 +925,31 @@ class PayrollService
             $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal + $plottedTotal, 2);
             $taxable = $totalGross;
 
-            // Tax — auto-apply the bracket that matches taxable income
-            $taxBreakdown = $this->calculateTaxBreakdown($taxable);
-            $tax = $taxBreakdown['tax'];
-            if ($tax > 0) {
-                $taxDescription = 'Income Tax';
-                if ($taxBreakdown['bracket']) {
-                    $taxDescription .= ' (' . $taxBreakdown['bracket']->label . ')';
-                }
+            // Tax — skip for fixed-rate employees
+            $tax = 0.0;
+            if (! $isFixedRate) {
+                $taxBreakdown = $this->calculateTaxBreakdown($taxable);
+                $tax = $taxBreakdown['tax'];
+                if ($tax > 0) {
+                    $taxDescription = 'Income Tax';
+                    if ($taxBreakdown['bracket']) {
+                        $taxDescription .= ' (' . $taxBreakdown['bracket']->label . ')';
+                    }
 
-                PayslipLineItem::create([
-                    'payslip_id' => $payslip->id,
-                    'component_type' => 3,
-                    'description' => $taxDescription,
-                    'amount' => $tax,
-                    'is_taxable' => false,
-                ]);
+                    PayslipLineItem::create([
+                        'payslip_id' => $payslip->id,
+                        'component_type' => 3,
+                        'description' => $taxDescription,
+                        'amount' => $tax,
+                        'is_taxable' => false,
+                    ]);
+                }
             }
 
-            // Government contributions — using government premium bracket tables
+            // Government contributions — skip for fixed-rate employees
             $totalGovEmployee = 0.0;
             $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
-            $premiumItems = $applyGovernmentContributions
+            $premiumItems = (!$isFixedRate && $applyGovernmentContributions)
                 ? $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation)
                 : [];
             foreach ($premiumItems as $premium) {
@@ -964,23 +1005,34 @@ class PayrollService
 
         $date = Carbon::now();
         $salaryRecord = $this->getSalaryRecordForDate($employee, $date);
-        $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
+        $isFixedRate = $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) === 0.0);
         $payRun = $options['pay_run'] ?? null;
         $gross = $salaryRecord ? $salaryRecord->amount : 0.0;
 
         $bonuses = $options['bonuses'] ?? [];
         $bonusTotal = array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
 
-        $taxBreakdown = $this->calculateTaxBreakdown($gross + $bonusTotal);
-        $tax = $taxBreakdown['tax'];
-        $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
-        $applyGovernmentContributions = $payRun instanceof PayRun
-            ? (bool) ($payRun->deduct_government_contributions ?? false)
-            : false;
-        $premiumItems = $applyGovernmentContributions
-            ? $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation)
-            : [];
-        $deductionItems = $this->calculateDeductionRules($gross, $employee);
+        // Skip taxes, premiums, deductions and bonuses for fixed-rate employees
+        if ($isFixedRate) {
+            $bonusTotal = 0.0;
+            $tax = 0.0;
+            $taxBreakdown = ['tax' => 0.0, 'bracket' => null];
+            $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+            $applyGovernmentContributions = false;
+            $premiumItems = [];
+            $deductionItems = [];
+        } else {
+            $taxBreakdown = $this->calculateTaxBreakdown($gross + $bonusTotal);
+            $tax = $taxBreakdown['tax'];
+            $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
+            $applyGovernmentContributions = $payRun instanceof PayRun
+                ? (bool) ($payRun->deduct_government_contributions ?? false)
+                : false;
+            $premiumItems = $applyGovernmentContributions
+                ? $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation)
+                : [];
+            $deductionItems = $this->calculateDeductionRules($gross, $employee);
+        }
 
         $totalPremiumEmployee = array_sum(array_map(fn($g) => $g['employee_share'], $premiumItems));
         $totalDeductionRules = array_sum(array_map(fn($d) => $d['amount'], $deductionItems));
@@ -1019,6 +1071,9 @@ class PayrollService
 
         $amount = (float) $record->amount;
         $dailyDivisor = (float) ($record->daily_divisor ?? 21.8);
+        if ($dailyDivisor <= 0) {
+            $dailyDivisor = 21.8;
+        }
 
         return match ((int) ($record->pay_frequency ?? 5)) {
             1 => round($amount * 8 * $dailyDivisor, 2),

@@ -95,7 +95,7 @@
                 </span>
             </div>
         </div>
-        
+
         <form id="report-filter-form" method="GET" action="" class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
             <div class="flex-1 min-w-[200px]">
                 <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
@@ -112,7 +112,7 @@
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
             </div>
             <div>
-                <button type="button" onclick="clearDates()" 
+                <button type="button" onclick="clearDates()"
                     class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:bg-slate-100 transition duration-200">
                     <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -154,7 +154,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button type="button" onclick="downloadReport('{{ $report['id'] }}')" 
+                            <button type="button" onclick="downloadReport('{{ $report['id'] }}')"
                                     class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -169,24 +169,30 @@
     </div>
 
     <script>
+        const reportDownloadUrlTemplate = @json(route('reports.download', ['type' => '__REPORT__']));
+
+        function buildReportDownloadUrl(reportId) {
+            return reportDownloadUrlTemplate.replace('__REPORT__', reportId);
+        }
+
         function downloadReport(reportId) {
             const startDate = document.getElementById('start_date').value;
             const endDate = document.getElementById('end_date').value;
-            
-            let url = `/reports/download/${reportId}`;
+
+            let url = buildReportDownloadUrl(reportId);
             const params = [];
-            
+
             if (startDate) {
                 params.push(`start_date=${encodeURIComponent(startDate)}`);
             }
             if (endDate) {
                 params.push(`end_date=${encodeURIComponent(endDate)}`);
             }
-            
+
             if (params.length > 0) {
                 url += `?${params.join('&')}`;
             }
-            
+
             window.location.href = url;
         }
 

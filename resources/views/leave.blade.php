@@ -441,6 +441,13 @@
     <x-slot:scripts>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const leaveDeclineUrlTemplate = @json(route('leave.decline', ['leave' => '__LEAVE__']));
+        const leaveCancelUrlTemplate = @json(route('leave.cancel', ['leave' => '__LEAVE__']));
+
+        function buildLeaveActionUrl(template, leaveId) {
+            return template.replace('__LEAVE__', leaveId);
+        }
+
         // ── Request Leave Modal ──
         const openBtn   = document.getElementById('openRequestLeaveModal');
         const closeBtn  = document.getElementById('closeRequestLeaveModal');
@@ -499,7 +506,7 @@
                 const leaveId  = this.dataset.id;
                 const employee = this.dataset.employee;
                 if (declineForm) {
-                    declineForm.action = '/leave/' + leaveId + '/decline';
+                    declineForm.action = buildLeaveActionUrl(leaveDeclineUrlTemplate, leaveId);
                 }
                 if (declineLabel) {
                     declineLabel.textContent = 'Declining leave for ' + employee + '.';
@@ -527,7 +534,7 @@
                 const leaveId  = this.dataset.id;
                 const employee = this.dataset.employee;
                 if (cancelForm) {
-                    cancelForm.action = '/leave/' + leaveId + '/cancel';
+                    cancelForm.action = buildLeaveActionUrl(leaveCancelUrlTemplate, leaveId);
                 }
                 if (cancelLabel) {
                     cancelLabel.textContent = 'Cancelling approved leave for ' + employee + '.';

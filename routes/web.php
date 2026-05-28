@@ -277,7 +277,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/organization/positions/{position}', [OrganizationController::class, 'updatePosition'])->name('organization.positions.update');
         Route::get('/organization/users/{user}/edit', [OrganizationController::class, 'editUser'])->name('organization.users.edit');
         Route::put('/organization/users/{user}', [OrganizationController::class, 'updateUser'])->name('organization.users.update');
-        Route::put('/organization/users/{user}/permissions', [OrganizationController::class, 'updateUserPermissions'])->name('organization.users.permissions.update');
+        Route::match(['post', 'put'], '/organization/users/{user}/permissions', [OrganizationController::class, 'updateUserPermissions'])->name('organization.users.permissions.update');
         Route::post('/organization/settings', [OrganizationController::class, 'updateSettings'])->name('organization.settings.update');
         Route::post('/organization/settings/reset-brand-colors', [OrganizationController::class, 'resetBrandColors'])->name('organization.settings.reset-brand-colors');
     });
@@ -302,7 +302,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
         Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
         Route::get('/employees/{employee}/temporary-access', [EmployeeController::class, 'showTemporaryAccess'])->name('employees.temporary-access.show');
-    Route::patch('/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
+        Route::match(['post', 'patch'], '/employees/{employee}/grant-role', [EmployeeController::class, 'grantRole'])->name('employees.grant-role');
         Route::post('/employees/{employee}/revoke-role', [EmployeeController::class, 'revokeRole'])->name('employees.revoke-role');
     });
     Route::middleware('permission:employees.delete')->group(function () {
