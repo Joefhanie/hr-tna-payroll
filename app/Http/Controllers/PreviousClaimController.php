@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\PayRun;
 use App\Models\Payslip;
 use App\Models\PreviousClaim;
+use App\Services\NotificationService;
 use App\Services\PayrollService;
 use App\Support\UploadFilename;
 use Illuminate\Http\Request;
@@ -16,6 +17,10 @@ use Carbon\Carbon;
 
 class PreviousClaimController extends Controller
 {
+    public function __construct(private readonly NotificationService $notificationService)
+    {
+    }
+
     /**
      * Display the Previous Claims index.
      * - HR (role 4) sees ALL claims.
@@ -80,6 +85,24 @@ class PreviousClaimController extends Controller
      * - HR (role 4) sees ALL claims.
      * - Employees (role 1) see only their own.
      */
+    /**
+     * Display the Overtime Requests index page.
+     */
+    public function overtimeIndex(Request $request)
+    {
+        $request->merge(['type' => 'Overtime']);
+        return $this->index($request);
+    }
+
+    /**
+     * Display the Night Differential Requests index page.
+     */
+    public function nightDifferentialIndex(Request $request)
+    {
+        $request->merge(['type' => 'Night Differential']);
+        return $this->index($request);
+    }
+
     public function index(Request $request)
     {
         /** @var \App\Models\User $user */
@@ -114,16 +137,30 @@ class PreviousClaimController extends Controller
             ? PayRun::whereIn('status', [1, 2])->orderByDesc('period_start')->get()
             : collect();
 
+        $type = $request->input('type');
+        $isOvertimePage = $type === 'Overtime';
+        $isNightDifferentialPage = $type === 'Night Differential';
+
+        $pageTitle = 'Previous Claims';
+        if ($isOvertimePage) {
+            $pageTitle = 'Overtime Requests';
+        } elseif ($isNightDifferentialPage) {
+            $pageTitle = 'Night Differential Requests';
+        }
+
         return view('payroll.previous-claims.index', [
-            'claims'        => $claims,
-            'filters'       => $filters,
-            'claimTypes'    => PreviousClaim::claimTypes(),
-            'totalPending'  => $totalPending,
-            'totalApproved' => $totalApproved,
-            'totalDeclined' => $totalDeclined,
-            'totalAmount'   => $totalAmount,
-            'openPayRuns'   => $openPayRuns,
-            'employees'     => $user?->role !== 1
+            'claims'                  => $claims,
+            'filters'                 => $filters,
+            'claimTypes'              => PreviousClaim::claimTypes(),
+            'totalPending'            => $totalPending,
+            'totalApproved'           => $totalApproved,
+            'totalDeclined'           => $totalDeclined,
+            'totalAmount'             => $totalAmount,
+            'openPayRuns'             => $openPayRuns,
+            'pageTitle'               => $pageTitle,
+            'isOvertimePage'          => $isOvertimePage,
+            'isNightDifferentialPage' => $isNightDifferentialPage,
+            'employees'               => $user?->role !== 1
                 ? Employee::with('user')->orderBy('first_name')->get()
                 : collect(),
         ]);
@@ -171,8 +208,8 @@ class PreviousClaimController extends Controller
             foreach ($claims as $claim) {
                 $employee = $claim->employee;
                 $payRun = $claim->payRun;
-                $payRunLabel = $payRun 
-                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                $payRunLabel = $payRun
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d')
                     : 'N/A';
 
                 fputcsv($file, [
@@ -208,10 +245,10 @@ class PreviousClaimController extends Controller
 
         return response()->stream(function () use ($headers, $callback) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, $headers);
 
             $callback($file);
@@ -232,7 +269,9 @@ class PreviousClaimController extends Controller
             'employee_id'  => ['required', 'exists:employees,id'],
             'claim_type'   => ['required', 'string', 'max:100'],
             'claim_date'   => ['required', 'date', 'before:today'],
-            'amount'       => ['required', 'numeric', 'min:0.01', 'max:9999999'],
+            'start_time'   => ['nullable', 'date_format:H:i'],
+            'end_time'     => ['nullable', 'date_format:H:i'],
+            'amount'       => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'description'  => ['nullable', 'string', 'max:2000'],
             'supporting_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ]);
@@ -249,14 +288,23 @@ class PreviousClaimController extends Controller
             'employee_id'         => $validated['employee_id'],
             'claim_type'          => $validated['claim_type'],
             'claim_date'          => $validated['claim_date'],
-            'amount'              => $validated['amount'],
+            'start_time'          => $validated['start_time'] ?? null,
+            'end_time'            => $validated['end_time'] ?? null,
+            'amount'              => $validated['amount'] ?? 0,
             'description'         => $validated['description'] ?? null,
             'supporting_document' => $docPath,
             'status'              => PreviousClaim::STATUS_PENDING,
             'submitted_by'        => $user?->id,
         ]);
 
-        return redirect()->route('payroll.previous-claims.index')
+        // Redirect back to the appropriate type-filtered page
+        $redirectParams = [];
+        $claimType = $validated['claim_type'] ?? null;
+        if ($claimType === 'Overtime' || $claimType === 'Night Differential') {
+            $redirectParams['type'] = $claimType;
+        }
+
+        return redirect()->route('payroll.previous-claims.index', $redirectParams)
             ->with('success', 'Previous claim submitted successfully and is awaiting HR review.');
     }
 
@@ -318,7 +366,15 @@ class PreviousClaimController extends Controller
             }
         }
 
-        return redirect()->route('payroll.previous-claims.index')
+        $this->notificationService->notifyPreviousClaimDecision($previousClaim->fresh(), $user, 'approved', $validated['hr_notes'] ?? null);
+
+        // Redirect back to the appropriate type-filtered page
+        $redirectParams = [];
+        if (in_array($previousClaim->claim_type, ['Overtime', 'Night Differential'])) {
+            $redirectParams['type'] = $previousClaim->claim_type;
+        }
+
+        return redirect()->route('payroll.previous-claims.index', $redirectParams)
             ->with('success', 'Claim approved and payslip updated with the claim amount.');
     }
 
@@ -342,7 +398,15 @@ class PreviousClaimController extends Controller
             'pay_run_id'  => null,
         ]);
 
-        return redirect()->route('payroll.previous-claims.index')
+        $this->notificationService->notifyPreviousClaimDecision($previousClaim->fresh(), $user, 'declined', $validated['hr_notes']);
+
+        // Redirect back to the appropriate type-filtered page
+        $redirectParams = [];
+        if (in_array($previousClaim->claim_type, ['Overtime', 'Night Differential'])) {
+            $redirectParams['type'] = $previousClaim->claim_type;
+        }
+
+        return redirect()->route('payroll.previous-claims.index', $redirectParams)
             ->with('success', 'Claim has been declined.');
     }
 
@@ -356,7 +420,13 @@ class PreviousClaimController extends Controller
 
         // Only pending claims can be deleted
         if ($previousClaim->status !== PreviousClaim::STATUS_PENDING) {
-            return redirect()->route('payroll.previous-claims.index')
+            // Redirect back to the appropriate type-filtered page
+            $redirectParams = [];
+            if (in_array($previousClaim->claim_type, ['Overtime', 'Night Differential'])) {
+                $redirectParams['type'] = $previousClaim->claim_type;
+            }
+
+            return redirect()->route('payroll.previous-claims.index', $redirectParams)
                 ->with('error', 'Only pending claims can be deleted.');
         }
 
@@ -367,7 +437,13 @@ class PreviousClaimController extends Controller
 
         $previousClaim->delete();
 
-        return redirect()->route('payroll.previous-claims.index')
+        // Redirect back to the appropriate type-filtered page
+        $redirectParams = [];
+        if (in_array($previousClaim->claim_type, ['Overtime', 'Night Differential'])) {
+            $redirectParams['type'] = $previousClaim->claim_type;
+        }
+
+        return redirect()->route('payroll.previous-claims.index', $redirectParams)
             ->with('success', 'Claim deleted.');
     }
 }

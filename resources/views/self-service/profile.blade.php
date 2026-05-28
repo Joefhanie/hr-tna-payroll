@@ -19,12 +19,20 @@
 
         $requestModalToOpen = null;
         $leaveRequestTarget = $canSubmitRequests ? 'leaveRequestModal' : '';
+        $overtimeRequestTarget = $canSubmitRequests ? 'overtimeRequestModal' : '';
+        $nightDifferentialRequestTarget = $canSubmitRequests ? 'nightDifferentialRequestModal' : '';
         $profileUpdateTarget = $canSubmitRequests ? 'profileUpdateModal' : '';
         $documentUploadTarget = $canSubmitRequests ? 'documentUploadModal' : '';
+        $overtimeRequests = $claimRequests->where('type', 'Overtime')->values();
+        $nightDifferentialRequests = $claimRequests->where('type', 'Night Differential')->values();
 
         if ($canSubmitRequests ?? false) {
             if (old('leave_type_id') !== null || old('start_date') !== null || old('end_date') !== null || old('reason') !== null) {
                 $requestModalToOpen = 'leaveRequestModal';
+            } elseif (old('claim_type') === 'Overtime') {
+                $requestModalToOpen = 'overtimeRequestModal';
+            } elseif (old('claim_type') === 'Night Differential') {
+                $requestModalToOpen = 'nightDifferentialRequestModal';
             } elseif (
                 old('first_name') !== null || old('last_name') !== null || old('middle_name') !== null ||
                 old('email') !== null || old('phone') !== null || old('address_line1') !== null ||
@@ -100,7 +108,7 @@
         </div>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <button type="button" onclick="switchProfileTab('leaves')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $leaveRequestTarget }}">
             <div class="flex items-center gap-2">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
@@ -159,6 +167,36 @@
                 </div>
             </div>
             <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{{ $canSubmitRequests ? 'Upload' : 'View' }}</span>
+        </button>
+
+        <button type="button" onclick="switchProfileTab('overtime-requests')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $overtimeRequestTarget }}">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m5-7a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Overtime</p>
+                    <p class="text-xs text-slate-500">{{ $overtimeRequests->count() }} request(s)</p>
+                </div>
+            </div>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">{{ $canSubmitRequests ? 'Submit' : 'View' }}</span>
+        </button>
+
+        <button type="button" onclick="switchProfileTab('night-differential-requests')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $nightDifferentialRequestTarget }}">
+            <div class="flex items-center gap-2">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m5-7a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-slate-900">Night Differential</p>
+                    <p class="text-xs text-slate-500">{{ $nightDifferentialRequests->count() }} request(s)</p>
+                </div>
+            </div>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">{{ $canSubmitRequests ? 'Submit' : 'View' }}</span>
         </button>
     </div>
 
@@ -332,8 +370,32 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">File</label>
-                        <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                            class="w-full text-sm text-slate-600 border border-slate-300 rounded-lg cursor-pointer bg-white file:mr-3 file:rounded-md file:border-0 file:bg-emerald-50 file:text-emerald-700 file:px-3 file:py-2 file:text-xs file:font-medium hover:file:bg-emerald-100 transition focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <label for="profileDocumentFileInput" id="profileDocumentDropZone"
+                            class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 px-4 py-6 text-center transition hover:border-emerald-400 hover:bg-emerald-50/40">
+                            <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p class="mt-1.5 text-sm text-slate-700">
+                                <span class="font-medium text-emerald-600">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="text-xs text-slate-400">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
+                        </label>
+                        <input type="file" id="profileDocumentFileInput" name="document_file" required
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="sr-only">
+                        {{-- Selected file pill --}}
+                        <div id="profileDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+                            <svg class="h-4 w-4 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span id="profileDocumentFileName" class="flex-1 truncate font-medium text-emerald-700 text-xs"></span>
+                            <button type="button" id="profileDocumentFileRemove"
+                                class="ml-1 rounded p-0.5 text-emerald-400 hover:bg-emerald-100 hover:text-emerald-700 transition" title="Remove file">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="profileDocumentFileError" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">Expiry Date</label>
@@ -350,6 +412,102 @@
                 </form>
             </div>
         </div>
+
+        <div id="overtimeRequestModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="overtimeRequestModal">
+            <div class="my-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">Submit Overtime</h2>
+                        <p class="mt-0.5 text-xs text-slate-500">Approved requests will show up on the overtime payroll page.</p>
+                    </div>
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50" data-close-modal="overtimeRequestModal">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                </div>
+
+                <form method="POST" action="{{ route('self-service.claim-requests.store', $employee) }}" class="px-6 py-5 space-y-4">
+                    @csrf
+                    <input type="hidden" name="claim_type" value="Overtime">
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Claim Date</label>
+                            <input type="date" name="claim_date" max="{{ now()->subDay()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('claim_date') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Start Time</label>
+                            <input type="time" name="start_time" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('start_time') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">End Time</label>
+                            <input type="time" name="end_time" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('end_time') }}">
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Enter the actual time window. Payroll will calculate the amount from the approved request.
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description <span class="font-normal text-slate-400">(optional)</span></label>
+                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Briefly describe the work or incident...">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="overtimeRequestModal">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold shadow-sm transition hover:bg-indigo-700" style="color: var(--brand-text-on-primary);">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="nightDifferentialRequestModal" class="fixed inset-0 z-50 hidden bg-black/40 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="nightDifferentialRequestModal">
+            <div class="my-auto w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">Submit Night Differential</h2>
+                        <p class="mt-0.5 text-xs text-slate-500">Approved requests will show up on the night differential payroll page.</p>
+                    </div>
+                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50" data-close-modal="nightDifferentialRequestModal">
+                        <i class="ti ti-x text-sm"></i>
+                    </button>
+                </div>
+
+                <form method="POST" action="{{ route('self-service.claim-requests.store', $employee) }}" class="px-6 py-5 space-y-4">
+                    @csrf
+                    <input type="hidden" name="claim_type" value="Night Differential">
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Claim Date</label>
+                            <input type="date" name="claim_date" max="{{ now()->subDay()->toDateString() }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('claim_date') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Start Time</label>
+                            <input type="time" name="start_time" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('start_time') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">End Time</label>
+                            <input type="time" name="end_time" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="{{ old('end_time') }}">
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Enter the actual time window. Payroll will calculate the amount from the approved request.
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Description <span class="font-normal text-slate-400">(optional)</span></label>
+                        <textarea name="description" rows="3" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Briefly describe the work or incident...">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-1">
+                        <button type="button" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="nightDifferentialRequestModal">Cancel</button>
+                        <button type="submit" class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold shadow-sm transition hover:bg-indigo-700" style="color: var(--brand-text-on-primary);">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     @endif    {{-- Tabs --}}
     <div class="mb-4">
         <div class="border-b border-slate-200">
@@ -357,6 +515,8 @@
                 <nav class="-mb-px flex gap-6 min-w-max pb-px" aria-label="Tabs">
                     <button type="button" onclick="switchProfileTab('timelogs')" id="tab-timelogs" class="border-indigo-600 text-indigo-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Time Logs</button>
                     <button type="button" onclick="switchProfileTab('leaves')" id="tab-leaves" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Leave Requests</button>
+                    <button type="button" onclick="switchProfileTab('overtime-requests')" id="tab-overtime-requests" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">OT Requests</button>
+                    <button type="button" onclick="switchProfileTab('night-differential-requests')" id="tab-night-differential-requests" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">ND Requests</button>
                     <button type="button" onclick="switchProfileTab('updates')" id="tab-updates" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Profile Updates</button>
                     <button type="button" onclick="switchProfileTab('payslips')" id="tab-payslips" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Payslips</button>
                     <button type="button" onclick="switchProfileTab('documents')" id="tab-documents" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition">Documents</button>
@@ -458,6 +618,74 @@
         </div>
 
         <x-table-pagination target="selfServiceProfileUpdatesTable" itemsPerPage="10" />
+    </div>
+
+    <div id="overtime-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
+        <h2 class="mb-4 text-base font-semibold text-slate-900">Overtime Requests</h2>
+        <div class="overflow-x-auto">
+            <table id="selfServiceOvertimeRequestsTable" class="w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                    <tr>
+                        <th class="px-3 py-2">Type</th>
+                        <th class="px-3 py-2">Claim Date</th>
+                        <th class="px-3 py-2">Time Range</th>
+                        <th class="px-3 py-2">Status</th>
+                        <th class="px-3 py-2">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse ($overtimeRequests as $claimRequest)
+                        <tr>
+                            <td class="px-3 py-2 text-slate-900">{{ $claimRequest['type'] }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ $claimRequest['claim_date'] }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ $claimRequest['time_range'] }}</td>
+                            <td class="px-3 py-2"><span class="badge {{ $badge($claimRequest['status']) }}">{{ $claimRequest['status'] }}</span></td>
+                            <td class="px-3 py-2 text-slate-500">{{ $claimRequest['created_at'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-3 py-6 text-center text-slate-500">No overtime requests found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <x-table-pagination target="selfServiceOvertimeRequestsTable" itemsPerPage="10" />
+    </div>
+
+    <div id="night-differential-requests" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
+        <h2 class="mb-4 text-base font-semibold text-slate-900">Night Differential Requests</h2>
+        <div class="overflow-x-auto">
+            <table id="selfServiceNightDifferentialRequestsTable" class="w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                    <tr>
+                        <th class="px-3 py-2">Type</th>
+                        <th class="px-3 py-2">Claim Date</th>
+                        <th class="px-3 py-2">Time Range</th>
+                        <th class="px-3 py-2">Status</th>
+                        <th class="px-3 py-2">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @forelse ($nightDifferentialRequests as $claimRequest)
+                        <tr>
+                            <td class="px-3 py-2 text-slate-900">{{ $claimRequest['type'] }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ $claimRequest['claim_date'] }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ $claimRequest['time_range'] }}</td>
+                            <td class="px-3 py-2"><span class="badge {{ $badge($claimRequest['status']) }}">{{ $claimRequest['status'] }}</span></td>
+                            <td class="px-3 py-2 text-slate-500">{{ $claimRequest['created_at'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-3 py-6 text-center text-slate-500">No night differential requests found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <x-table-pagination target="selfServiceNightDifferentialRequestsTable" itemsPerPage="10" />
     </div>
 
     <div id="payslips" class="mb-4 rounded-lg bg-white p-4 shadow-sm hidden">
@@ -634,6 +862,147 @@
             const form = document.getElementById('profilePictureForm');
             if (form) form.submit();
         });
+
+        // ===== Document Upload File Picker =====
+        (() => {
+            const fileInput  = document.getElementById('profileDocumentFileInput');
+            const dropZone   = document.getElementById('profileDocumentDropZone');
+            const filePill   = document.getElementById('profileDocumentFilePill');
+            const fileName   = document.getElementById('profileDocumentFileName');
+            const fileRemove = document.getElementById('profileDocumentFileRemove');
+            const fileError  = document.getElementById('profileDocumentFileError');
+
+            if (!fileInput) return;
+
+            const ACCEPTED_EXTS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
+
+            const getExt = (name) => {
+                const match = name.toLowerCase().match(/\.[^.]+$/);
+                return match ? match[0] : '';
+            };
+
+            const showError = (msg) => {
+                if (!fileError) return;
+                fileError.textContent = msg;
+                fileError.classList.remove('hidden');
+            };
+
+            const clearError = () => {
+                if (!fileError) return;
+                fileError.textContent = '';
+                fileError.classList.add('hidden');
+            };
+
+            const showPill = (file) => {
+                if (fileName) fileName.textContent = file.name;
+                filePill?.classList.remove('hidden');
+                filePill?.classList.add('flex');
+                dropZone?.classList.add('border-emerald-400', 'bg-emerald-50/60');
+            };
+
+            const clearPill = () => {
+                if (fileName) fileName.textContent = '';
+                filePill?.classList.add('hidden');
+                filePill?.classList.remove('flex');
+                dropZone?.classList.remove('border-emerald-400', 'bg-emerald-50/60');
+            };
+
+            const applyFile = (file) => {
+                clearError();
+                const ext = getExt(file.name);
+                if (!ACCEPTED_EXTS.includes(ext)) {
+                    showError(`Invalid file type "${ext || file.name}". Accepted: ${ACCEPTED_EXTS.join(', ')}`);
+                    fileInput.value = '';
+                    clearPill();
+                    return;
+                }
+                showPill(file);
+            };
+
+            if (dropZone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); });
+                });
+                ['dragenter', 'dragover'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => dropZone.classList.add('border-emerald-400', 'bg-emerald-50'));
+                });
+                ['dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => {
+                        if (!fileInput.files?.length) dropZone.classList.remove('border-emerald-400', 'bg-emerald-50');
+                    });
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer?.files;
+                    if (!files || files.length === 0) return;
+                    fileInput.files = files;
+                    applyFile(files[0]);
+                });
+            }
+
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                if (file) applyFile(file);
+                else { clearPill(); clearError(); }
+            });
+
+            fileRemove?.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.value = '';
+                clearPill();
+                clearError();
+            });
+
+            // AJAX Form Submission to retain form inputs & selected file on validation error
+            const form = fileInput?.closest('form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                    `;
+                }
+
+                clearError();
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        window.location.href = response.url || window.location.href;
+                    } else {
+                        const data = await response.json();
+                        const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Upload failed. Please check form values.');
+                        showError(errMsg);
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                        }
+                    }
+                } catch (error) {
+                    showError('An unexpected network error occurred.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                }
+            });
+        })();
 
         function openRequestModal(modalId) {
             const modal = document.getElementById(modalId);
@@ -884,6 +1253,8 @@
 
             closePayslipModal();
             closeRequestModal('leaveRequestModal');
+            closeRequestModal('overtimeRequestModal');
+            closeRequestModal('nightDifferentialRequestModal');
             closeRequestModal('profileUpdateModal');
             closeRequestModal('documentUploadModal');
         });
@@ -896,9 +1267,11 @@
 
         // Switch profile tabs client-side
         function switchProfileTab(tabName) {
-            const tabs = ['leaves', 'updates', 'payslips', 'timelogs', 'documents'];
+            const tabs = ['leaves', 'overtime-requests', 'night-differential-requests', 'updates', 'payslips', 'timelogs', 'documents'];
             const elements = {
                 leaves: document.getElementById('leave-requests'),
+                'overtime-requests': document.getElementById('overtime-requests'),
+                'night-differential-requests': document.getElementById('night-differential-requests'),
                 updates: document.getElementById('profile-update-requests'),
                 payslips: document.getElementById('payslips'),
                 timelogs: document.getElementById('attendance-logs'),
@@ -906,6 +1279,8 @@
             };
             const buttons = {
                 leaves: document.getElementById('tab-leaves'),
+                'overtime-requests': document.getElementById('tab-overtime-requests'),
+                'night-differential-requests': document.getElementById('tab-night-differential-requests'),
                 updates: document.getElementById('tab-updates'),
                 payslips: document.getElementById('tab-payslips'),
                 timelogs: document.getElementById('tab-timelogs'),
@@ -938,7 +1313,7 @@
             let initialTab = 'timelogs';
             const urlParams = new URLSearchParams(window.location.search);
             const tabParam = urlParams.get('tab');
-            const validTabs = ['leaves', 'updates', 'payslips', 'timelogs', 'documents'];
+            const validTabs = ['leaves', 'overtime-requests', 'night-differential-requests', 'updates', 'payslips', 'timelogs', 'documents'];
 
             if (tabParam && validTabs.includes(tabParam)) {
                 initialTab = tabParam;
@@ -948,6 +1323,10 @@
                     initialTab = hash;
                 } else if (hash === 'leave-requests') {
                     initialTab = 'leaves';
+                } else if (hash === 'overtime-requests') {
+                    initialTab = 'overtime-requests';
+                } else if (hash === 'night-differential-requests') {
+                    initialTab = 'night-differential-requests';
                 } else if (hash === 'profile-update-requests') {
                     initialTab = 'updates';
                 } else if (hash === 'payslips') {

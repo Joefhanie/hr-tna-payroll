@@ -12,6 +12,7 @@ use App\Models\PayslipLineItem;
 use App\Models\PayrollSetting;
 use App\Models\GovernmentPremium;
 use App\Models\PreviousClaim;
+use App\Models\TaxBracket;
 use App\Models\SalaryRecord;
 use App\Models\EmployeePlotting;
 use Carbon\Carbon;
@@ -120,23 +121,25 @@ class PayrollService
     }
 
     /**
-     * Calculate tax using the employee's assigned tax brackets.
-     * Falls back to zero if no brackets are assigned.
+     * Resolve the active tax bracket that matches a taxable amount.
      */
-    public function calculateTax(float $taxableAmount, Employee $employee): float
+    public function resolveTaxBracket(float $taxableAmount): ?TaxBracket
     {
-        $activeSalary = $this->getSalaryRecordForDate($employee);
-        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
-            return 0.0;
-        }
+        return TaxBracket::resolveForTaxableAmount($taxableAmount);
+    }
 
-        $brackets = $employee->taxBrackets()
-            ->where('is_active', true)
-            ->orderBy('threshold', 'asc')
-            ->get();
+    /**
+     * Calculate tax from a provided bracket collection.
+     */
+    public function calculateTaxBreakdownFromBrackets(iterable $brackets, float $taxableAmount): array
+    {
+        $brackets = collect($brackets)->values();
 
         if ($brackets->isEmpty()) {
-            return 0.0;
+            return [
+                'tax' => 0.0,
+                'bracket' => null,
+            ];
         }
 
         $tax = 0.0;
@@ -154,7 +157,34 @@ class PayrollService
             }
         }
 
-        return round($tax, 2);
+        $resolvedBracket = $brackets
+            ->filter(function ($bracket) use ($taxableAmount) {
+                return $taxableAmount >= (float) $bracket->threshold;
+            })
+            ->sortByDesc('threshold')
+            ->first();
+
+        return [
+            'tax' => round($tax, 2),
+            'bracket' => $resolvedBracket,
+        ];
+    }
+
+    /**
+     * Calculate tax using the active tax brackets that match taxable income.
+     * Returns both the computed tax and the resolved bracket.
+     */
+    public function calculateTaxBreakdown(float $taxableAmount): array
+    {
+        return $this->calculateTaxBreakdownFromBrackets(TaxBracket::getActiveBrackets(), $taxableAmount);
+    }
+
+    /**
+     * Calculate tax using the active tax brackets that match taxable income.
+     */
+    public function calculateTax(float $taxableAmount, Employee $employee): float
+    {
+        return $this->calculateTaxBreakdown($taxableAmount)['tax'];
     }
 
 
@@ -165,10 +195,8 @@ class PayrollService
      */
     public function calculateDeductionRules(float $gross, Employee $employee): array
     {
+        // Apply deduction rules for all employees including fixed-rate ones
         $activeSalary = $this->getSalaryRecordForDate($employee);
-        if ($activeSalary && is_null($activeSalary->daily_divisor)) {
-            return [];
-        }
 
         $rules = $employee->deductionRules()
             ->where('is_active', true)
@@ -266,13 +294,7 @@ class PayrollService
      */
     public function applyBonuses(Payslip $payslip, array $bonuses = []): float
     {
-        $employee = $payslip->employee;
-        if ($employee) {
-            $activeSalary = $this->getSalaryRecordForDate($employee);
-            if ($activeSalary && is_null($activeSalary->daily_divisor)) {
-                return 0.0;
-            }
-        }
+        // Bonuses are applied to all employees regardless of salary divisor
 
         $total = 0.0;
         foreach ($bonuses as $b) {
@@ -472,8 +494,46 @@ class PayrollService
                     continue;
                 }
 
-                if ($checkIn && $checkIn->gt($shiftStart)) {
-                    $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
+                // For flexible shifts, recalculate effective start/end based on actual clock-in.
+                // The employee is not late if they clock in within the flexible window.
+                // Their shift end is pushed forward to match their actual start + shift duration.
+                $effectiveShiftStart = $shiftStart->copy();
+                $effectiveShiftEnd   = $shiftEnd->copy();
+
+                if ($dayShift && $dayShift->is_flexible && $checkIn) {
+                    $shiftStartMinutes      = $dayShift->getStartMinutes();
+                    $flexibleUntilMinutes   = $dayShift->getFlexibleUntilMinutes();
+                    $clockInMinutes         = $checkIn->hour * 60 + $checkIn->minute;
+
+                    // Clamp the effective start to [shiftStart, flexUntil]
+                    $effectiveStartMinutes  = max($shiftStartMinutes, min($clockInMinutes, $flexibleUntilMinutes));
+                    $effectiveShiftStart    = $attendanceDate->copy()->setTime(
+                        intdiv($effectiveStartMinutes, 60),
+                        $effectiveStartMinutes % 60,
+                        0
+                    );
+
+                    // Shift end = effective start + original shift duration
+                    $endMinutes = $effectiveStartMinutes + $dayShift->shift_duration_minutes;
+                    if ($endMinutes >= 24 * 60) {
+                        $endMinutes -= 24 * 60;
+                        $effectiveShiftEnd = $attendanceDate->copy()->addDay()->setTime(
+                            intdiv($endMinutes, 60),
+                            $endMinutes % 60,
+                            0
+                        );
+                    } else {
+                        $effectiveShiftEnd = $attendanceDate->copy()->setTime(
+                            intdiv($endMinutes, 60),
+                            $endMinutes % 60,
+                            0
+                        );
+                    }
+                }
+
+                // Late check: only fire if employee arrived AFTER the effective start
+                if ($checkIn && $checkIn->gt($effectiveShiftStart)) {
+                    $dayLateMinutes = $effectiveShiftStart->diffInMinutes($checkIn);
                     $summary['late_minutes'] += $dayLateMinutes;
 
                     // Apply late policy thresholds from LateDeductionService
@@ -483,12 +543,12 @@ class PayrollService
                 }
 
                 if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
-                    if ($checkOut->lt($shiftEnd)) {
-                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
+                    if ($checkOut->lt($effectiveShiftEnd)) {
+                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($effectiveShiftEnd);
                     }
 
-                    if ($checkOut->gt($shiftEnd)) {
-                        $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+                    if ($checkOut->gt($effectiveShiftEnd)) {
+                        $summary['overtime_minutes'] += $effectiveShiftEnd->diffInMinutes($checkOut);
                     }
 
                     if ($checkOut->gt($premiumStart)) {
@@ -524,12 +584,15 @@ class PayrollService
         $activeSalary = $salaryRecord ?? $this->getSalaryRecordForDate($employee, $periodStart);
         $isFixedRate = $activeSalary && is_null($activeSalary->daily_divisor);
 
-        $lateDeduction = $isFixedRate ? 0.0 : round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
-        $undertimeDeduction = $isFixedRate ? 0.0 : round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
-        $absenceDeduction = ($isFixedRate || $proratedGross) ? 0.0 : round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
+        // Always compute attendance-based deductions; keep proratedGross behavior for absence
+        $lateDeduction = round($totalLateDeductionHours * $hourlyRate * $lateDeductionMultiplier, 2);
+        $undertimeDeduction = round(($summary['undertime_minutes'] / 60) * $hourlyRate * $undertimeDeductionMultiplier, 2);
+        $absenceDeduction = $proratedGross ? 0.0 : round($summary['absent_days'] * $dailyRate * $absenceDeductionMultiplier, 2);
 
-        $overtimePay = round(($summary['overtime_minutes'] / 60) * $hourlyRate * $overtimeMultiplier, 2);
-        $nightDifferential = round(($summary['premium_minutes'] / 60) * $hourlyRate * $nightDifferentialMultiplier, 2);
+        // Overtime and Night Differential are now ONLY paid via approved requests.
+        // We keep the summary minutes for reporting/tracking, but automatic pay is 0.
+        $overtimePay = 0.0;
+        $nightDifferential = 0.0;
 
         $earnings = [];
         if ($overtimePay > 0) {
@@ -560,6 +623,46 @@ class PayrollService
     }
 
     /**
+     * Calculate the payable amount for an approved overtime or night differential request.
+     */
+    public function calculateApprovedRequestAmount(
+        PreviousClaim $claim,
+        float $gross,
+        float $workingHoursPerDay,
+        float $overtimeMultiplier,
+        float $nightDifferentialMultiplier,
+        Carbon $periodStart,
+        Carbon $periodEnd
+    ): float {
+        $claimAmount = (float) $claim->amount;
+
+        if ($claimAmount > 0 || ! in_array($claim->claim_type, ['Overtime', 'Night Differential'], true)) {
+            return round($claimAmount, 2);
+        }
+
+        if (! $claim->start_time || ! $claim->end_time) {
+            return 0.0;
+        }
+
+        $start = Carbon::parse($claim->start_time);
+        $end = Carbon::parse($claim->end_time);
+
+        if ($end->lt($start)) {
+            $end->addDay();
+        }
+
+        $minutes = $start->diffInMinutes($end);
+        $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
+        $dailyRate = round($gross / $periodDays, 2);
+        $hourlyRate = round($dailyRate / max($workingHoursPerDay, 0.1), 2);
+        $multiplier = $claim->claim_type === 'Overtime'
+            ? $overtimeMultiplier
+            : $nightDifferentialMultiplier;
+
+        return round(($minutes / 60) * $hourlyRate * $multiplier, 2);
+    }
+
+    /**
      * Generate a payslip for an employee within a pay run.
      *
      * Component Type: 1=Earning, 2=Deduction, 3=Tax, 4=Government
@@ -572,7 +675,7 @@ class PayrollService
             $periodEnd = Carbon::parse($payRun->period_end);
 
             // Load employee pivot assignments
-            $employee->load('taxBrackets', 'deductionRules');
+            $employee->load('deductionRules');
 
             $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
             $isFixedRate = $salaryRecord && is_null($salaryRecord->daily_divisor);
@@ -633,8 +736,8 @@ class PayrollService
             }
 
             // Bonuses (manually passed in options)
-            $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
-            $bonusTotal = $isFixedRate ? 0.0 : $this->applyBonuses($payslip, $bonuses);
+            $bonuses = $options['bonuses'] ?? [];
+            $bonusTotal = $this->applyBonuses($payslip, $bonuses);
 
             // ── Previous Claims assigned to this pay run ──────────────────────
             // 1. Claims explicitly assigned to this specific pay run
@@ -651,7 +754,30 @@ class PayrollService
                 ->get();
 
             foreach ($previousClaims as $claim) {
+                /** @var \App\Models\PreviousClaim $claim */
                 $claimAmount = (float) $claim->amount;
+
+                if ($claimAmount == 0 && in_array($claim->claim_type, ['Overtime', 'Night Differential'], true)) {
+                    $shift = $employee->getActiveShiftForDate($periodStart);
+                    $workingHoursPerDay = $shift ? max(0.1, $shift->getWorkingHoursPerDay()) : 8.0;
+                    $global = \App\Models\PayrollSetting::first();
+                    $overtimeMultiplier = $salaryRecord && $salaryRecord->attendance_overtime_multiplier !== null
+                        ? (float) $salaryRecord->attendance_overtime_multiplier
+                        : (float) ($global->attendance_overtime_multiplier ?? 1.25);
+                    $nightDifferentialMultiplier = $salaryRecord && $salaryRecord->attendance_night_differential_multiplier !== null
+                        ? (float) $salaryRecord->attendance_night_differential_multiplier
+                        : (float) ($global->attendance_night_differential_multiplier ?? 0.10);
+
+                    $claimAmount = $this->calculateApprovedRequestAmount(
+                        $claim,
+                        $gross,
+                        $workingHoursPerDay,
+                        $overtimeMultiplier,
+                        $nightDifferentialMultiplier,
+                        $periodStart,
+                        $periodEnd
+                    );
+                }
 
                 if ($claim->claim_type === 'Late Plotted Payment') {
                     $location = 'Unspecified';
@@ -659,10 +785,10 @@ class PayrollService
                         $location = trim($matches[1]);
                     }
                     $description = 'Previous Claim (Plotted Payment): ' . $location
-                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                        . ' (' . \Carbon\Carbon::parse($claim->claim_date)->format('M d, Y') . ')';
                 } else {
                     $description = 'Previous Claim: ' . $claim->claim_type
-                        . ' (' . $claim->claim_date->format('M d, Y') . ')';
+                        . ' (' . \Carbon\Carbon::parse($claim->claim_date)->format('M d, Y') . ')';
                 }
 
                 PayslipLineItem::create([
@@ -761,13 +887,19 @@ class PayrollService
             $totalGross = round($gross + $attendanceEarningsTotal + $bonusTotal + $previousClaimsTotal + $approvedDisputesTotal + $plottedTotal, 2);
             $taxable = $totalGross;
 
-            // Tax — using employee's assigned brackets
-            $tax = $this->calculateTax($taxable, $employee);
+            // Tax — auto-apply the bracket that matches taxable income
+            $taxBreakdown = $this->calculateTaxBreakdown($taxable);
+            $tax = $taxBreakdown['tax'];
             if ($tax > 0) {
+                $taxDescription = 'Income Tax';
+                if ($taxBreakdown['bracket']) {
+                    $taxDescription .= ' (' . $taxBreakdown['bracket']->label . ')';
+                }
+
                 PayslipLineItem::create([
                     'payslip_id' => $payslip->id,
                     'component_type' => 3,
-                    'description' => 'Income Tax',
+                    'description' => $taxDescription,
                     'amount' => $tax,
                     'is_taxable' => false,
                 ]);
@@ -776,7 +908,7 @@ class PayrollService
             // Government contributions — using government premium bracket tables
             $totalGovEmployee = 0.0;
             $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
-            $premiumItems = ($applyGovernmentContributions && ! $isFixedRate)
+            $premiumItems = $applyGovernmentContributions
                 ? $this->calculateGovernmentPremiums($gross, $taxable, $monthlyCompensation)
                 : [];
             foreach ($premiumItems as $premium) {
@@ -828,7 +960,7 @@ class PayrollService
      */
     public function computeFinalPay(Employee $employee, array $options = []): array
     {
-        $employee->load('taxBrackets', 'deductionRules');
+        $employee->load('deductionRules');
 
         $date = Carbon::now();
         $salaryRecord = $this->getSalaryRecordForDate($employee, $date);
@@ -836,15 +968,16 @@ class PayrollService
         $payRun = $options['pay_run'] ?? null;
         $gross = $salaryRecord ? $salaryRecord->amount : 0.0;
 
-        $bonuses = $isFixedRate ? [] : ($options['bonuses'] ?? []);
-        $bonusTotal = $isFixedRate ? 0.0 : array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
+        $bonuses = $options['bonuses'] ?? [];
+        $bonusTotal = array_sum(array_map(fn($b) => (float)($b['amount'] ?? 0), $bonuses));
 
-        $tax = $this->calculateTax($gross + $bonusTotal, $employee);
+        $taxBreakdown = $this->calculateTaxBreakdown($gross + $bonusTotal);
+        $tax = $taxBreakdown['tax'];
         $monthlyCompensation = $this->estimateMonthlyCompensation($salaryRecord, $gross);
         $applyGovernmentContributions = $payRun instanceof PayRun
             ? (bool) ($payRun->deduct_government_contributions ?? false)
             : false;
-        $premiumItems = ($applyGovernmentContributions && ! $isFixedRate)
+        $premiumItems = $applyGovernmentContributions
             ? $this->calculateGovernmentPremiums($gross, $gross + $bonusTotal, $monthlyCompensation)
             : [];
         $deductionItems = $this->calculateDeductionRules($gross, $employee);
@@ -859,6 +992,7 @@ class PayrollService
             'gross' => round($gross, 2),
             'bonuses' => round($bonusTotal, 2),
             'tax' => $tax,
+            'tax_bracket' => $taxBreakdown['bracket']?->label,
             'government_premiums' => $premiumItems,
             'deductions' => $deductionItems,
             'total_deductions' => $totalDeductions,

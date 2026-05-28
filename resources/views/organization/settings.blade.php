@@ -398,10 +398,22 @@
                                     or drag and drop
                                 </p>
                                 <p class="text-xs text-slate-500">PDF, DOC, DOCX, XLS, XLSX, PNG, JPG up to 25MB</p>
-                                <p id="companyDocumentFileName" class="mt-2 text-xs font-medium text-slate-600"></p>
                             </div>
                         </label>
                         <input type="file" id="companyDocumentFileInput" name="document_file" class="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+                        {{-- Selected file pill --}}
+                        <div id="companyDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm">
+                            <svg class="h-4 w-4 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span id="companyDocumentFileName" class="flex-1 truncate font-medium text-indigo-700 text-xs"></span>
+                            <button type="button" id="companyDocumentFileRemove" class="ml-1 rounded p-0.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700 transition" title="Remove file">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="companyDocumentFileError" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">
@@ -485,19 +497,59 @@
         })();
 
         (() => {
-            const fileInput = document.getElementById('companyDocumentFileInput');
-            const dropZone = document.getElementById('companyDocumentDropZone');
-            const fileName = document.getElementById('companyDocumentFileName');
+            const fileInput  = document.getElementById('companyDocumentFileInput');
+            const dropZone   = document.getElementById('companyDocumentDropZone');
+            const filePill   = document.getElementById('companyDocumentFilePill');
+            const fileName   = document.getElementById('companyDocumentFileName');
+            const fileRemove = document.getElementById('companyDocumentFileRemove');
+            const fileError  = document.getElementById('companyDocumentFileError');
 
-            if (!fileInput || !dropZone) {
-                return;
-            }
+            if (!fileInput || !dropZone) return;
 
-            const updateFileName = () => {
-                const file = fileInput.files && fileInput.files[0];
-                fileName.textContent = file ? file.name : '';
+            const ACCEPTED_EXTS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg'];
+
+            const getExt = (name) => {
+                const match = name.toLowerCase().match(/\.[^.]+$/);
+                return match ? match[0] : '';
             };
 
+            const showError = (msg) => {
+                fileError.textContent = msg;
+                fileError.classList.remove('hidden');
+            };
+
+            const clearError = () => {
+                fileError.textContent = '';
+                fileError.classList.add('hidden');
+            };
+
+            const showPill = (file) => {
+                fileName.textContent = file.name;
+                filePill.classList.remove('hidden');
+                filePill.classList.add('flex');
+                dropZone.classList.add('border-indigo-400', 'bg-indigo-50/60');
+            };
+
+            const clearPill = () => {
+                fileName.textContent = '';
+                filePill.classList.add('hidden');
+                filePill.classList.remove('flex');
+                dropZone.classList.remove('border-indigo-400', 'bg-indigo-50/60');
+            };
+
+            const applyFile = (file) => {
+                clearError();
+                const ext = getExt(file.name);
+                if (!ACCEPTED_EXTS.includes(ext)) {
+                    showError(`Invalid file type "${ext || file.name}". Accepted: ${ACCEPTED_EXTS.join(', ')}`);
+                    fileInput.value = '';
+                    clearPill();
+                    return;
+                }
+                showPill(file);
+            };
+
+            // Drag & drop
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
                 dropZone.addEventListener(eventName, (event) => {
                     event.preventDefault();
@@ -513,22 +565,87 @@
 
             ['dragleave', 'drop'].forEach((eventName) => {
                 dropZone.addEventListener(eventName, () => {
-                    dropZone.classList.remove('border-indigo-400', 'bg-indigo-50');
+                    if (!fileInput.files?.length) {
+                        dropZone.classList.remove('border-indigo-400', 'bg-indigo-50');
+                    }
                 });
             });
 
             dropZone.addEventListener('drop', (event) => {
                 const files = event.dataTransfer?.files;
-                if (!files || files.length === 0) {
-                    return;
-                }
-
+                if (!files || files.length === 0) return;
                 fileInput.files = files;
-                updateFileName();
+                applyFile(files[0]);
             });
 
-            fileInput.addEventListener('change', updateFileName);
-            updateFileName();
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                if (file) {
+                    applyFile(file);
+                } else {
+                    clearPill();
+                    clearError();
+                }
+            });
+
+            // Remove / unselect
+            fileRemove?.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.value = '';
+                clearPill();
+                clearError();
+            });
+
+            // AJAX Form Submission to retain form inputs & selected file on validation error
+            const form = fileInput?.closest('form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                    `;
+                }
+
+                clearError();
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        window.location.href = response.url || window.location.href;
+                    } else {
+                        const data = await response.json();
+                        const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Upload failed. Please check form values.');
+                        showError(errMsg);
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                        }
+                    }
+                } catch (error) {
+                    showError('An unexpected network error occurred.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                }
+            });
         })();
 
         (() => {

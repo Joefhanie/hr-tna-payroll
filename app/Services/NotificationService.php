@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Leave;
 use App\Models\OnboardingAssignment;
 use App\Models\OnboardingTask;
+use App\Models\PreviousClaim;
 use App\Models\ProfileUpdateRequest;
 use App\Models\User;
 use App\Notifications\SystemNotification;
@@ -233,5 +234,63 @@ class NotificationService
                 'read_at' => null,
             ]);
         }
+    }
+
+    public function notifyPreviousClaimRequested(PreviousClaim $claim, User $requester): void
+    {
+        $claim->loadMissing('employee.manager.user');
+
+        $recipients = $this->hrUsers();
+        $managerUser = $claim->employee?->manager?->user;
+
+        if ($managerUser && $managerUser->id !== $requester->id) {
+            $recipients->push($managerUser);
+        }
+
+        $this->send($recipients, new SystemNotification(
+            'previous-claim-request',
+            $claim->claim_type . ' request submitted',
+            trim((string) ($claim->employee?->full_name ?? 'An employee')) . ' submitted a ' . strtolower($claim->claim_type) . ' request for ' . optional($claim->claim_date)->format('M d, Y') . '.',
+            route('payroll.previous-claims.index', ['type' => $claim->claim_type], false),
+            'ti ti-file-dollar',
+            [
+                'previous_claim_id' => $claim->id,
+                'employee_id' => $claim->employee_id,
+                'claim_type' => $claim->claim_type,
+            ]
+        ));
+    }
+
+    public function notifyPreviousClaimDecision(PreviousClaim $claim, User $reviewer, string $decision, ?string $note = null): void
+    {
+        $claim->loadMissing('employee.user');
+
+        $employeeUser = $claim->employee?->user;
+        if (! $employeeUser || $employeeUser->id === $reviewer->id) {
+            return;
+        }
+
+        $decisionLabel = $decision === 'approved' ? 'approved' : 'declined';
+        $icon = $decision === 'approved' ? 'ti ti-circle-check' : 'ti ti-circle-x';
+        $message = trim((string) ($reviewer->name ?? 'HR')) . ' ' . $decisionLabel . ' your ' . strtolower($claim->claim_type) . ' request for ' . optional($claim->claim_date)->format('M d, Y') . '.';
+
+        if ($note) {
+            $message .= ' Note: ' . $note;
+        }
+
+        $this->send(collect([$employeeUser]), new SystemNotification(
+            'previous-claim-' . $decisionLabel,
+            'Claim request ' . $decisionLabel,
+            $message,
+            route('self-service.profile', $claim->employee_id, false),
+            $icon,
+            [
+                'previous_claim_id' => $claim->id,
+                'employee_id' => $claim->employee_id,
+                'decision' => $decisionLabel,
+                'reviewer_id' => $reviewer->id,
+                'note' => $note,
+            ]
+        ));
     }
 }

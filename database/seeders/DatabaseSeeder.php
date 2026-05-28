@@ -65,6 +65,8 @@ class DatabaseSeeder extends Seeder
 
 
 
+
+
         $deductions = [
             ['name' => 'Late Deduction', 'type' => 'Prorated', 'amount' => null, 'rate' => 0.001, 'scope' => 'Attendance linked', 'is_active' => true, 'sort_order' => 0],
             ['name' => 'Absent Deduction', 'type' => 'Fixed', 'amount' => 1000.00, 'rate' => null, 'scope' => 'Attendance linked', 'is_active' => true, 'sort_order' => 1],
@@ -171,8 +173,7 @@ class DatabaseSeeder extends Seeder
                 'reason' => 'Initial Salary',
             ]);
 
-            // Sync default tax and deduction settings
-            $emp->taxBrackets()->sync(TaxBracket::pluck('id')->all());
+            // Sync default deduction settings
             $emp->deductionRules()->sync(DeductionRule::pluck('id')->all());
 
             return $emp;

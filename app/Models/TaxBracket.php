@@ -31,4 +31,12 @@ class TaxBracket extends Model
             ->orderBy('threshold')
             ->get();
     }
+
+    public static function resolveForTaxableAmount(float $taxableAmount): ?self
+    {
+        return self::where('is_active', true)
+            ->where('threshold', '<=', $taxableAmount)
+            ->orderBy('threshold', 'desc')
+            ->first();
+    }
 }
