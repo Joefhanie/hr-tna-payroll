@@ -142,7 +142,7 @@
                                         </a>
                                     @endif
                                     @if ($payRun->status != 3)
-                                        <form method="POST" action="{{ route('payroll.destroy', $payRun) }}" class="inline" data-confirm="Are you sure? This will soft delete the payroll run.">
+                                        <form method="POST" action="{{ route('payroll.destroy', $payRun) }}" class="inline" data-confirm="Are you sure you want to delete this pay run? This action cannot be undone." data-confirm-type="danger" data-confirm-text="Delete" data-confirm-title="Delete Pay Run">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="action-icon text-red-600 hover:text-red-800 transition" title="Delete">

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('users') || Schema::hasColumn('users', 'permissions')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->json('permissions')->nullable()->after('role');
         });
@@ -18,6 +22,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('users') || !Schema::hasColumn('users', 'permissions')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('permissions');
         });

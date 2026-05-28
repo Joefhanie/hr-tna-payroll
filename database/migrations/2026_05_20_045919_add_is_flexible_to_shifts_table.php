@@ -16,8 +16,12 @@ return new class extends Migration
         }
 
         Schema::table('shifts', function (Blueprint $table) {
-            $table->boolean('is_flexible')->default(false)->after('is_night_shift');
-            $table->integer('flexible_hours')->nullable()->default(2)->after('is_flexible');
+            if (!Schema::hasColumn('shifts', 'is_flexible')) {
+                $table->boolean('is_flexible')->default(false)->after('is_night_shift');
+            }
+            if (!Schema::hasColumn('shifts', 'flexible_hours')) {
+                $table->integer('flexible_hours')->nullable()->default(2)->after('is_flexible');
+            }
         });
     }
 
@@ -31,7 +35,12 @@ return new class extends Migration
         }
 
         Schema::table('shifts', function (Blueprint $table) {
-            $table->dropColumn(['is_flexible', 'flexible_hours']);
+            if (Schema::hasColumn('shifts', 'flexible_hours')) {
+                $table->dropColumn('flexible_hours');
+            }
+            if (Schema::hasColumn('shifts', 'is_flexible')) {
+                $table->dropColumn('is_flexible');
+            }
         });
     }
 };

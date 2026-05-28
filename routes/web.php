@@ -203,6 +203,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/timekeeping/manual', [TimekeepingController::class, 'storeManual'])->name('timekeeping.manual.store');
         Route::post('/timekeeping/shift-schedule/save', [TimekeepingController::class, 'saveShiftSchedule'])->name('timekeeping.shift-schedule.save');
     });
+    Route::middleware('permission:timekeeping.delete')->group(function () {
+        Route::post('/timekeeping/shift-schedule/soft-delete', [TimekeepingController::class, 'softDeleteShiftSchedule'])->name('timekeeping.shift-schedule.soft-delete');
+    });
 
     // Onboarding, Leave, Benefits, Reports
     Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding');
@@ -241,6 +244,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::middleware('permission:leaves.create')->group(function () {
         Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');
+        Route::post('/leave/types', [LeaveController::class, 'storeType'])->name('leave.types.store');
     });
     Route::middleware('permission:leaves.edit')->group(function () {
         Route::post('/leave/{leave}/approve', [LeaveController::class, 'approve'])->name('leave.approve');

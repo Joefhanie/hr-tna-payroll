@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Schema;
 
 class Employee extends Model
 {
@@ -191,23 +192,39 @@ class Employee extends Model
 
     public function currentShift(): HasOne
     {
-        return $this->hasOne(ShiftAssignment::class)
+        $query = $this->hasOne(ShiftAssignment::class)
             ->where('effective_from', '<=', now()->toDateString())
             ->where(function ($query) {
                 $query->whereNull('effective_to')
                     ->orWhere('effective_to', '>=', now()->toDateString());
             })
             ->latest('effective_from');
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $query->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 13);
+            });
+        }
+
+        return $query;
     }
 
     public function currentShifts(): HasMany
     {
-        return $this->hasMany(ShiftAssignment::class)
+        $query = $this->hasMany(ShiftAssignment::class)
             ->where('effective_from', '<=', now()->toDateString())
             ->where(function ($query) {
                 $query->whereNull('effective_to')
                     ->orWhere('effective_to', '>=', now()->toDateString());
             });
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $query->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 13);
+            });
+        }
+
+        return $query;
     }
 
     public function shiftAssignments()
@@ -229,6 +246,12 @@ class Employee extends Model
             })
             ->orderByDesc('effective_from')
             ->get();
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $assignments = $assignments->filter(function ($assignment) {
+                return $assignment->status === null || (int) $assignment->status !== 13;
+            })->values();
+        }
 
         foreach ($assignments as $assignment) {
             if ($assignment->shift && is_array($assignment->shift->days_of_week)) {

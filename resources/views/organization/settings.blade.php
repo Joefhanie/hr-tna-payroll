@@ -146,6 +146,8 @@
                                 form="resetBrandColorsForm"
                                 data-confirm="Restore the original blue and indigo system colors?"
                                 data-confirm-title="Restore Original Colors"
+                                data-confirm-type="info"
+                                data-confirm-text="Restore"
                                 class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                             >
                                 Restore Original Colors

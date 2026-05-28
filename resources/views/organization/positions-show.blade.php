@@ -46,7 +46,7 @@
                     </svg>
                     Edit
                 </a>
-                    <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" data-confirm="Delete this position?">
+                    <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" data-confirm="Delete this position?" data-confirm-type="danger" data-confirm-text="Delete" data-confirm-title="Delete Position">
                         @csrf
                     @method('DELETE')
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100">

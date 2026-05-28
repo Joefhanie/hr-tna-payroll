@@ -11,7 +11,7 @@
             @if ($payRun->status == 1 || $payRun->status == 2)
                 <form action="{{ route('payroll.finalize', $payRun) }}" method="POST">
                     @csrf
-                        <button type="submit" data-confirm="Are you sure you want to finalize this pay run? This will approve all payslips." data-confirm-title="Finalize Pay Run" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
+                        <button type="submit" data-confirm="Are you sure you want to finalize this pay run? This will approve all payslips." data-confirm-title="Finalize Pay Run" data-confirm-type="info" data-confirm-text="Finalize" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">
                         Finalize Pay Run
                     </button>
                 </form>

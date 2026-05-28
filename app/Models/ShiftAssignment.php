@@ -14,11 +14,13 @@ class ShiftAssignment extends Model
         'shift_id',
         'effective_from',
         'effective_to',
+        'status',
     ];
 
     protected $casts = [
         'effective_from' => 'date',
         'effective_to' => 'date',
+        'status' => 'integer',
     ];
 
     /**

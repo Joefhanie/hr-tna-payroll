@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('field_records') || Schema::hasColumn('field_records', 'notes_saved_at')) {
+            return;
+        }
+
         Schema::table('field_records', function (Blueprint $table) {
             $table->timestamp('notes_saved_at')->nullable()->after('notes');
         });
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('field_records') || !Schema::hasColumn('field_records', 'notes_saved_at')) {
+            return;
+        }
+
         Schema::table('field_records', function (Blueprint $table) {
             $table->dropColumn('notes_saved_at');
         });

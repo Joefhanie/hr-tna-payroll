@@ -11,10 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('payroll_settings')) {
+            return;
+        }
+
         Schema::table('payroll_settings', function (Blueprint $table) {
-            $table->integer('late_tier1_max_minutes')->default(15)->after('late_grace_period_minutes');
-            $table->integer('late_tier2_max_minutes')->default(30)->after('late_tier1_max_minutes');
-            $table->integer('late_tier3_max_minutes')->default(60)->after('late_tier2_max_minutes');
+            if (!Schema::hasColumn('payroll_settings', 'late_tier1_max_minutes')) {
+                $table->integer('late_tier1_max_minutes')->default(15)->after('late_grace_period_minutes');
+            }
+            if (!Schema::hasColumn('payroll_settings', 'late_tier2_max_minutes')) {
+                $table->integer('late_tier2_max_minutes')->default(30)->after('late_tier1_max_minutes');
+            }
+            if (!Schema::hasColumn('payroll_settings', 'late_tier3_max_minutes')) {
+                $table->integer('late_tier3_max_minutes')->default(60)->after('late_tier2_max_minutes');
+            }
         });
     }
 
@@ -23,12 +33,20 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('payroll_settings')) {
+            return;
+        }
+
         Schema::table('payroll_settings', function (Blueprint $table) {
-            $table->dropColumn([
-                'late_tier1_max_minutes',
-                'late_tier2_max_minutes',
-                'late_tier3_max_minutes',
-            ]);
+            if (Schema::hasColumn('payroll_settings', 'late_tier3_max_minutes')) {
+                $table->dropColumn('late_tier3_max_minutes');
+            }
+            if (Schema::hasColumn('payroll_settings', 'late_tier2_max_minutes')) {
+                $table->dropColumn('late_tier2_max_minutes');
+            }
+            if (Schema::hasColumn('payroll_settings', 'late_tier1_max_minutes')) {
+                $table->dropColumn('late_tier1_max_minutes');
+            }
         });
     }
 };

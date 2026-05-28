@@ -235,6 +235,8 @@
                 <button type="submit"
                     data-confirm="Are you sure you want to submit and save the current plotting payments?"
                     data-confirm-title="Submit Plotting Payments"
+                    data-confirm-type="info"
+                    data-confirm-text="Submit"
                     @if(!$hasEditableFields) disabled @endif
                     class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                     Submit Plotting

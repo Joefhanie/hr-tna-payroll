@@ -11,10 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('company_settings')) {
+            return;
+        }
+
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->string('brand_primary_color', 7)->nullable()->after('logo_dark_path');
-            $table->string('brand_secondary_color', 7)->nullable()->after('brand_primary_color');
-            $table->string('brand_accent_color', 7)->nullable()->after('brand_secondary_color');
+            if (!Schema::hasColumn('company_settings', 'brand_primary_color')) {
+                $table->string('brand_primary_color', 7)->nullable()->after('logo_dark_path');
+            }
+            if (!Schema::hasColumn('company_settings', 'brand_secondary_color')) {
+                $table->string('brand_secondary_color', 7)->nullable()->after('brand_primary_color');
+            }
+            if (!Schema::hasColumn('company_settings', 'brand_accent_color')) {
+                $table->string('brand_accent_color', 7)->nullable()->after('brand_secondary_color');
+            }
         });
     }
 
@@ -23,12 +33,20 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('company_settings')) {
+            return;
+        }
+
         Schema::table('company_settings', function (Blueprint $table) {
-            $table->dropColumn([
-                'brand_primary_color',
-                'brand_secondary_color',
-                'brand_accent_color',
-            ]);
+            if (Schema::hasColumn('company_settings', 'brand_accent_color')) {
+                $table->dropColumn('brand_accent_color');
+            }
+            if (Schema::hasColumn('company_settings', 'brand_secondary_color')) {
+                $table->dropColumn('brand_secondary_color');
+            }
+            if (Schema::hasColumn('company_settings', 'brand_primary_color')) {
+                $table->dropColumn('brand_primary_color');
+            }
         });
     }
 };
