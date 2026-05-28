@@ -472,8 +472,46 @@ class PayrollService
                     continue;
                 }
 
-                if ($checkIn && $checkIn->gt($shiftStart)) {
-                    $dayLateMinutes = $shiftStart->diffInMinutes($checkIn);
+                // For flexible shifts, recalculate effective start/end based on actual clock-in.
+                // The employee is not late if they clock in within the flexible window.
+                // Their shift end is pushed forward to match their actual start + shift duration.
+                $effectiveShiftStart = $shiftStart->copy();
+                $effectiveShiftEnd   = $shiftEnd->copy();
+
+                if ($dayShift && $dayShift->is_flexible && $checkIn) {
+                    $shiftStartMinutes      = $dayShift->getStartMinutes();
+                    $flexibleUntilMinutes   = $dayShift->getFlexibleUntilMinutes();
+                    $clockInMinutes         = $checkIn->hour * 60 + $checkIn->minute;
+
+                    // Clamp the effective start to [shiftStart, flexUntil]
+                    $effectiveStartMinutes  = max($shiftStartMinutes, min($clockInMinutes, $flexibleUntilMinutes));
+                    $effectiveShiftStart    = $attendanceDate->copy()->setTime(
+                        intdiv($effectiveStartMinutes, 60),
+                        $effectiveStartMinutes % 60,
+                        0
+                    );
+
+                    // Shift end = effective start + original shift duration
+                    $endMinutes = $effectiveStartMinutes + $dayShift->shift_duration_minutes;
+                    if ($endMinutes >= 24 * 60) {
+                        $endMinutes -= 24 * 60;
+                        $effectiveShiftEnd = $attendanceDate->copy()->addDay()->setTime(
+                            intdiv($endMinutes, 60),
+                            $endMinutes % 60,
+                            0
+                        );
+                    } else {
+                        $effectiveShiftEnd = $attendanceDate->copy()->setTime(
+                            intdiv($endMinutes, 60),
+                            $endMinutes % 60,
+                            0
+                        );
+                    }
+                }
+
+                // Late check: only fire if employee arrived AFTER the effective start
+                if ($checkIn && $checkIn->gt($effectiveShiftStart)) {
+                    $dayLateMinutes = $effectiveShiftStart->diffInMinutes($checkIn);
                     $summary['late_minutes'] += $dayLateMinutes;
 
                     // Apply late policy thresholds from LateDeductionService
@@ -483,12 +521,12 @@ class PayrollService
                 }
 
                 if ($checkOut && $checkIn && $checkOut->gte($checkIn)) {
-                    if ($checkOut->lt($shiftEnd)) {
-                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($shiftEnd);
+                    if ($checkOut->lt($effectiveShiftEnd)) {
+                        $summary['undertime_minutes'] += $checkOut->diffInMinutes($effectiveShiftEnd);
                     }
 
-                    if ($checkOut->gt($shiftEnd)) {
-                        $summary['overtime_minutes'] += $shiftEnd->diffInMinutes($checkOut);
+                    if ($checkOut->gt($effectiveShiftEnd)) {
+                        $summary['overtime_minutes'] += $effectiveShiftEnd->diffInMinutes($checkOut);
                     }
 
                     if ($checkOut->gt($premiumStart)) {
