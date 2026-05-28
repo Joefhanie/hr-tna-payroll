@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('previous_claims')) {
+            return;
+        }
+
         Schema::create('previous_claims', function (Blueprint $table) {
             $table->bigIncrements('id');
             // All referenced tables use int (signed) PKs in this DB

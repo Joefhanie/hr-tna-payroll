@@ -18,6 +18,7 @@ class PayRun extends Model
         'pay_date',
         'frequency',
         'status',
+        'deduct_government_contributions',
         'created_by',
         'finalized_at',
     ];
@@ -26,6 +27,7 @@ class PayRun extends Model
         'period_start' => 'date',
         'period_end' => 'date',
         'pay_date' => 'date',
+        'deduct_government_contributions' => 'boolean',
         'finalized_at' => 'datetime',
     ];
 

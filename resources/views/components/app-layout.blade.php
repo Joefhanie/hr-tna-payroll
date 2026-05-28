@@ -517,8 +517,8 @@
         <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl overflow-y-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
             <div class="px-6 py-6">
                 <div class="flex flex-col items-center text-center">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-3">
-                        <i class="ti ti-alert-triangle text-2xl"></i>
+                    <div id="confirmModalIconContainer" class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-3">
+                        <i id="confirmModalIcon" class="ti ti-alert-triangle text-2xl"></i>
                     </div>
                     <h3 class="text-lg font-bold text-slate-900" id="confirmModalTitle">Confirm Action</h3>
                     <p class="mt-2 text-sm text-slate-500" id="confirmModalMessage">Are you sure you want to proceed?</p>
@@ -692,17 +692,65 @@
 
             // Confirm Modal
             let __pendingConfirmForm = null;
+            let __confirmCallback = null;
 
             const confirmModal = document.getElementById('confirmModal');
             const confirmCancel = document.getElementById('confirmCancel');
             const confirmProceed = document.getElementById('confirmProceed');
             const confirmModalTitle = document.getElementById('confirmModalTitle');
             const confirmModalMessage = document.getElementById('confirmModalMessage');
+            const confirmModalIconContainer = document.getElementById('confirmModalIconContainer');
+            const confirmModalIcon = document.getElementById('confirmModalIcon');
 
-            function openConfirmModal(title, message) {
+            function openConfirmModal(title, message, callback = null, options = {}) {
                 if (!confirmModal) return;
                 confirmModalTitle.innerHTML = title || 'Confirm Action';
                 confirmModalMessage.innerHTML = message || 'Are you sure you want to proceed?';
+                __confirmCallback = callback;
+
+                // Customize button labels if provided
+                if (confirmProceed) {
+                    confirmProceed.innerHTML = options.confirmText || 'Confirm';
+                    // Reset class list to default, then apply type-specific classes
+                    confirmProceed.className = "rounded-xl px-5 py-2 text-sm font-medium text-white transition " + (options.confirmClass || 'bg-slate-900 hover:bg-slate-800');
+                }
+                if (confirmCancel) {
+                    confirmCancel.innerHTML = options.cancelText || 'Cancel';
+                }
+
+                // Customize icon and color scheme based on type
+                if (confirmModalIconContainer && confirmModalIcon) {
+                    confirmModalIconContainer.className = "flex h-12 w-12 items-center justify-center rounded-full mb-3";
+                    confirmModalIcon.className = "text-2xl";
+
+                    const type = options.type || 'warning';
+                    if (type === 'danger') {
+                        confirmModalIconContainer.classList.add('bg-rose-50', 'text-rose-600');
+                        confirmModalIcon.classList.add('ti', 'ti-trash');
+                        if (confirmProceed && !options.confirmClass) {
+                            confirmProceed.className = "rounded-xl px-5 py-2 text-sm font-medium text-white transition bg-rose-600 hover:bg-rose-700";
+                        }
+                    } else if (type === 'success') {
+                        confirmModalIconContainer.classList.add('bg-emerald-50', 'text-emerald-600');
+                        confirmModalIcon.classList.add('ti', 'ti-circle-check');
+                        if (confirmProceed && !options.confirmClass) {
+                            confirmProceed.className = "rounded-xl px-5 py-2 text-sm font-medium text-white transition bg-emerald-600 hover:bg-emerald-700";
+                        }
+                    } else if (type === 'info') {
+                        confirmModalIconContainer.classList.add('bg-blue-50', 'text-blue-600');
+                        confirmModalIcon.classList.add('ti', 'ti-info-circle');
+                        if (confirmProceed && !options.confirmClass) {
+                            confirmProceed.className = "rounded-xl px-5 py-2 text-sm font-medium text-white transition bg-blue-600 hover:bg-blue-700";
+                        }
+                    } else { // default warning
+                        confirmModalIconContainer.classList.add('bg-amber-50', 'text-amber-600');
+                        confirmModalIcon.classList.add('ti', 'ti-alert-triangle');
+                        if (confirmProceed && !options.confirmClass) {
+                            confirmProceed.className = "rounded-xl bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800";
+                        }
+                    }
+                }
+
                 confirmModal.classList.remove('hidden');
                 confirmModal.classList.add('flex');
             }
@@ -711,13 +759,24 @@
                 if (!confirmModal) return;
                 confirmModal.classList.remove('flex');
                 confirmModal.classList.add('hidden');
+                __pendingConfirmForm = null;
+                __confirmCallback = null;
             }
+
+            // Expose globally
+            window.showConfirmModal = function(title, message, callback, options = {}) {
+                openConfirmModal(title, message, callback, options);
+            };
 
             function initConfirmModal() {
                 document.querySelectorAll('[data-confirm]').forEach(function (el) {
                     el.addEventListener('click', function (e) {
                         const message = el.getAttribute('data-confirm') || 'Are you sure you want to proceed?';
                         const title = el.getAttribute('data-confirm-title') || 'Confirm Action';
+                        const type = el.getAttribute('data-confirm-type') || 'warning';
+                        const confirmText = el.getAttribute('data-confirm-text') || 'Confirm';
+                        const cancelText = el.getAttribute('data-confirm-cancel') || 'Cancel';
+
                         let form = null;
                         if (el.hasAttribute('form')) {
                             form = document.getElementById(el.getAttribute('form'));
@@ -729,24 +788,29 @@
 
                         e.preventDefault();
                         __pendingConfirmForm = form;
-                        confirmModalTitle.innerHTML = title;
-                        confirmModalMessage.innerHTML = message;
-                        confirmModal.classList.remove('hidden');
-                        confirmModal.classList.add('flex');
+                        openConfirmModal(title, message, null, { type, confirmText, cancelText });
                     });
                 });
 
                 if (confirmCancel) {
                     confirmCancel.addEventListener('click', function () {
                         closeConfirmModal();
-                        __pendingConfirmForm = null;
                     });
                 }
 
                 if (confirmProceed) {
                     confirmProceed.addEventListener('click', function () {
                         if (__pendingConfirmForm) {
-                            __pendingConfirmForm.submit();
+                            const form = __pendingConfirmForm;
+                            closeConfirmModal();
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit();
+                            } else {
+                                form.submit();
+                            }
+                        } else if (__confirmCallback) {
+                            __confirmCallback();
+                            closeConfirmModal();
                         }
                     });
                 }
@@ -755,7 +819,6 @@
                     confirmModal.addEventListener('click', function (event) {
                         if (event.target === confirmModal) {
                             closeConfirmModal();
-                            __pendingConfirmForm = null;
                         }
                     });
                 }
@@ -763,7 +826,6 @@
                 document.addEventListener('keydown', function (event) {
                     if (event.key === 'Escape' && confirmModal && confirmModal.classList.contains('flex')) {
                         closeConfirmModal();
-                        __pendingConfirmForm = null;
                     }
                 });
             }

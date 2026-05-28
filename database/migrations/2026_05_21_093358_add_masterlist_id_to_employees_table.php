@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('employees') || Schema::hasColumn('employees', 'masterlist_id')) {
+            return;
+        }
+
         Schema::table('employees', function (Blueprint $table) {
             $table->integer('masterlist_id')->nullable()->after('manager_id');
         });
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('employees') || !Schema::hasColumn('employees', 'masterlist_id')) {
+            return;
+        }
+
         Schema::table('employees', function (Blueprint $table) {
             $table->dropColumn('masterlist_id');
         });

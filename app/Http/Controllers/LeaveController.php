@@ -8,6 +8,7 @@ use App\Services\LeaveRequestService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -425,6 +426,125 @@ class LeaveController extends Controller
             'prevMonthDate'      => $selectedDateCarbon->copy()->subMonth()->startOfMonth()->toDateString(),
             'nextMonthDate'      => $selectedDateCarbon->copy()->addMonth()->startOfMonth()->toDateString(),
         ]);
+    }
+
+    /**
+     * Store a new leave type (HR only).
+     */
+    public function storeType(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user || $user->role !== 4) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'code' => ['nullable', 'string', 'max:20'],
+            'is_paid' => ['nullable', 'boolean'],
+            'max_days_per_year' => ['nullable', 'integer', 'min:0'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        if (! Schema::hasTable('leave_types')) {
+            abort(404, 'Leave types table not found.');
+        }
+
+        $columns = array_flip(Schema::getColumnListing('leave_types'));
+        $payload = [];
+
+        if (isset($columns['name'])) {
+            $payload['name'] = $validated['name'];
+        }
+
+        if (isset($columns['code'])) {
+            $requestedCode = strtoupper((string) ($validated['code'] ?? ''));
+            $requestedCode = preg_replace('/[^A-Z0-9_-]/', '', $requestedCode);
+            $payload['code'] = $this->resolveUniqueLeaveTypeCode($requestedCode, $validated['name']);
+        }
+
+        if (isset($columns['is_paid'])) {
+            $payload['is_paid'] = ($validated['is_paid'] ?? false) ? 1 : 0;
+        }
+
+        if (isset($columns['max_days_per_year'])) {
+            $payload['max_days_per_year'] = $validated['max_days_per_year'] ?? null;
+        }
+
+        if (isset($columns['is_accrued'])) {
+            $payload['is_accrued'] = 0;
+        }
+
+        if (isset($columns['accrual_rate'])) {
+            $payload['accrual_rate'] = null;
+        }
+
+        if (isset($columns['requires_approval'])) {
+            $payload['requires_approval'] = 1;
+        }
+
+        if (isset($columns['min_notice_days'])) {
+            $payload['min_notice_days'] = 0;
+        }
+
+        if (isset($columns['is_active'])) {
+            $payload['is_active'] = array_key_exists('is_active', $validated)
+                ? ($validated['is_active'] ? 1 : 0)
+                : 1;
+        }
+
+        if (isset($columns['created_at'])) {
+            $payload['created_at'] = now();
+        }
+
+        if (isset($columns['updated_at'])) {
+            $payload['updated_at'] = now();
+        }
+
+        DB::table('leave_types')->insert($payload);
+
+        return redirect()->route('leave.index')->with('success', 'Leave type created successfully.');
+    }
+
+    private function resolveUniqueLeaveTypeCode(string $requestedCode, string $name): string
+    {
+        $baseCode = $requestedCode !== '' ? $requestedCode : $this->generateLeaveTypeCodeFromName($name);
+        $baseCode = Str::upper(Str::limit($baseCode, 20, ''));
+
+        $candidate = $baseCode;
+        $suffix = 2;
+
+        while (DB::table('leave_types')->where('code', $candidate)->exists()) {
+            $suffixText = (string) $suffix;
+            $maxBaseLength = 20 - strlen($suffixText);
+            $candidate = Str::limit($baseCode, $maxBaseLength, '') . $suffixText;
+            $suffix++;
+        }
+
+        return $candidate;
+    }
+
+    private function generateLeaveTypeCodeFromName(string $name): string
+    {
+        $tokens = preg_split('/\s+/', trim($name)) ?: [];
+        $initials = '';
+
+        foreach ($tokens as $token) {
+            if ($token === '') {
+                continue;
+            }
+            $initials .= strtoupper(substr($token, 0, 1));
+        }
+
+        $initials = preg_replace('/[^A-Z0-9]/', '', $initials);
+        if ($initials !== '') {
+            return $initials;
+        }
+
+        $fallback = strtoupper(Str::slug($name, ''));
+        $fallback = preg_replace('/[^A-Z0-9]/', '', $fallback);
+
+        return $fallback !== '' ? $fallback : 'LT';
     }
 
     /**

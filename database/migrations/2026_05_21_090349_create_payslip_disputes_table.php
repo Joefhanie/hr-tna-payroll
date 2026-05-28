@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('payslip_disputes')) {
+            return;
+        }
+
         Schema::create('payslip_disputes', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('employee_id');

@@ -18,6 +18,13 @@
                 Export CSV
             </a>
             @endif
+            @if(auth()->user()->role === 4)
+            <button type="button" id="openAddLeaveTypeModal"
+                class="inline-flex items-center gap-2 rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                <i class="ti ti-plus text-base"></i>
+                Add Leave Type
+            </button>
+            @endif
             @if(auth()->user()->hasPermission('leaves.create'))
             <button type="button" id="openRequestLeaveModal"
                 class="inline-flex items-center gap-2 rounded-[0.5rem] bg-[#1a56db] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">
@@ -54,6 +61,54 @@
                 <p class="mt-2 text-[0.7rem] text-slate-500">{{ number_format($used, $used == floor($used) ? 0 : 1) }} used</p>
             </div>
         @endforeach
+    </div>
+    @endif
+
+    {{-- ADD LEAVE TYPE MODAL (HR only) --}}
+    @if(auth()->user()->role === 4 && auth()->user()->hasPermission('leaves.create'))
+    <div id="addLeaveTypeModal" class="fixed inset-0 z-50 hidden bg-slate-950/40 p-4 backdrop-blur-sm overflow-y-auto justify-center items-start sm:items-center">
+        <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div>
+                    <h3 class="text-base font-semibold text-slate-900">Add Leave Type</h3>
+                    <p class="mt-0.5 text-xs text-slate-500">Create a new leave type for the system.</p>
+                </div>
+                <button type="button" id="closeAddLeaveTypeModal" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50">
+                    <i class="ti ti-x text-sm"></i>
+                </button>
+            </div>
+            <form method="POST" action="{{ route('leave.types.store') }}" class="px-6 py-5 space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Name</label>
+                    <input name="name" required maxlength="120"
+                        class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Paid?</label>
+                        <select name="is_paid" class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700">
+                            <option value="1">Yes</option>
+                            <option value="0" selected>No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Max Days / Year</label>
+                        <input name="max_days_per_year" type="number" min="0"
+                            class="w-full rounded-[0.5rem] border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                    </div>
+                </div>
+                <div>
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="is_active" value="1" checked class="rounded"> Active
+                    </label>
+                </div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button type="button" id="cancelAddLeaveType" class="rounded-[0.5rem] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="rounded-[0.5rem] bg-[#1a56db] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1e40af]">Create</button>
+                </div>
+            </form>
+        </div>
     </div>
     @endif
 
@@ -484,6 +539,20 @@
         closeCancel?.addEventListener('click', closeCancelM);
         cancelBtnDismiss?.addEventListener('click', closeCancelM);
         cancelModal?.addEventListener('click', e => { if (e.target === cancelModal) closeCancelM(); });
+
+        // ── Add Leave Type Modal (HR) ──
+        const addLeaveTypeModal = document.getElementById('addLeaveTypeModal');
+        const openAddLeaveTypeBtn = document.getElementById('openAddLeaveTypeModal');
+        const closeAddLeaveTypeBtn = document.getElementById('closeAddLeaveTypeModal');
+        const cancelAddLeaveTypeBtn = document.getElementById('cancelAddLeaveType');
+
+        function openAddLeaveType() { addLeaveTypeModal?.classList.remove('hidden'); addLeaveTypeModal?.classList.add('flex'); }
+        function closeAddLeaveType(){ addLeaveTypeModal?.classList.remove('flex'); addLeaveTypeModal?.classList.add('hidden'); }
+
+        openAddLeaveTypeBtn?.addEventListener('click', openAddLeaveType);
+        closeAddLeaveTypeBtn?.addEventListener('click', closeAddLeaveType);
+        cancelAddLeaveTypeBtn?.addEventListener('click', closeAddLeaveType);
+        addLeaveTypeModal?.addEventListener('click', e => { if (e.target === addLeaveTypeModal) closeAddLeaveType(); });
 
         // ── ESC to close any modal ──
         document.addEventListener('keydown', function (e) {

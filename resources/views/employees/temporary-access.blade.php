@@ -258,7 +258,7 @@
 
                                     {{-- Revoke Temporary Role Assignment --}}
                                     @if ($user && ($isCurrentTemporary || $isScheduled))
-                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" data-confirm="Are you sure you want to revoke this temporary role assignment?">
+                                        <form method="POST" action="{{ route('employees.revoke-role', $employee) }}" class="inline-block" data-confirm="Are you sure you want to revoke this temporary role assignment?" data-confirm-type="danger" data-confirm-text="Revoke" data-confirm-title="Revoke Temporary Access">
                                             @csrf
                                             <button type="submit"
                                                     class="text-red-600 hover:text-red-800 transition"
@@ -684,14 +684,22 @@
             if (exportBtn) exportBtn.href = url;
         }
 
-        let taSearchTimer = null;
-        document.getElementById('ta-search')?.addEventListener('input', function () {
-            updateTaExportUrl();
+        function filterTemporaryAccessRows() {
+            const term = (document.getElementById('ta-search')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('#ta-table .ta-row').forEach((row) => {
+                if (!term) {
+                    row.style.display = '';
+                    return;
+                }
 
-            clearTimeout(taSearchTimer);
-            taSearchTimer = setTimeout(() => {
-                document.getElementById('taFilterForm')?.submit();
-            }, 300);
+                const searchable = row.textContent.toLowerCase();
+                row.style.display = searchable.includes(term) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('ta-search')?.addEventListener('input', function () {
+            filterTemporaryAccessRows();
+            updateTaExportUrl();
         });
 
         document.getElementById('taFromDate')?.addEventListener('change', updateTaExportUrl);
@@ -715,6 +723,8 @@
                 openNoUserModal(button.dataset.noUserId, button.dataset.noUserName || '');
             });
         });
+
+        filterTemporaryAccessRows();
 
         updateTaExportUrl();
     </script>

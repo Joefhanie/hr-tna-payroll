@@ -90,7 +90,7 @@
                                     <a href="{{ route('organization.departments.edit', $department) }}" class="action-icon text-slate-500 hover:text-slate-700 transition" title="Edit Department">
                                         <i class="ti ti-edit text-lg"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?" style="display: inline;">
+                                    <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?" data-confirm-type="danger" data-confirm-text="Delete" data-confirm-title="Delete Department" style="display: inline;">
                                         @csrf
                                             @method('DELETE')
                                         @method('DELETE')
@@ -135,7 +135,7 @@
                                                                     <a href="{{ route('organization.positions.edit', $position) }}" class="text-slate-400 hover:text-slate-700 transition">
                                                                         <i class="ti ti-edit text-[1.1rem]"></i>
                                                                     </a>
-                                                                     <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" data-confirm="Delete this position?" style="display: inline;">
+                                                                     <form method="POST" action="{{ route('organization.positions.destroy', $position) }}" data-confirm="Delete this position?" data-confirm-type="danger" data-confirm-text="Delete" data-confirm-title="Delete Position" style="display: inline;">
                                                                          @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="text-red-400 hover:text-red-600 transition">

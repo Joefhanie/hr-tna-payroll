@@ -123,7 +123,7 @@ class EmployeeController extends Controller
             ]);
 
             $statusLabels = [
-                1 => 'Active',
+                1 => 'Regular',
                 2 => 'Probationary',
                 3 => 'On Leave',
                 4 => 'Resigned',
@@ -169,7 +169,13 @@ class EmployeeController extends Controller
             ->orWhere('position_id', 'LIKE', '%Manager%')
             ->get();
 
-        return view('employees.create', compact('departments', 'positions', 'managers'));
+        $pendingUser = null;
+        $pendingUserId = session('pending_employee_user_id');
+        if ($pendingUserId) {
+            $pendingUser = User::find($pendingUserId);
+        }
+
+        return view('employees.create', compact('departments', 'positions', 'managers', 'pendingUser'));
     }
 
     /**
@@ -230,9 +236,19 @@ class EmployeeController extends Controller
                 $user = User::find($pendingUserId);
 
                 if ($user) {
-                    $user->update([
-                        'employee_id' => $employee->id,
-                    ]);
+                    // Link the user to the newly created employee and sync the
+                    // user's display name to the employee's full name when the
+                    // user's name is blank or currently matches the username.
+                    if (empty($user->employee_id)) {
+                        $user->employee_id = $employee->id;
+                    }
+
+                    $shouldSyncName = empty(trim((string) $user->name)) || ($user->name === $user->username);
+                    if ($shouldSyncName) {
+                        $user->name = $employee->full_name ?? trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''));
+                    }
+
+                    $user->save();
                 }
             }
 

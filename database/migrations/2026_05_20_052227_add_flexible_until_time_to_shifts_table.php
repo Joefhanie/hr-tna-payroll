@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('shifts')) {
+        if (!Schema::hasTable('shifts') || Schema::hasColumn('shifts', 'flexible_until_time')) {
             return;
         }
 
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (!Schema::hasTable('shifts')) {
+        if (!Schema::hasTable('shifts') || !Schema::hasColumn('shifts', 'flexible_until_time')) {
             return;
         }
 

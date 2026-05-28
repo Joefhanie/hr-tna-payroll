@@ -30,7 +30,7 @@
                     </svg>
                     Edit
                 </a>
-                <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?">
+                <form method="POST" action="{{ route('organization.departments.destroy', $department) }}" data-confirm="Delete this department?" data-confirm-type="danger" data-confirm-text="Delete" data-confirm-title="Delete Department">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100">

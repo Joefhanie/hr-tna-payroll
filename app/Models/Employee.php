@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Schema;
 
 class Employee extends Model
 {
@@ -51,6 +52,49 @@ class Employee extends Model
         'status' => 'integer',
         'employment_type' => 'integer',
     ];
+
+    private function normalizeNamePart(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    public function getFirstNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = $this->normalizeNamePart($value);
+    }
+
+    public function getMiddleNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setMiddleNameAttribute($value): void
+    {
+        $this->attributes['middle_name'] = $this->normalizeNamePart($value);
+    }
+
+    public function getLastNameAttribute($value): ?string
+    {
+        return $this->normalizeNamePart($value);
+    }
+
+    public function setLastNameAttribute($value): void
+    {
+        $this->attributes['last_name'] = $this->normalizeNamePart($value);
+    }
 
     /**
      * Get the department that the employee belongs to.
@@ -148,23 +192,39 @@ class Employee extends Model
 
     public function currentShift(): HasOne
     {
-        return $this->hasOne(ShiftAssignment::class)
+        $query = $this->hasOne(ShiftAssignment::class)
             ->where('effective_from', '<=', now()->toDateString())
             ->where(function ($query) {
                 $query->whereNull('effective_to')
                     ->orWhere('effective_to', '>=', now()->toDateString());
             })
             ->latest('effective_from');
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $query->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 13);
+            });
+        }
+
+        return $query;
     }
 
     public function currentShifts(): HasMany
     {
-        return $this->hasMany(ShiftAssignment::class)
+        $query = $this->hasMany(ShiftAssignment::class)
             ->where('effective_from', '<=', now()->toDateString())
             ->where(function ($query) {
                 $query->whereNull('effective_to')
                     ->orWhere('effective_to', '>=', now()->toDateString());
             });
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $query->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 13);
+            });
+        }
+
+        return $query;
     }
 
     public function shiftAssignments()
@@ -186,6 +246,12 @@ class Employee extends Model
             })
             ->orderByDesc('effective_from')
             ->get();
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $assignments = $assignments->filter(function ($assignment) {
+                return $assignment->status === null || (int) $assignment->status !== 13;
+            })->values();
+        }
 
         foreach ($assignments as $assignment) {
             if ($assignment->shift && is_array($assignment->shift->days_of_week)) {

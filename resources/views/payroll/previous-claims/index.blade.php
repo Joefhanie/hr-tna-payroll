@@ -184,7 +184,9 @@
                                             class="action-icon text-slate-400 hover:text-rose-600 transition"
                                             title="Delete"
                                             data-confirm="Delete this pending claim?"
-                                            data-confirm-title="Delete Claim">
+                                            data-confirm-title="Delete Claim"
+                                            data-confirm-type="danger"
+                                            data-confirm-text="Delete">
                                             <i class="ti ti-trash text-lg"></i>
                                         </button>
                                     </form>

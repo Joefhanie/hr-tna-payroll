@@ -134,7 +134,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 @php
-                                    $statusLabels = [1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
+                                    $statusLabels = [1 => 'Regular', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated'];
                                     $statusCode = (int) ($employee->status ?? 0);
                                     $statusLabel = $statusLabels[$statusCode] ?? 'Unknown';
                                     $statusColors = [
@@ -278,14 +278,26 @@
         document.getElementById('filterEmploymentType')?.addEventListener('change', updateExportUrl);
         document.getElementById('filterDepartment')?.addEventListener('change', updateExportUrl);
 
-        // Auto-filter search input with debounce
-        let debounceTimer;
-        document.getElementById('filterSearch')?.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function() {
-                document.getElementById('filterForm')?.submit();
-            }, 500);
+        // Client-side search filtering
+        function filterEmployeeRows() {
+            const term = (document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('#emp-table .emp-row').forEach((row) => {
+                if (!term) {
+                    row.setAttribute('data-filter-hidden', 'false');
+                    return;
+                }
+
+                const searchable = row.textContent.toLowerCase();
+                row.setAttribute('data-filter-hidden', searchable.includes(term) ? 'false' : 'true');
+            });
+        }
+
+        document.getElementById('filterSearch')?.addEventListener('input', function () {
+            filterEmployeeRows();
+            updateExportUrl();
         });
+
+        filterEmployeeRows();
 
         // Run once on load
         updateExportUrl();

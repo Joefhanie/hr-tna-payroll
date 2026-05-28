@@ -48,12 +48,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentPage = 1;
     let isUpdating = false;
 
-    function getVisibleRows() {
+    function getFilteredRows() {
         return Array.from(tbody.querySelectorAll(':scope > tr')).filter(row => {
             if (row.id === 'noResultsRow' || row.id === 'emptyRow') return false;
             if (row.querySelector('td[colspan]')) return false;
-
-            // Check if explicitly hidden by a client-side filter
             return row.getAttribute('data-filter-hidden') !== 'true';
         });
     }
@@ -62,8 +60,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isUpdating) return;
         isUpdating = true;
 
-        const visibleRows = getVisibleRows();
-        const totalItems = visibleRows.length;
+        const filteredRows = getFilteredRows();
+        const totalItems = filteredRows.length;
         const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
 
         if (currentPage > totalPages) {
@@ -92,9 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         allRows.forEach(row => {
-            const isVisibleByFilter = visibleRows.includes(row);
+            const isVisibleByFilter = filteredRows.includes(row);
             if (isVisibleByFilter) {
-                const idx = visibleRows.indexOf(row);
+                const idx = filteredRows.indexOf(row);
                 if (idx >= startIdx && idx < endIdx) {
                     row.style.display = '';
                 } else {
@@ -147,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
         isUpdating = false;
     }
 
-    const observerConfig = { attributes: true, childList: true, subtree: true, attributeFilter: ['style', 'class'] };
+    const observerConfig = { attributes: true, childList: true, subtree: true, attributeFilter: ['style', 'class', 'data-filter-hidden'] };
     const observer = new MutationObserver(function (mutations) {
         let externalChange = false;
         for (let mutation of mutations) {
@@ -171,8 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnNext.addEventListener('click', function () {
-        const visibleRows = getVisibleRows();
-        const totalPages = Math.ceil(visibleRows.length / itemsPerPage);
+        const filteredRows = getFilteredRows();
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
         if (currentPage < totalPages) {
             currentPage++;
             update();

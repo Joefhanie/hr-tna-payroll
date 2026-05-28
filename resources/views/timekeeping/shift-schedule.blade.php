@@ -5,6 +5,7 @@
     @php
         $canCreateShifts = auth()->user() && auth()->user()->hasPermission('timekeeping.create');
         $canEditShifts = auth()->user() && auth()->user()->hasPermission('timekeeping.edit');
+        $canDeleteShifts = auth()->user() && auth()->user()->role === 4 && auth()->user()->hasPermission('timekeeping.delete');
         $canManageShifts = $canCreateShifts || $canEditShifts;
     @endphp
 
@@ -172,6 +173,11 @@
                                                         <!-- Edit Shift Segment Button -->
                                                         <button type="button" onclick="openEditModal({{ $employee->id }}, '{{ addslashes($employee->full_name) }}', {{ $assignment->id }}, '{{ $assignment->shift->start_time }}', '{{ $assignment->shift->end_time }}', {{ $assignment->shift->break_minutes }}, {{ json_encode($assignment->shift->days_of_week ?? []) }}, {{ $assignment->shift->is_flexible ? 'true' : 'false' }}, {{ $assignment->shift->flexible_until_time ? "'".substr($assignment->shift->flexible_until_time, 0, 5)."'" : 'null' }})" class="ml-1 inline-flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors" title="Edit this shift segment">
                                                             <i class="ti ti-pencil text-sm"></i>
+                                                        </button>
+                                                    @endif
+                                                    @if($canDeleteShifts)
+                                                        <button type="button" onclick="softDeleteShiftSchedule({{ $assignment->id }}, '{{ addslashes($employee->full_name) }}')" class="ml-1 inline-flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-rose-600 transition-colors" title="Delete this shift segment">
+                                                            <i class="ti ti-trash text-sm"></i>
                                                         </button>
                                                     @endif
                                                 </div>
@@ -388,6 +394,11 @@
                                                     <i class="ti ti-pencil text-sm"></i>
                                                 </button>
                                             @endif
+                                            @if($canDeleteShifts)
+                                                <button type="button" onclick="softDeleteShiftSchedule({{ $assignment->id }}, '{{ addslashes($employee->full_name) }}')" class="inline-flex items-center justify-center rounded-lg bg-white border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-rose-600 transition-colors shadow-xs" title="Delete this shift segment">
+                                                    <i class="ti ti-trash text-sm"></i>
+                                                </button>
+                                            @endif
                                         </div>
                                     @endif
                                 @empty
@@ -596,7 +607,7 @@
             const flexUntilInput = document.querySelector('#addShiftModal input[name="flexible_until_time"]');
             const startWrapper = document.getElementById('start_time_wrapper');
             const flexHint = document.getElementById('flexible_hint');
-            
+
             if (flexCheckbox && flexUntilContainer && flexUntilInput) {
                 flexCheckbox.addEventListener('change', function() {
                     const infoIcon = document.getElementById('end_time_info_icon');
@@ -658,7 +669,7 @@
                     const isInputClick = endTimeInput && endTimeInput.contains(e.target);
                     const isIconClick = infoIcon && infoIcon.contains(e.target);
                     const isHintClick = flexHint && flexHint.contains(e.target);
-                    
+
                     if (!isInputClick && !isIconClick && !isHintClick) {
                         flexHint.classList.add('hidden');
                     }
@@ -735,7 +746,7 @@
             // Reset flexible inputs
             const flexCheckbox = document.querySelector('#addShiftModal input[name="is_flexible"]');
             if (flexCheckbox) flexCheckbox.checked = false;
-            
+
             const flexUntilContainer = document.getElementById('flex_until_container');
             const flexUntilInput = document.querySelector('#addShiftModal input[name="flexible_until_time"]');
             const startWrapper = document.getElementById('start_time_wrapper');
@@ -796,7 +807,7 @@
                 if (cb) {
                     cb.checked = false; // Uncheck for the new shift schedule
                     cb.disabled = true; // Disable to prevent duplication
-                    
+
                     const pill = cb.nextElementSibling;
                     if (pill) {
                         pill.classList.add('day-pill-disabled-scheduled');
@@ -813,7 +824,7 @@
             const breakMinutes = document.querySelector('#addShiftModal input[name="break_minutes"]').value;
             const isFlexible = document.querySelector('#addShiftModal input[name="is_flexible"]')?.checked || false;
             const flexibleUntilTime = isFlexible ? (document.querySelector('#addShiftModal input[name="flexible_until_time"]')?.value || null) : null;
-            
+
             // Get checked days
             const checkedDays = Array.from(document.querySelectorAll('#addShiftModal input[name="days[]"]:checked')).map(cb => cb.value);
 
@@ -864,6 +875,47 @@
             });
         }
 
+        function softDeleteShiftSchedule(assignmentId, employeeName) {
+            if (!assignmentId) {
+                return;
+            }
+
+            window.showConfirmModal(
+                'Delete Shift Schedule',
+                `Delete shift schedule for ${employeeName}? Are you sure you want to proceed?`,
+                function() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                    fetch('{{ route("timekeeping.shift-schedule.soft-delete") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            assignment_id: assignmentId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert(data.message || 'Error deleting shift schedule.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error deleting shift schedule.');
+                    });
+                },
+                {
+                    type: 'danger',
+                    confirmText: 'Delete'
+                }
+            );
+        }
+
         function showToast() {
             const toast = document.getElementById('toastNotification');
             toast.classList.remove('translate-y-[-150%]', 'opacity-0');
@@ -879,26 +931,26 @@
 
         function openAddShiftModal() {
             const m = document.getElementById('addShiftModal');
-            
+
             m.querySelector('h3').innerText = 'Add Shift Schedule';
-            
+
             document.getElementById('modal_employee_id').value = '';
             const searchInput = document.getElementById('employee_search_input');
             searchInput.value = '';
             searchInput.readOnly = false;
             searchInput.classList.remove('bg-slate-50', 'text-slate-500');
-            
+
             const assignmentIdInput = document.getElementById('modal_assignment_id');
             if (assignmentIdInput) assignmentIdInput.value = '';
-            
+
             m.querySelector('form').reset();
             m.querySelector('input[name="break_minutes"]').value = '60';
-            
+
             resetModalShifts();
-            
+
             const alertCard = document.getElementById('existing_shift_alert');
             if (alertCard) alertCard.classList.add('hidden');
-            
+
             m.classList.remove('hidden');
             m.classList.add('flex');
         }
@@ -906,19 +958,19 @@
         function openAddModalPreselected(employeeId, employeeName, displayString = '', days = []) {
             const m = document.getElementById('addShiftModal');
             m.querySelector('form').reset();
-            
+
             document.getElementById('modal_employee_id').value = employeeId;
-            
+
             const searchInput = document.getElementById('employee_search_input');
             searchInput.value = employeeName;
             searchInput.readOnly = true;
             searchInput.classList.add('bg-slate-50', 'text-slate-500');
-            
+
             let assignmentIdInput = document.getElementById('modal_assignment_id');
             if (assignmentIdInput) assignmentIdInput.value = '';
 
             resetModalShifts();
-            
+
             const alertCard = document.getElementById('existing_shift_alert');
             const timeText = document.getElementById('existing_shift_time_text');
             const daysText = document.getElementById('existing_shift_days_text');
@@ -929,13 +981,13 @@
                     daysText.innerText = days.join(', ');
                     alertCard.classList.remove('hidden');
                 }
-                
+
                 days.forEach(day => {
                     const cb = document.querySelector(`#addShiftModal input[name="days[]"][value="${day}"]`);
                     if (cb) {
                         cb.checked = false;
                         cb.disabled = true;
-                        
+
                         const pill = cb.nextElementSibling;
                         if (pill) {
                             pill.classList.add('day-pill-disabled-scheduled');
@@ -946,7 +998,7 @@
             } else {
                 if (alertCard) alertCard.classList.add('hidden');
             }
-            
+
             m.querySelector('h3').innerText = 'Add Shift Schedule';
             m.classList.remove('hidden');
             m.classList.add('flex');
@@ -955,15 +1007,15 @@
         function openEditModal(employeeId, employeeName, assignmentId, startTime, endTime, breakMinutes, days, isFlexible = false, flexibleUntilTime = null) {
             const m = document.getElementById('addShiftModal');
             m.querySelector('form').reset();
-            
+
             m.querySelector('h3').innerText = 'Edit Shift Segment';
-            
+
             document.getElementById('modal_employee_id').value = employeeId;
             const searchInput = document.getElementById('employee_search_input');
             searchInput.value = employeeName;
             searchInput.readOnly = true;
             searchInput.classList.add('bg-slate-50', 'text-slate-500');
-            
+
             let assignmentIdInput = document.getElementById('modal_assignment_id');
             if (!assignmentIdInput) {
                 assignmentIdInput = document.createElement('input');
@@ -973,15 +1025,15 @@
                 m.querySelector('form').appendChild(assignmentIdInput);
             }
             assignmentIdInput.value = assignmentId;
-            
-            m.querySelector('input[name="start_time"]').value = startTime.substring(0, 5); 
+
+            m.querySelector('input[name="start_time"]').value = startTime.substring(0, 5);
             m.querySelector('input[name="end_time"]').value = endTime.substring(0, 5);
             m.querySelector('input[name="break_minutes"]').value = breakMinutes;
             const flexCheckbox = m.querySelector('input[name="is_flexible"]');
             if(flexCheckbox) {
                 flexCheckbox.checked = isFlexible;
             }
-            
+
             const flexUntilContainer = document.getElementById('flex_until_container');
             const flexUntilInput = m.querySelector('input[name="flexible_until_time"]');
             const startWrapper = document.getElementById('start_time_wrapper');
@@ -1011,16 +1063,16 @@
                     if (infoIcon) infoIcon.classList.add('hidden');
                 }
             }
-            
+
             resetModalShifts();
             const checkboxes = m.querySelectorAll('input[name="days[]"]');
             checkboxes.forEach(cb => {
                 cb.checked = days.includes(cb.value);
             });
-            
+
             const alertCard = document.getElementById('existing_shift_alert');
             if (alertCard) alertCard.classList.add('hidden');
-            
+
             m.classList.remove('hidden');
             m.classList.add('flex');
         }
