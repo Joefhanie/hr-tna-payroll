@@ -14,8 +14,8 @@ return new class extends Migration
         if (!Schema::hasTable('employee_plottings')) {
             Schema::create('employee_plottings', function (Blueprint $table) {
                 $table->id();
-                $table->unsignedInteger('employee_id');
-                $table->unsignedInteger('supervisor_id')->nullable();
+                $table->unsignedBigInteger('employee_id');
+                $table->unsignedBigInteger('supervisor_id')->nullable();
                 $table->date('date');
                 $table->decimal('amount', 14, 2)->default(0.00);
                 $table->timestamps();

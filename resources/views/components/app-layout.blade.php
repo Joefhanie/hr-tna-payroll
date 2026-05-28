@@ -185,6 +185,8 @@
                     ['route' => 'payroll.index',                 'path' => '/payroll',                   'label' => 'Payroll Run'],
                     ['route' => 'payroll.plotting-payment',      'path' => '/payroll/plotting-payment',  'label' => 'Plotting of Payments'],
                     ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims',   'label' => 'Previous Claims'],
+                    ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims',   'label' => 'Overtime Requests', 'query' => ['type' => 'Overtime']],
+                    ['route' => 'payroll.previous-claims.index', 'path' => '/payroll/previous-claims',   'label' => 'Night Differential Requests', 'query' => ['type' => 'Night Differential']],
                     ['route' => 'payroll.disputes.index',        'path' => '/payroll/disputes',          'label' => 'Disputes'],
                 ]],
                 ['route' => 'benefits', 'path' => '/benefits', 'label' => 'Benefits', 'icon' => 'heartbeat', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
@@ -300,10 +302,26 @@
                                             @endif
                                             @php
                                                 $childRouteExists = \Illuminate\Support\Facades\Route::has($child['route']);
-                                                $childIsActive = $childRouteExists
-                                                    ? (request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))) || ($child['route'] === 'payroll.index' && request()->routeIs('payroll.show', 'payroll.edit')))
-                                                    : request()->is(ltrim($child['path'], '/'));
-                                                $childHref = $childRouteExists ? route($child['route']) : url($child['path']);
+                                                $childIsActive = false;
+                                                if ($childRouteExists) {
+                                                    $baseActive = request()->routeIs($child['route']) || request()->routeIs($child['route'].'.*') || ($child['route'] === 'payroll.plotting-payment' && (request()->routeIs('payroll.work-location-details') || request()->routeIs('payroll.per-date'))) || ($child['route'] === 'payroll.index' && request()->routeIs('payroll.show', 'payroll.edit'));
+                                                    if ($baseActive) {
+                                                        if (isset($child['query'])) {
+                                                            $childIsActive = true;
+                                                            foreach ($child['query'] as $key => $val) {
+                                                                if (request()->query($key) !== $val) {
+                                                                    $childIsActive = false;
+                                                                    break;
+                                                                }
+                                                            }
+                                                        } else {
+                                                            $childIsActive = !request()->has('type');
+                                                        }
+                                                    }
+                                                } else {
+                                                    $childIsActive = request()->is(ltrim($child['path'], '/'));
+                                                }
+                                                $childHref = $childRouteExists ? route($child['route'], $child['query'] ?? []) : url($child['path']);
                                             @endphp
                                             <a href="{{ $childHref }}" class="sidebar-link sidebar-link-sub {{ $childIsActive ? 'sidebar-link-active' : '' }}">
                                                 <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">

@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      * Creates table for tracking late time-in deductions and policies
@@ -19,7 +18,7 @@ return new class extends Migration
         Schema::create('late_deductions', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('time_log_id')->nullable()->comment('Reference to time_logs table');
-            $table->unsignedInteger('employee_id')->nullable()->comment('Reference to employees table');
+            $table->unsignedBigInteger('employee_id')->nullable()->comment('Reference to employees table');
             $table->date('attendance_date')->comment('Date of the late attendance');
             $table->time('expected_time')->comment('Expected clock-in time (shift start)');
             $table->time('actual_time')->comment('Actual clock-in time');
@@ -31,7 +30,7 @@ return new class extends Migration
             $table->string('policy_version')->default('1.0')->comment('Version of late policy applied');
             $table->boolean('is_excused')->default(false)->comment('Whether late was excused/waived');
             $table->text('excuse_reason')->nullable()->comment('Reason for excuse if applicable');
-            $table->unsignedInteger('approved_by')->nullable()->comment('HR/Manager who approved/waived');
+            $table->unsignedBigInteger('approved_by')->nullable()->comment('HR/Manager who approved/waived');
             $table->text('notes')->nullable();
             $table->timestamps();
 

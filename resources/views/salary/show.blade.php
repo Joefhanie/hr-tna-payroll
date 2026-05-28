@@ -168,39 +168,8 @@
             @csrf
 
             @php
-                $assignedTaxIds = $employee->taxBrackets->pluck('id')->toArray();
-                $assignedTaxId = $assignedTaxIds[0] ?? null;
                 $assignedDeductionIds = $employee->deductionRules->pluck('id')->toArray();
             @endphp
-
-            <!-- Tax Brackets -->
-            <div class="mb-8">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-slate-800">Tax Brackets</h3>
-                        <p class="text-xs text-slate-500">Income thresholds and tax rates</p>
-                    </div>
-                </div>
-
-                @if ($allTaxBrackets->count() > 0)
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach ($allTaxBrackets as $bracket)
-                            <label class="flex items-center gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer transition hover:border-indigo-300 hover:bg-indigo-50/30 {{ in_array($bracket->id, $assignedTaxIds) ? 'border-indigo-300 bg-indigo-50/50' : '' }}">
-                                <input type="radio" name="tax_bracket_id" value="{{ $bracket->id }}" {{ (int) $assignedTaxId === (int) $bracket->id ? 'checked' : '' }} class="border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-medium text-slate-800 truncate">{{ $bracket->label ?: 'Bracket #' . $bracket->id }}</p>
-                                    <p class="text-xs text-slate-500">Threshold: ₱{{ number_format($bracket->threshold, 2) }} · Rate: {{ $bracket->rate * 100 }}%</p>
-                                </div>
-                            </label>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-sm text-slate-500 italic">No active tax brackets configured. <a href="{{ route('salary.settings') }}" class="text-indigo-600 hover:text-indigo-800">Configure settings</a></p>
-                @endif
-            </div>
 
 
             <!-- Deduction Rules -->

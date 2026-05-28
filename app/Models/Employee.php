@@ -276,13 +276,7 @@ class Employee extends Model
         ])));
     }
 
-    /**
-     * Tax brackets assigned to this employee.
-     */
-    public function taxBrackets(): BelongsToMany
-    {
-        return $this->belongsToMany(TaxBracket::class, 'employee_tax_bracket')->withTimestamps();
-    }
+
 
 
     /**

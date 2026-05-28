@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\Leave;
 use App\Models\Payslip;
+use App\Models\PreviousClaim;
 use App\Models\ProfileUpdateRequest;
 use App\Models\User;
 use App\Services\LeaveRequestService;
@@ -143,6 +144,7 @@ class SelfServiceController extends Controller
         ]);
 
         $leaveRequests = collect();
+        $claimRequests = collect();
         $attendanceLogs = collect();
         $leaveTypes = $this->leaveTypeOptions();
 
@@ -159,6 +161,23 @@ class SelfServiceController extends Controller
                         'reason' => $leave->reason,
                         'status' => $this->requestStatusLabel((int) $leave->status),
                         'created_at' => optional($leave->created_at)->format('M d, Y h:i A'),
+                    ];
+                });
+
+            $claimRequests = PreviousClaim::query()
+                ->where('employee_id', $employee->id)
+                ->whereIn('claim_type', ['Overtime', 'Night Differential'])
+                ->latest('created_at')
+                ->get()
+                ->map(function (PreviousClaim $claim) {
+                    return [
+                        'type' => $claim->claim_type,
+                        'claim_date' => optional($claim->claim_date)->format('M d, Y'),
+                        'time_range' => $claim->start_time && $claim->end_time
+                            ? optional($claim->start_time)->format('h:i A') . ' - ' . optional($claim->end_time)->format('h:i A')
+                            : 'N/A',
+                        'status' => $this->requestStatusLabel((int) $claim->status),
+                        'created_at' => optional($claim->created_at)->format('M d, Y h:i A'),
                     ];
                 });
 
@@ -281,6 +300,7 @@ class SelfServiceController extends Controller
             'leaveTypeOptions' => $leaveTypes,
             'leaveTypeChoices' => $this->leaveTypeChoices(),
             'leaveRequests' => $leaveRequests,
+            'claimRequests' => $claimRequests,
             'attendanceLogs' => $attendanceLogs,
             'profileUpdateRequests' => $profileUpdateRequests,
             'payslips' => $payslips,
@@ -314,6 +334,40 @@ class SelfServiceController extends Controller
         return redirect()
             ->route('self-service.profile', $employee)
             ->with('success', 'Leave request submitted successfully.');
+    }
+
+    public function storeClaimRequest(Request $request, Employee $employee): RedirectResponse
+    {
+        $this->authorizeEmployeeSubmission($employee);
+
+        $validated = $request->validate([
+            'claim_type' => ['required', 'in:Overtime,Night Differential'],
+            'claim_date' => ['required', 'date', 'before:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['required', 'date_format:H:i'],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $claim = PreviousClaim::create([
+            'employee_id' => $employee->id,
+            'claim_type' => $validated['claim_type'],
+            'claim_date' => $validated['claim_date'],
+            'start_time' => $validated['start_time'],
+            'end_time' => $validated['end_time'],
+            'amount' => 0,
+            'description' => $validated['description'] ?? null,
+            'status' => PreviousClaim::STATUS_PENDING,
+            'submitted_by' => Auth::id(),
+        ]);
+
+        $currentUser = Auth::user();
+        if ($currentUser) {
+            $this->notificationService->notifyPreviousClaimRequested($claim, $currentUser);
+        }
+
+        return redirect()
+            ->route('self-service.profile', $employee)
+            ->with('success', 'Overtime or night differential request submitted successfully.');
     }
 
     public function storeProfileUpdateRequest(Request $request, Employee $employee): RedirectResponse

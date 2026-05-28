@@ -11,6 +11,8 @@ class PreviousClaim extends Model
         'employee_id',
         'claim_type',
         'claim_date',
+        'start_time',
+        'end_time',
         'amount',
         'description',
         'supporting_document',
@@ -24,6 +26,8 @@ class PreviousClaim extends Model
 
     protected $casts = [
         'claim_date'  => 'date',
+        'start_time'  => 'datetime:H:i',
+        'end_time'    => 'datetime:H:i',
         'reviewed_at' => 'datetime',
         'amount'      => 'decimal:2',
         'status'      => 'integer',

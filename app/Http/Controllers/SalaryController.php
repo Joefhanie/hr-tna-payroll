@@ -158,13 +158,12 @@ class SalaryController extends Controller
      */
     public function settings(): View
     {
-        $taxBrackets = TaxBracket::orderBy('sort_order')->orderBy('threshold')->get();
         $deductionRules = DeductionRule::orderBy('sort_order')->get();
         $lateDeductionRules = \App\Models\LateDeductionRule::orderBy('sort_order')->get();
 
         $global = \App\Models\PayrollSetting::first();
 
-        return view('salary.settings', compact('taxBrackets', 'deductionRules', 'lateDeductionRules', 'global'));
+        return view('salary.settings', compact('deductionRules', 'lateDeductionRules', 'global'));
     }
 
     /**
@@ -381,38 +380,7 @@ class SalaryController extends Controller
         return redirect()->route('salary.settings')->with('success', 'Payroll defaults updated successfully.');
     }
 
-    /**
-     * Save tax brackets.
-     */
-    public function saveTaxBrackets(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'brackets' => 'required|array',
-            'brackets.*.id' => 'nullable|integer',
-            'brackets.*.threshold' => 'required|numeric|min:0',
-            'brackets.*.rate' => 'required|numeric|min:0|max:100',
-            'brackets.*.label' => 'nullable|string',
-            'brackets.*.is_active' => 'nullable',
-        ]);
 
-        foreach ($validated['brackets'] as $index => $bracketData) {
-            $payload = [
-                'threshold' => $bracketData['threshold'],
-                'rate' => $bracketData['rate'] / 100,
-                'label' => $bracketData['label'] ?? null,
-                'is_active' => isset($bracketData['is_active']),
-                'sort_order' => $index,
-            ];
-
-            if (isset($bracketData['id']) && $bracketData['id']) {
-                TaxBracket::findOrFail($bracketData['id'])->update($payload);
-            } else {
-                TaxBracket::create($payload);
-            }
-        }
-
-        return redirect()->route('salary.settings')->with('success', 'Tax brackets updated successfully.');
-    }
 
 
 
@@ -464,17 +432,16 @@ class SalaryController extends Controller
      */
     public function show(Employee $employee): View
     {
-        $employee->load('salaryRecords', 'taxBrackets', 'deductionRules');
+        $employee->load('salaryRecords', 'deductionRules');
         $payFrequencies = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
 
-        $allTaxBrackets = TaxBracket::where('is_active', true)->orderBy('sort_order')->get();
         $allDeductionRules = DeductionRule::where('is_active', true)->orderBy('sort_order')->get();
 
         $global = \App\Models\PayrollSetting::first();
 
         return view('salary.show', compact(
             'employee', 'payFrequencies',
-            'allTaxBrackets', 'allDeductionRules', 'global'
+            'allDeductionRules', 'global'
         ));
     }
 
@@ -532,8 +499,6 @@ class SalaryController extends Controller
                 ->update(['end_date' => now()->subDay()]);
 
             $salaryRecord = SalaryRecord::create($validated);
-
-            $this->syncTaxBracketFromSalaryRecord($employee, $salaryRecord);
         });
 
         return redirect()->route('salary.show', $employee)
@@ -641,29 +606,12 @@ class SalaryController extends Controller
         return $validated;
     }
 
-    /**
-     * Save per-employee tax bracket, contribution, and deduction rule assignments.
-     */
     public function saveAssignments(Request $request, Employee $employee): RedirectResponse
     {
-        $taxBracketId = $request->input('tax_bracket_id');
-        $employee->taxBrackets()->sync($taxBracketId ? [$taxBracketId] : []);
         $employee->deductionRules()->sync($request->input('deduction_rules', []));
 
         return redirect()->route('salary.show', $employee)
-            ->with('success', 'Tax & deduction assignments updated successfully.');
-    }
-
-    private function syncTaxBracketFromSalaryRecord(Employee $employee, SalaryRecord $salaryRecord): void
-    {
-        $taxBracket = TaxBracket::where('is_active', true)
-            ->where('threshold', '<=', $salaryRecord->amount)
-            ->orderByDesc('threshold')
-            ->first();
-
-        if ($taxBracket) {
-            $employee->taxBrackets()->sync([$taxBracket->id]);
-        }
+            ->with('success', 'Deduction assignments updated successfully.');
     }
 
 

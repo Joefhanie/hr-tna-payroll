@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:self-service.create')->group(function () {
         Route::post('/self-service/profile/{employee}/leave-requests', [SelfServiceController::class, 'storeLeaveRequest'])->name('self-service.leave-requests.store');
+        Route::post('/self-service/profile/{employee}/claim-requests', [SelfServiceController::class, 'storeClaimRequest'])->name('self-service.claim-requests.store');
         Route::post('/self-service/profile/{employee}/profile-update-requests', [SelfServiceController::class, 'storeProfileUpdateRequest'])->name('self-service.profile-update-requests.store');
         Route::post('/self-service/profile/{employee}/profile-picture', [SelfServiceController::class, 'storeProfilePicture'])->name('self-service.profile-picture.store');
         Route::post('/self-service/profile/{employee}/documents', [SelfServiceController::class, 'storeDocumentUpload'])->name('self-service.documents.store');
@@ -364,7 +365,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/payroll/previous-claims/{previousClaim}', [PreviousClaimController::class, 'destroy'])->name('payroll.previous-claims.destroy');
     });
     Route::middleware('permission:payroll.edit')->group(function () {
-        Route::post('/salaries/settings/tax-brackets', [SalaryController::class, 'saveTaxBrackets'])->name('salary.save-tax-brackets');
+
         Route::post('/salaries/settings/late-deduction-rules', [SalaryController::class, 'saveLateDeductionRules'])->name('salary.save-late-deduction-rules');
         Route::post('/salaries/government-premiums', [SalaryController::class, 'saveGovernmentPremiums'])->name('salary.government-premiums.save');
         Route::post('/salaries/contribution-tables/{governmentPremium}', [SalaryController::class, 'saveContributionTable'])->name('salary.contribution-tables.save');

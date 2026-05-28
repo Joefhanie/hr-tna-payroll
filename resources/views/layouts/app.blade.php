@@ -40,8 +40,11 @@
     .badge-red     { background: #fee2e2; color: #991b1b; }
     .badge-blue    { background: #dbeafe; color: #1e40af; }
     .badge-gray    { background: #f1f5f9; color: #475569; }
-    .badge-indigo  { background: #e0e7ff; color: #3730a3; }
-    .badge-purple  { background: #f3e8ff; color: #6b21a8; }
+    .badge-indigo   { background: #e0e7ff; color: #3730a3; }
+    .badge-purple   { background: #f3e8ff; color: #6b21a8; }
+    .badge-emerald  { background: #d1fae5; color: #065f46; }
+    .badge-rose     { background: #ffe4e6; color: #9f1239; }
+    .badge-yellow   { background: #fef9c3; color: #854d0e; }
   </style>
 </head>
 <body>
@@ -63,7 +66,14 @@
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
         ['url' => route('salary.settings'), 'label' => 'Salary Settings'],
       ]],
-      ['url' => route('payroll.index'),      'label' => 'Payroll',       'group' => 'Modules', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete'],
+      ['label' => 'Payroll', 'group' => 'Modules', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
+        ['url' => route('payroll.index'),                                                                        'label' => 'Payroll Runs'],
+        ['url' => route('payroll.plotting-payment'),                                                             'label' => 'Plotting of Payments'],
+        ['url' => route('payroll.previous-claims.index'),                                                        'label' => 'Previous Claims'],
+        ['url' => route('payroll.previous-claims.index', ['type' => 'Overtime']),                                'label' => 'Overtime Requests'],
+        ['url' => route('payroll.previous-claims.index', ['type' => 'Night Differential']),                      'label' => 'Night Differential Requests'],
+        ['url' => route('payroll.disputes.index'),                                                               'label' => 'Disputes'],
+      ]],
       ['url' => route('benefits'),     'label' => 'Benefits',      'group' => 'Modules', 'permission' => 'benefits.view,benefits.create,benefits.edit,benefits.delete'],
       ['url' => route('self-service'), 'label' => 'Self-Service',  'group' => 'Modules', 'permission' => 'self-service.view'],
       ['url' => route('reports'),      'label' => 'Reports',       'group' => 'Modules', 'permission' => 'reports.view,reports.create,reports.edit,reports.delete'],
@@ -84,6 +94,27 @@
     $groups = collect($nav)->groupBy('group');
     $current = url()->current();
     $currentPath = request()->path();
+
+    $isActive = function ($url) use ($currentPath) {
+      $parsedLink = parse_url($url);
+      $linkPath = ltrim($parsedLink['path'] ?? '', '/');
+      if ($currentPath !== $linkPath && !str_starts_with($currentPath, $linkPath . '/')) {
+        return false;
+      }
+      if (isset($parsedLink['query'])) {
+        parse_str($parsedLink['query'], $linkQuery);
+        foreach ($linkQuery as $key => $val) {
+          if (request()->query($key) !== $val) {
+            return false;
+          }
+        }
+      } else {
+        if (request()->has('type') && !str_contains($url, 'type=')) {
+          return false;
+        }
+      }
+      return true;
+    };
   @endphp
 
   <div class="h-screen flex w-full">
@@ -105,7 +136,7 @@
               @if (isset($item['children']))
                 @php
                   $hasActiveChild = collect($item['children'])->contains(
-                    fn ($child) => $current === $child['url'] || str_starts_with($current, $child['url'])
+                    fn ($child) => $isActive($child['url'])
                   );
                 @endphp
                 <details class="group" @if ($hasActiveChild) open @endif>
@@ -119,7 +150,7 @@
                       @if(isset($child['roles']) && !in_array($user->role ?? 0, $child['roles']))
                           @continue
                       @endif
-                      <a href="{{ $child['url'] }}" class="nav-link-sub {{ ($current === $child['url'] || str_starts_with($current, $child['url'])) ? 'active' : '' }}">
+                      <a href="{{ $child['url'] }}" class="nav-link-sub {{ $isActive($child['url']) ? 'active' : '' }}">
                         <span class="h-1 w-1 rounded-full bg-current opacity-50"></span>
                         {{ $child['label'] }}
                       </a>
@@ -128,7 +159,7 @@
                 </details>
               @else
                 <a href="{{ $item['url'] }}"
-                   class="nav-link {{ $current === $item['url'] ? 'active' : '' }}">
+                   class="nav-link {{ $isActive($item['url']) ? 'active' : '' }}">
                   <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
                   {{ $item['label'] }}
                 </a>
