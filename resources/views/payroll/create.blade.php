@@ -17,16 +17,27 @@
                 <!-- Pay Period -->
                 <div class="card p-6">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Pay Period</h2>
-                    
+
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Period Start</label>
                             <input type="date" name="period_start" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value="{{ old('period_start', now()->startOfMonth()->format('Y-m-d')) }}" required>
                         </div>
-                        
+
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Period End</label>
                             <input type="date" name="period_end" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" value="{{ old('period_end', now()->endOfMonth()->format('Y-m-d')) }}" required>
+                        </div>
+
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
+                            <label class="flex items-start gap-3 text-sm font-medium text-slate-700">
+                                <input type="checkbox" name="deduct_government_contributions" value="1" id="deductGovContribToggle" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" {{ old('deduct_government_contributions') ? 'checked' : '' }}>
+                                <span>
+                                    Deduct government contributions
+                                    <span class="block text-xs font-normal text-slate-500">Enable this for the pay run that should carry monthly government deductions.</span>
+                                </span>
+                            </label>
+                            <p id="deductGovContribHelp" class="text-xs text-slate-500"></p>
                         </div>
                     </div>
                 </div>
@@ -74,7 +85,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
                         <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium">
                             Generate Draft Run
@@ -93,6 +104,45 @@
                 const startInput = document.querySelector('input[name="period_start"]');
                 const endInput = document.querySelector('input[name="period_end"]');
                 const activePayRuns = @json($activePayRuns ?? []);
+                const deductGovToggle = document.getElementById('deductGovContribToggle');
+                const deductGovHelp = document.getElementById('deductGovContribHelp');
+
+                function monthKey(value) {
+                    return value ? String(value).slice(0, 7) : '';
+                }
+
+                function monthAlreadyHasGovernmentContributions(startVal, endVal) {
+                    const selectedMonth = monthKey(endVal || startVal);
+                    if (!selectedMonth) {
+                        return false;
+                    }
+
+                    return activePayRuns.some(run => {
+                        const runMonth = monthKey(run.period_end);
+                        const hasGovContribs = (run.deduct_government_contributions || Number(run.government_contribution_count) > 0);
+                        return runMonth === selectedMonth && hasGovContribs;
+                    });
+                }
+
+                function updateGovernmentContributionToggle() {
+                    if (!deductGovToggle) {
+                        return;
+                    }
+
+                    const startVal = startInput?.value;
+                    const endVal = endInput?.value;
+                    const locked = monthAlreadyHasGovernmentContributions(startVal, endVal);
+
+                    deductGovToggle.disabled = locked;
+                    if (locked) {
+                        deductGovToggle.checked = false;
+                        if (deductGovHelp) {
+                            deductGovHelp.textContent = 'Government contributions are already applied in a pay run for this month.';
+                        }
+                    } else if (deductGovHelp) {
+                        deductGovHelp.textContent = 'Leave off for the first cutoff; enable only for the pay run that should deduct contributions.';
+                    }
+                }
 
                 function updateButtonLabel() {
                     const enabledCheckboxes = Array.from(checkboxes).filter(cb => !cb.disabled);
@@ -100,7 +150,7 @@
                         btn.textContent = 'Select All';
                         return;
                     }
-                    
+
                     const checkedCount = enabledCheckboxes.filter(cb => cb.checked).length;
                     if (checkedCount === enabledCheckboxes.length) {
                         btn.textContent = 'Unselect All';
@@ -159,11 +209,11 @@
                     if (enabledCheckboxes.length === 0) return;
 
                     const allChecked = enabledCheckboxes.every(cb => cb.checked);
-                    
+
                     enabledCheckboxes.forEach(cb => {
                         cb.checked = !allChecked;
                     });
-                    
+
                     updateButtonLabel();
                 });
 
@@ -173,9 +223,12 @@
 
                 startInput?.addEventListener('change', updateEmployeeAvailability);
                 endInput?.addEventListener('change', updateEmployeeAvailability);
+                startInput?.addEventListener('change', updateGovernmentContributionToggle);
+                endInput?.addEventListener('change', updateGovernmentContributionToggle);
 
                 // Initialize state
                 updateEmployeeAvailability();
+                updateGovernmentContributionToggle();
             });
         </script>
     </x-slot:scripts>

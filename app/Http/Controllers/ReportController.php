@@ -160,7 +160,7 @@ class ReportController extends Controller
         ];
 
         $statusLabels = [
-            1 => 'Active',
+            1 => 'Regular',
             2 => 'Probationary',
             3 => 'On Leave',
             4 => 'Resigned',
@@ -170,7 +170,7 @@ class ReportController extends Controller
         return $this->streamCsv("headcount_report_{$date}.csv", $headers, function ($file) use ($employees, $employmentTypes, $statusLabels) {
             foreach ($employees as $employee) {
                 $salary = $employee->salaryRecords->first()?->amount ?? '0.00';
-                
+
                 fputcsv($file, [
                     $employee->id,
                     $employee->employee_code ?? 'N/A',
@@ -395,10 +395,10 @@ class ReportController extends Controller
 
         return response()->stream(function () use ($headers, $callback) {
             $file = fopen('php://output', 'w');
-            
+
             // Add UTF-8 BOM for proper encoding support in Excel
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+
             fputcsv($file, $headers);
 
             $callback($file);
@@ -445,8 +445,8 @@ class ReportController extends Controller
             foreach ($claims as $claim) {
                 $employee = $claim->employee;
                 $payRun = $claim->payRun;
-                $payRunLabel = $payRun 
-                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                $payRunLabel = $payRun
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d')
                     : 'N/A';
 
                 fputcsv($file, [
@@ -511,8 +511,8 @@ class ReportController extends Controller
                 $employee = $dispute->employee;
                 $payslip = $dispute->payslip;
                 $payRun = $payslip?->payRun;
-                $payRunPeriod = $payRun 
-                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d') 
+                $payRunPeriod = $payRun
+                    ? $payRun->period_start->format('Y-m-d') . ' - ' . $payRun->period_end->format('Y-m-d')
                     : 'N/A';
 
                 fputcsv($file, [

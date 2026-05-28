@@ -10,6 +10,7 @@ use App\Services\PayrollService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class PayrollController extends Controller
@@ -883,9 +884,13 @@ class PayrollController extends Controller
         $employees = \App\Models\Employee::whereNull('termination_date')->orderBy('last_name')->get();
 
         $activePayRuns = PayRun::whereNotIn('status', [4, 13])
-            ->with('payslips')
+            ->with('payslips.governmentContributions')
             ->get()
             ->map(function ($payRun) {
+                $governmentContributionCount = $payRun->payslips
+                    ->flatMap(fn ($payslip) => $payslip->governmentContributions)
+                    ->count();
+
                 return [
                     'id' => $payRun->id,
                     'name' => $payRun->name,
@@ -893,6 +898,8 @@ class PayrollController extends Controller
                     'period_end' => Carbon::parse($payRun->period_end)->toDateString(),
                     'status_label' => $payRun->status === 3 ? 'Completed' : ($payRun->status === 2 ? 'Processing' : 'Draft'),
                     'employee_ids' => $payRun->payslips->pluck('employee_id')->all(),
+                    'deduct_government_contributions' => (bool) ($payRun->deduct_government_contributions ?? false),
+                    'government_contribution_count' => $governmentContributionCount,
                 ];
             });
 
@@ -909,10 +916,14 @@ class PayrollController extends Controller
             'period_end' => 'required|date|after_or_equal:period_start',
             'employee_ids' => 'required|array|min:1',
             'employee_ids.*' => 'exists:employees,id',
+            'deduct_government_contributions' => ['nullable', 'boolean'],
         ]);
 
         $periodStart = Carbon::parse($validated['period_start']);
         $periodEnd = Carbon::parse($validated['period_end']);
+        $requestedDeductGov = $request->boolean('deduct_government_contributions');
+        $governmentContributionLocked = $this->monthAlreadyHasGovernmentContributions($periodEnd);
+        $deductGovernmentContributions = $requestedDeductGov && ! $governmentContributionLocked;
 
         // Check for duplicate pay runs (exact same period, active and NOT completed status)
         $duplicatePayRun = PayRun::where('period_start', $periodStart->toDateString())
@@ -956,6 +967,7 @@ class PayrollController extends Controller
             'pay_date' => $periodEnd->toDateString(),
             'frequency' => 4,  // Default to Monthly or customizable later
             'status' => 2,     // Processing / Draft Review
+            'deduct_government_contributions' => $deductGovernmentContributions,
             'created_by' => $request->user()->id ?? null,
         ]);
 
@@ -976,6 +988,25 @@ class PayrollController extends Controller
         $payrollService->finalizePayRun($payRun);
 
         return redirect()->route('payroll.show', $payRun)->with('status', 'Pay run finalized successfully.');
+    }
+
+    private function monthAlreadyHasGovernmentContributions(Carbon $periodEnd): bool
+    {
+        $query = PayRun::query()
+            ->whereYear('period_end', $periodEnd->year)
+            ->whereMonth('period_end', $periodEnd->month)
+            ->whereNotIn('status', [4, 13]);
+
+        if (Schema::hasColumn('pay_runs', 'deduct_government_contributions')) {
+            $query->where(function ($subQuery) {
+                $subQuery->where('deduct_government_contributions', true)
+                    ->orWhereHas('payslips.governmentContributions');
+            });
+        } else {
+            $query->whereHas('payslips.governmentContributions');
+        }
+
+        return $query->exists();
     }
 
     /**

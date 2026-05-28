@@ -170,7 +170,7 @@
                                 <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Employment Type</span><span class="font-semibold text-slate-800">{{ match((int) $employee->employment_type) {1 => 'Full-time', 2 => 'Part-time', 3 => 'Contract', 4 => 'Temporary', default => 'N/A'} }}</span></div>
                                 <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Hire Date</span><span class="font-semibold text-slate-800">{{ $employee->hire_date?->format('M d, Y') ?? 'N/A' }}</span></div>
                                 <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Manager</span><span class="font-semibold text-slate-800">{{ $employee->manager?->full_name ?? 'Not Assigned' }}</span></div>
-                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Status</span><span class="badge {{ match((int) $employee->status) {1 => 'badge-green', 2 => 'badge-amber', 3 => 'badge-blue', 4 => 'badge-gray', 5 => 'badge-red', default => 'badge-gray'} }}">{{ match((int) $employee->status) {1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated', default => 'Unknown'} }}</span></div>
+                                <div class="flex flex-col gap-0.5"><span class="text-xs text-slate-400 uppercase tracking-wide">Status</span><span class="badge {{ match((int) $employee->status) {1 => 'badge-green', 2 => 'badge-amber', 3 => 'badge-blue', 4 => 'badge-gray', 5 => 'badge-red', default => 'badge-gray'} }}">{{ match((int) $employee->status) {1 => 'Regular', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated', default => 'Unknown'} }}</span></div>
                             </div>
                         </div>
                         @endif
@@ -365,7 +365,7 @@
                                         <span class="text-xs text-slate-400 uppercase tracking-wide">Status</span>
                                         <div>
                                             <span class="badge {{ match((int) $employee->status) {1 => 'badge-green', 2 => 'badge-amber', 3 => 'badge-blue', 4 => 'badge-gray', 5 => 'badge-red', default => 'badge-gray'} }}">
-                                                {{ match((int) $employee->status) {1 => 'Active', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated', default => 'Unknown'} }}
+                                                {{ match((int) $employee->status) {1 => 'Regular', 2 => 'Probationary', 3 => 'On Leave', 4 => 'Resigned', 5 => 'Terminated', default => 'Unknown'} }}
                                             </span>
                                         </div>
                                     </div>

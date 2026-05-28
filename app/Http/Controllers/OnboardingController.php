@@ -518,7 +518,7 @@ class OnboardingController extends Controller
     private function employeeStatusLabel(int $status): string
     {
         return match ($status) {
-            1 => 'Active',
+            1 => 'Regular',
             2 => 'Probationary',
             3 => 'On Leave',
             4 => 'Resigned',
@@ -537,7 +537,7 @@ class OnboardingController extends Controller
                 ['value' => '4', 'label' => 'Intern'],
             ],
             'employee_statuses' => [
-                ['value' => '1', 'label' => 'Active'],
+                ['value' => '1', 'label' => 'Regular'],
                 ['value' => '2', 'label' => 'Probationary'],
                 ['value' => '3', 'label' => 'On Leave'],
                 ['value' => '4', 'label' => 'Resigned'],
