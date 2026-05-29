@@ -263,12 +263,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/organization/users', [OrganizationController::class, 'users'])->name('organization.users.index');
         Route::get('/organization/settings', [OrganizationController::class, 'settings'])->name('organization.settings');
         Route::get('/organization/settings/company-documents/{companyDocument}/download', [OrganizationController::class, 'downloadCompanyDocument'])->name('organization.settings.company-documents.download');
+        Route::get('/organization/settings/machine-settings', [OrganizationController::class, 'machineSettings'])->name('organization.settings.machine-settings');
     });
     Route::middleware('permission:settings.create')->group(function () {
         Route::post('/organization/departments', [OrganizationController::class, 'storeDepartment'])->name('organization.departments.store');
         Route::post('/organization/positions', [OrganizationController::class, 'storePosition'])->name('organization.positions.store');
         Route::post('/organization/users', [OrganizationController::class, 'storeUser'])->name('organization.users.store');
         Route::post('/organization/settings/company-documents', [OrganizationController::class, 'storeCompanyDocument'])->name('organization.settings.company-documents.store');
+        Route::post('/organization/settings/machine-settings', [OrganizationController::class, 'storeMachineSetting'])->name('organization.settings.machine-settings.store');
     });
     Route::middleware('permission:settings.edit')->group(function () {
         Route::get('/organization/departments/{department}/edit', [OrganizationController::class, 'editDepartment'])->name('organization.departments.edit');
@@ -284,6 +286,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:settings.delete')->group(function () {
         Route::delete('/organization/departments/{department}', [OrganizationController::class, 'destroyDepartment'])->name('organization.departments.destroy');
         Route::delete('/organization/positions/{position}', [OrganizationController::class, 'destroyPosition'])->name('organization.positions.destroy');
+        Route::delete('/organization/settings/machine-settings/{machineSetting}', [OrganizationController::class, 'destroyMachineSetting'])->name('organization.settings.machine-settings.destroy');
     });
 
     // Employee Management

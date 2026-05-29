@@ -600,7 +600,7 @@
             const form = fileInput?.closest('form');
             form?.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
                 if (submitBtn) {
