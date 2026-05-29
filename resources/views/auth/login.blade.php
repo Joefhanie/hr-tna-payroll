@@ -290,12 +290,7 @@
             {{-- Form header --}}
             <div class="mb-8">
                 <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your account</h2>
-                <p class="mt-1.5 text-sm text-slate-500">
-                    Enter your credentials to access your workspace.
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="brand-link font-semibold ml-0.5">New here?</a>
-                    @endif
-                </p>
+                <p class="mt-1.5 text-sm text-slate-500">Enter your credentials to access your workspace.</p>
             </div>
 
             {{-- Error messages --}}
