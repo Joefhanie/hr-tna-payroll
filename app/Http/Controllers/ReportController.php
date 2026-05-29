@@ -24,9 +24,10 @@ class ReportController extends Controller
         // 1. Total Active Employees
         $activeEmployeesCount = Employee::where('status', 1)->count();
 
-        // 2. Today's Attendance count (only those with a time in/check_in record)
+        // 2. Today's Attendance count (only those with a time-in punch record)
         $todayAttendanceCount = Attendance::whereDate('attendance_date', Carbon::today())
-            ->whereNotNull('check_in')
+            ->where('punch_type', 'in')
+            ->whereIn('status', [1, 2])
             ->count();
 
         // 3. Approved Leaves this month
@@ -226,11 +227,14 @@ class ReportController extends Controller
         ];
 
         // Fetch attendance logs
-        $query = Attendance::with(['user.employee', 'shift'])->orderByDesc('attendance_date');
+        $query = Attendance::with(['user.employee', 'shift'])
+            ->where('punch_type', 'in')
+            ->orderByDesc('attendance_date')
+            ->orderByDesc('time');
 
         $this->applyDateRangeFilters($query, $request, 'attendance_date');
 
-        $attendances = $query->get();
+        $attendances = $query->get()->unique(fn (Attendance $attendance) => $attendance->emp_id . '|' . $attendance->attendance_date->toDateString());
 
         $statusLabels = [
             1 => 'Present',

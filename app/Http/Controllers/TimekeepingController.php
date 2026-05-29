@@ -56,15 +56,15 @@ class TimekeepingController extends Controller
             : collect();
 
         $attendanceQuery = Attendance::with(['user.employee.currentShift.shift', 'shift'])
-            ->where('attendance_date', $selectedDate);
+            ->where('attendance_date', $selectedDate)
+            ->where('punch_type', 'in');
 
         if ($allowedEmployeeIds !== null) {
-            $allowedUserIds = User::whereIn('employee_id', $allowedEmployeeIds)->pluck('id')->toArray();
-            $attendanceQuery->whereIn('user_id', $allowedUserIds);
+            $attendanceQuery->whereIn('emp_id', $allowedEmployeeIds);
         }
 
         $todayAttendance = Schema::hasTable('attendance')
-            ? $attendanceQuery->orderBy('check_in')->get()
+            ? $attendanceQuery->orderBy('time')->get()->unique(fn ($attendance) => $attendance->emp_id . '|' . $attendance->attendance_date->toDateString())
             : collect();
 
         // Helper function to insert virtual "Shift Not Started" records
@@ -76,7 +76,7 @@ class TimekeepingController extends Controller
             $existingMap = [];
             foreach ($attendanceCollection as $att) {
                 $dateStr = $att->attendance_date->toDateString();
-                $existingMap[$dateStr][$att->user_id] = true;
+                $existingMap[$dateStr][$att->emp_id] = true;
             }
 
             $virtualRecords = [];
@@ -120,12 +120,12 @@ class TimekeepingController extends Controller
 
                         if ($hasApprovedLeave) {
                             $virtual = new Attendance([
-                                'user_id' => $user->id,
+                                'emp_id' => $employee->id,
                                 'shift_id' => $dayShift->id,
                                 'attendance_date' => $cursor->copy(),
+                                'punch_type' => 'in',
+                                'time' => null,
                                 'status' => 4, // On Leave
-                                'check_in' => null,
-                                'check_out' => null,
                                 'notes' => 'Auto-marked: Approved Leave'
                             ]);
                             $virtual->setRelation('user', $user);
@@ -133,12 +133,12 @@ class TimekeepingController extends Controller
                             $virtualRecords[] = $virtual;
                         } elseif ($hasNotStarted) {
                             $virtual = new Attendance([
-                                'user_id' => $user->id,
+                                'emp_id' => $employee->id,
                                 'shift_id' => $dayShift->id,
                                 'attendance_date' => $cursor->copy(),
+                                'punch_type' => 'in',
+                                'time' => null,
                                 'status' => 5, // Shift Not Started
-                                'check_in' => null,
-                                'check_out' => null,
                                 'notes' => 'Shift has not started yet.'
                             ]);
                             $virtual->setRelation('user', $user);
@@ -258,15 +258,15 @@ class TimekeepingController extends Controller
             ->whereBetween('attendance_date', [
                 $selectedDateCarbon->copy()->startOfMonth()->toDateString(),
                 $selectedDateCarbon->copy()->endOfMonth()->toDateString()
-            ]);
+            ])
+            ->where('punch_type', 'in');
 
         if ($allowedEmployeeIds !== null) {
-            $allowedUserIds = User::whereIn('employee_id', $allowedEmployeeIds)->pluck('id')->toArray();
-            $calendarDataRecordsQuery->whereIn('user_id', $allowedUserIds);
+            $calendarDataRecordsQuery->whereIn('emp_id', $allowedEmployeeIds);
         }
 
         $calendarDataRecords = Schema::hasTable('attendance')
-            ? $calendarDataRecordsQuery->orderBy('check_in')->get()
+            ? $calendarDataRecordsQuery->orderBy('time')->get()->unique(fn ($attendance) => $attendance->emp_id . '|' . $attendance->attendance_date->toDateString())
             : collect();
 
         // Helper function to insert virtual "Shift Not Started" records for calendar
@@ -278,7 +278,7 @@ class TimekeepingController extends Controller
             $existingMap = [];
             foreach ($attendanceCollection as $att) {
                 $dateStr = $att->attendance_date->toDateString();
-                $existingMap[$dateStr][$att->user_id] = true;
+                $existingMap[$dateStr][$att->emp_id] = true;
             }
 
             $virtualRecords = [];
@@ -429,13 +429,14 @@ class TimekeepingController extends Controller
 
         $recentAttendance = Schema::hasTable('attendance')
             ? Attendance::with(['user.employee.currentShift.shift', 'shift'])
-                ->whereIn('user_id', $unfilteredAttendance->pluck('user_id')->unique())
+                ->where('punch_type', 'in')
+                ->whereIn('emp_id', $unfilteredAttendance->pluck('emp_id')->unique())
                 ->where('attendance_date', '>=', Carbon::now()->subDays(30)->toDateString())
                 ->orderByDesc('attendance_date')
-                ->orderByDesc('check_in')
+                ->orderByDesc('time')
                 ->get()
-                ->unique(fn ($attendance) => $attendance->user_id.'|'.$attendance->attendance_date->toDateString())
-                ->groupBy('user_id')
+                ->unique(fn ($attendance) => $attendance->emp_id.'|'.$attendance->attendance_date->toDateString())
+                ->groupBy('emp_id')
             : collect();
 
         $attendanceStatusLabels = [
@@ -475,11 +476,14 @@ class TimekeepingController extends Controller
         }) ?? $todayAttendance->first();
 
         $openAttendanceMap = Schema::hasTable('attendance')
-            ? Attendance::whereNull('check_out')
+            ? Attendance::where('punch_type', 'in')
                 ->get()
+                ->filter(function ($attendance) {
+                    return is_null($attendance->check_out);
+                })
                 ->mapWithKeys(function ($attendance) {
                     return [
-                        $attendance->user_id . '|' . $attendance->attendance_date->toDateString() => $attendance->check_in?->format('H:i'),
+                        $attendance->emp_id . '|' . $attendance->attendance_date->toDateString() => $attendance->check_in?->format('H:i'),
                     ];
                 })
                 ->all()
@@ -606,12 +610,12 @@ class TimekeepingController extends Controller
         $lateDeductionService = app(LateDeductionService::class);
 
         $validated = $request->validate([
-                'employee_id'     => 'required|exists:employees,id',
-                'attendance_date' => 'required|date',
-                'check_in'        => 'required|date_format:H:i',
-            'check_out'       => 'nullable|date_format:H:i',
-            'status'          => 'nullable|integer|in:1,2,3,4',
-            'notes'           => 'nullable|string|max:500',
+            'employee_id' => 'required|exists:employees,id',
+            'attendance_date' => 'required|date',
+            'check_in' => 'required|date_format:H:i',
+            'check_out' => 'nullable|date_format:H:i',
+            'status' => 'nullable|integer|in:1,2,3,4',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         /** @var \App\Models\User $currentUser */
@@ -691,21 +695,27 @@ class TimekeepingController extends Controller
 
         $checkInDateTime = Carbon::parse($validated['attendance_date'] . ' ' . $validated['check_in']);
 
-        $existingAttendance = Attendance::where('user_id', $user->id)
+        $existingAttendance = Attendance::where('emp_id', $employee->id)
             ->where('attendance_date', $validated['attendance_date'])
+            ->where('punch_type', 'in')
+            ->first();
+
+        $existingCheckOut = Attendance::where('emp_id', $employee->id)
+            ->where('attendance_date', $validated['attendance_date'])
+            ->where('punch_type', 'out')
             ->first();
 
         if ($existingAttendance && $existingAttendance->check_in) {
             $existingCheckIn = Carbon::parse($existingAttendance->check_in)->format('H:i');
             $incomingCheckIn = $checkInDateTime->format('H:i');
 
-            $isCompletingOpenEntry = is_null($existingAttendance->check_out)
+            $isCompletingOpenEntry = is_null($existingCheckOut)
                 && !empty($validated['check_out'])
                 && $existingCheckIn === $incomingCheckIn;
 
             $isExactDuplicate = $existingCheckIn === $incomingCheckIn
                 && empty($validated['check_out'])
-                && !is_null($existingAttendance->check_out);
+                && !is_null($existingCheckOut);
 
             if ($isExactDuplicate) {
                 return back()->withErrors([
@@ -713,7 +723,7 @@ class TimekeepingController extends Controller
                 ])->withInput();
             }
 
-            if ($existingCheckIn === $incomingCheckIn && !$isCompletingOpenEntry && is_null($existingAttendance->check_out)) {
+            if ($existingCheckIn === $incomingCheckIn && !$isCompletingOpenEntry && is_null($existingCheckOut)) {
                 return back()->withErrors([
                     'employee_id' => 'This open time in already exists. Add a time out to complete it.',
                 ])->withInput();
@@ -741,25 +751,27 @@ class TimekeepingController extends Controller
             $checkOutDateTime->addDay();
         }
 
-        $attendanceData = [
-            'check_in'  => $checkInDateTime,
-            'check_out' => $checkOutDateTime,
-            'status'    => $validated['status'],
-            'notes'     => $validated['notes'] ?? null,
-        ];
+        $shiftId = Schema::hasColumn('attendance', 'shift_id') && $shift ? $shift->id : null;
 
-        if (Schema::hasColumn('attendance', 'shift_id') && $shift) {
-            // Only set shift_id when there is an active shift for the attendance date.
-            $attendanceData['shift_id'] = $shift->id;
-        }
-
-        $attendance = Attendance::updateOrCreate(
-            [
-                'user_id'         => $user->id,
-                'attendance_date' => $validated['attendance_date'],
-            ],
-            $attendanceData
+        $attendance = Attendance::upsertPunch(
+            $employee->id,
+            $validated['attendance_date'],
+            'in',
+            $checkInDateTime,
+            $shiftId,
+            (int) $validated['status']
         );
+
+        if ($checkOutDateTime) {
+            Attendance::upsertPunch(
+                $employee->id,
+                $validated['attendance_date'],
+                'out',
+                $checkOutDateTime,
+                $shiftId,
+                (int) $validated['status']
+            );
+        }
 
         if ($attendance) {
             $shiftForLate = $shift ?? $candidateShift;
@@ -949,7 +961,8 @@ class TimekeepingController extends Controller
             $shiftService = app(\App\Services\ShiftService::class);
             $lateDeductionService = app(LateDeductionService::class);
             $todayStr = now()->toDateString();
-            $attendances = Attendance::where('user_id', $employee->user->id)
+            $attendances = Attendance::where('emp_id', $employee->id)
+                ->where('punch_type', 'in')
                 ->where('attendance_date', '>=', $todayStr)
                 ->get();
 
@@ -1006,7 +1019,8 @@ class TimekeepingController extends Controller
             $shiftService = app(\App\Services\ShiftService::class);
             $lateDeductionService = app(LateDeductionService::class);
             $todayStr = now()->toDateString();
-            $attendances = Attendance::where('user_id', $employee->user->id)
+            $attendances = Attendance::where('emp_id', $employee->id)
+                ->where('punch_type', 'in')
                 ->where('attendance_date', '>=', $todayStr)
                 ->get();
 
@@ -1049,7 +1063,8 @@ class TimekeepingController extends Controller
         }
 
         $attendances = Attendance::with(['shift', 'user.employee.currentShift.shift'])
-            ->where('user_id', $user->id)
+            ->where('emp_id', $user->employee_id)
+            ->where('punch_type', 'in')
             ->orderByDesc('attendance_date')
             ->paginate(30);
 

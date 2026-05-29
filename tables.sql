@@ -971,16 +971,15 @@ CREATE TABLE audit_logs (
 
 CREATE TABLE attendance (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id             INT UNSIGNED     NOT NULL,
+    emp_id              INT UNSIGNED     NOT NULL,
     shift_id            INT UNSIGNED     NULL,
+    punch_type          ENUM('in','out') NOT NULL COMMENT 'Indicates whether the punch is an in or out entry',
     attendance_date     DATE             NOT NULL,
-    check_in            DATETIME         NULL,
-    check_out           DATETIME         NULL,
+    time                TIME             NULL,
     status              INT              NOT NULL DEFAULT 1 COMMENT '1=Present, 2=Late, 3=Absent, 4=Excused',
-    notes               TEXT             NULL,
     created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_att_user_date (user_id, attendance_date)
+    INDEX idx_att_emp_date (emp_id, attendance_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 

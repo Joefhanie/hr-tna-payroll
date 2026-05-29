@@ -62,19 +62,27 @@ class TapRecordAttendanceService
 
         $timeOut = $timeOutTap ? Carbon::parse($timeOutTap->time) : null;
 
-        $attendance = Attendance::updateOrCreate(
-            [
-                'user_id' => $employee->user?->id,
-                'attendance_date' => $dateString,
-            ],
-            [
-                'shift_id' => $shift?->id,
-                'check_in' => $timeIn,
-                'check_out' => $timeOut,
-                'status' => $this->resolveStatus($shift, $timeIn, $timeOut),
-                'notes' => 'Synced from tap records.',
-            ]
+        $status = $this->resolveStatus($shift, $timeIn, $timeOut);
+
+        $attendance = Attendance::upsertPunch(
+            $employee->id,
+            $dateString,
+            'in',
+            $timeIn,
+            $shift?->id,
+            $status
         );
+
+        if ($timeOut) {
+            Attendance::upsertPunch(
+                $employee->id,
+                $dateString,
+                'out',
+                $timeOut,
+                $shift?->id,
+                $status
+            );
+        }
 
         return $attendance;
     }

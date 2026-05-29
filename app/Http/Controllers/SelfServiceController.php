@@ -182,8 +182,10 @@ class SelfServiceController extends Controller
                 });
 
             $attendanceLogs = Attendance::query()
-                ->where('user_id', $employee->user->id)
+                ->where('emp_id', $employee->id)
+                ->where('punch_type', 'in')
                 ->latest('attendance_date')
+                ->latest('time')
                 ->limit(12)
                 ->get()
                 ->map(function (Attendance $attendance) {
