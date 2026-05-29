@@ -33,17 +33,10 @@
                     </div>
 
                     <div class="mt-2 flex w-full flex-wrap items-center gap-2 md:mt-0 md:w-auto">
-                        <select name="employee_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="onboarding_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
                             <option value="">All Statuses</option>
-                            @foreach (($filterOptions['employee_statuses'] ?? []) as $option)
-                                <option value="{{ $option['value'] }}" @selected(($filters['employee_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
-                            @endforeach
-                        </select>
-
-                        <select name="employment_type" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
-                            <option value="">All Types</option>
-                            @foreach (($filterOptions['employment_types'] ?? []) as $option)
-                                <option value="{{ $option['value'] }}" @selected(($filters['employment_type'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
+                            @foreach (($filterOptions['onboarding_statuses'] ?? []) as $option)
+                                <option value="{{ $option['value'] }}" @selected(($filters['onboarding_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
 
