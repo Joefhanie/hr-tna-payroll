@@ -206,9 +206,9 @@ class PayrollController extends Controller
 
         // Get ALL field records grouped by empid+date so we can show multiple entries per cell
         $allFieldRecords = DB::table('field_records')
-            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'payroll_note', 'time', 'id', 'session_id', 'work_status')
+            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'payroll_note', 'id', 'session_id', 'work_status')
             ->whereIn('Date', $dateKeys)
-            ->orderBy('time')
+            ->orderBy('Date')
             ->orderBy('id')
             ->get();
 
@@ -362,7 +362,7 @@ class PayrollController extends Controller
         $dateFormatted = $parsedDate->format('M d, Y');
 
         $scannedEmployeeCodes = DB::table('field_records')
-            ->where('Date', $date)
+            ->whereDate('Date', $date)
             ->distinct()
             ->pluck('empid')
             ->all();
@@ -381,7 +381,7 @@ class PayrollController extends Controller
         $employeeLocations = [];
         $recordsForUniqueLocs = DB::table('field_records')
             ->select('empid', 'location')
-            ->where('Date', $date)
+            ->whereDate('Date', $date)
             ->get();
 
         foreach ($recordsForUniqueLocs as $r) {
@@ -487,7 +487,7 @@ class PayrollController extends Controller
                         $supCode = null;
                         $fieldRecord = DB::table('field_records')
                             ->where('empid', $employee->employee_code)
-                            ->where('Date', $date)
+                            ->whereDate('Date', $date)
                             ->where('location', $locationName)
                             ->first();
 
@@ -556,7 +556,7 @@ class PayrollController extends Controller
 
         DB::table('field_records')
             ->where('empid', $employee->employee_code)
-            ->where('Date', $validated['date'])
+            ->whereDate('Date', $validated['date'])
             ->where('location', $validated['location'])
             ->update(['payroll_note' => $validated['note']]);
 
@@ -591,7 +591,7 @@ class PayrollController extends Controller
         $employeeRecords = DB::table('field_records')
             ->where('empid', $employee->employee_code)
             ->whereIn('Date', array_keys($dates))
-            ->orderBy('time')
+            ->orderBy('Date')
             ->orderBy('id')
             ->get()
             ->groupBy('Date');
@@ -604,14 +604,19 @@ class PayrollController extends Controller
             $recordsForDate = $employeeRecords->get($dateString);
 
             if ($recordsForDate && $recordsForDate->isNotEmpty()) {
-                // Unique locations worked on this date
-                $uniqueLocs = $recordsForDate->pluck('location')->unique()->all();
+                $seenSessions = [];
+                foreach ($recordsForDate as $fieldRecord) {
+                    $locName = $fieldRecord->location ?: 'General';
 
-                foreach ($uniqueLocs as $loc) {
-                    $locName = $loc ?: 'General';
+                    // Deduplication logic using session_id
+                    $dedupKey = $fieldRecord->session_id
+                        ? 'session_' . $fieldRecord->session_id
+                        : 'loc_' . $locName;
 
-                    // Find a record for this specific location to get the supervisor & notes
-                    $fieldRecord = $recordsForDate->first(fn($r) => ($r->location ?: 'General') === $locName);
+                    if (isset($seenSessions[$dedupKey])) {
+                        continue; // Skip duplicates for the same session or same location (if no session)
+                    }
+                    $seenSessions[$dedupKey] = true;
 
                     $fieldSupervisor = $fieldRecord ? ($fieldSupervisorMap[$fieldRecord->sup_id][$dateString] ?? null) : null;
                     $supervisorCode = $fieldRecord ? $fieldRecord->sup_id : ($employee->manager?->employee_code ?? null);
@@ -702,7 +707,7 @@ class PayrollController extends Controller
                     $supCode = null;
                     $fieldRecord = DB::table('field_records')
                         ->where('empid', $employee->employee_code)
-                        ->where('Date', $date)
+                        ->whereDate('Date', $date)
                         ->where('location', $locationName)
                         ->first();
 
@@ -765,7 +770,7 @@ class PayrollController extends Controller
 
         // Fetch all field records for this date
         $allRecords = DB::table('field_records')
-            ->where('Date', $date)
+            ->whereDate('Date', $date)
             ->get();
 
         // Group field records by employee code
@@ -906,9 +911,9 @@ class PayrollController extends Controller
     private function fieldRecordMaps(array $dates): array
     {
         $records = DB::table('field_records')
-            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'time', 'id')
+            ->select('empid', 'sup_id', 'Date', 'location', 'notes', 'id')
             ->whereIn('Date', $dates)
-            ->orderBy('time')
+            ->orderBy('Date')
             ->orderBy('id')
             ->get();
 
