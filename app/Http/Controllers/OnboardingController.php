@@ -108,7 +108,7 @@ class OnboardingController extends Controller
             ->when($filters['employment_type'] !== '', function ($query) use ($filters) {
                 $query->where('employment_type', (int) $filters['employment_type']);
             })
-            ->when($filters['employee_status'] !== '', function ($query) use ($filters) {
+            ->when($filters['employee_status'] !== '' && is_numeric($filters['employee_status']), function ($query) use ($filters) {
                 $query->where('status', (int) $filters['employee_status']);
             })
             ->when($filters['department'] !== '', function ($query) use ($filters) {

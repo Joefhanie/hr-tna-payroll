@@ -54,7 +54,7 @@
                 <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-2xl">
                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">Daily Overview</p>
-                        <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">Good morning, {{ $firstName }}</h2>
+                        <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">Welcome, {{ $firstName }}!</h2>
                         <p class="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-[0.98rem]">Here&apos;s what&apos;s happening with your team today, with the most urgent updates pulled forward for quick review on mobile or desktop.</p>
                     </div>
 
