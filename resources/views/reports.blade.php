@@ -108,8 +108,11 @@
                 <label for="end_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     End Date <span class="text-slate-400 font-normal text-[10px] lowercase">(attendance, leaves, claims & disputes)</span>
                 </label>
-                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}"
+                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" min="{{ request('start_date') }}"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
+                @error('end_date')
+                    <p class="mt-2 text-xs font-medium text-red-600">{{ $message }}</p>
+                @enderror
             </div>
             <div>
                 <button type="button" onclick="clearDates()"
@@ -175,9 +178,29 @@
             return reportDownloadUrlTemplate.replace('__REPORT__', reportId);
         }
 
+        function syncDateConstraints() {
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const startDate = startDateInput.value;
+
+            endDateInput.min = startDate;
+
+            if (startDate && endDateInput.value && endDateInput.value < startDate) {
+                endDateInput.value = '';
+            }
+        }
+
+        document.getElementById('start_date').addEventListener('input', syncDateConstraints);
+        document.getElementById('start_date').addEventListener('change', syncDateConstraints);
+
         function downloadReport(reportId) {
             const startDate = document.getElementById('start_date').value;
             const endDate = document.getElementById('end_date').value;
+
+            if (startDate && endDate && startDate > endDate) {
+                alert('End Date must be on or after Start Date.');
+                return;
+            }
 
             let url = buildReportDownloadUrl(reportId);
             const params = [];
@@ -199,6 +222,9 @@
         function clearDates() {
             document.getElementById('start_date').value = '';
             document.getElementById('end_date').value = '';
+            document.getElementById('end_date').min = '';
         }
+
+        syncDateConstraints();
     </script>
 </x-app-layout>

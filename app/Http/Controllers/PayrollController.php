@@ -461,9 +461,15 @@ class PayrollController extends Controller
                 foreach ($dates as $date => $amount) {
                     $cleanAmount = (float) str_replace([',', '$', ' '], '', $amount);
 
+                    // Normalize location key to avoid mismatches between empty/whitespace and 'General'
+                    $locationKey = trim((string) $locationName);
+                    if ($locationKey === '') {
+                        $locationKey = 'General';
+                    }
+
                     $plotting = EmployeePlotting::where('empid', $employee->employee_code)
                         ->where('date', $date)
-                        ->where('location', $locationName)
+                        ->where('location', $locationKey)
                         ->first();
 
                     if ($plotting) {
@@ -475,7 +481,7 @@ class PayrollController extends Controller
                             'payment_status' => 'paid',
                             'posted' => true
                         ]);
-                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
+                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationKey, $cleanAmount);
                     } else {
                         // Resolve supervisor code
                         $supCode = null;
@@ -494,16 +500,37 @@ class PayrollController extends Controller
                             }
                         }
 
-                        EmployeePlotting::create([
-                            'empid' => $employee->employee_code,
-                            'date' => $date,
-                            'location' => $locationName,
-                            'sup_id' => $supCode,
-                            'amount' => $cleanAmount,
-                            'payment_status' => 'paid',
-                            'posted' => true
-                        ]);
-                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
+                        try {
+                            EmployeePlotting::create([
+                                'empid' => $employee->employee_code,
+                                'date' => $date,
+                                'location' => $locationKey,
+                                'sup_id' => $supCode,
+                                'amount' => $cleanAmount,
+                                'payment_status' => 'paid',
+                                'posted' => true
+                            ]);
+                        } catch (\Illuminate\Database\QueryException $e) {
+                            // Handle race or duplicate insertion by reconciling with existing record
+                            $existing = EmployeePlotting::where('empid', $employee->employee_code)
+                                ->where('date', $date)
+                                ->where('location', $locationKey)
+                                ->first();
+                            if ($existing) {
+                                if ($existing->posted) {
+                                    continue;
+                                }
+                                $existing->update([
+                                    'amount' => $cleanAmount,
+                                    'payment_status' => 'paid',
+                                    'posted' => true
+                                ]);
+                            } else {
+                                throw $e; // rethrow unexpected DB errors
+                            }
+                        }
+
+                        $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationKey, $cleanAmount);
                     }
                 }
             }
@@ -650,9 +677,15 @@ class PayrollController extends Controller
             foreach ($locations as $locationName => $amount) {
                 $cleanAmount = (float) str_replace([',', '$', ' '], '', $amount);
 
+                // Normalize location and guard against empty/whitespace
+                $locationKey = trim((string) $locationName);
+                if ($locationKey === '') {
+                    $locationKey = 'General';
+                }
+
                 $plotting = EmployeePlotting::where('empid', $employee->employee_code)
                     ->where('date', $date)
-                    ->where('location', $locationName)
+                    ->where('location', $locationKey)
                     ->first();
 
                 if ($plotting) {
@@ -664,7 +697,7 @@ class PayrollController extends Controller
                         'payment_status' => 'paid',
                         'posted' => true
                     ]);
-                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
+                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationKey, $cleanAmount);
                 } else {
                     $supCode = null;
                     $fieldRecord = DB::table('field_records')
@@ -682,16 +715,36 @@ class PayrollController extends Controller
                         }
                     }
 
-                    EmployeePlotting::create([
-                        'empid' => $employee->employee_code,
-                        'date' => $date,
-                        'location' => $locationName,
-                        'sup_id' => $supCode,
-                        'amount' => $cleanAmount,
-                        'payment_status' => 'paid',
-                        'posted' => true
-                    ]);
-                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationName, $cleanAmount);
+                    try {
+                        EmployeePlotting::create([
+                            'empid' => $employee->employee_code,
+                            'date' => $date,
+                            'location' => $locationKey,
+                            'sup_id' => $supCode,
+                            'amount' => $cleanAmount,
+                            'payment_status' => 'paid',
+                            'posted' => true
+                        ]);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        $existing = EmployeePlotting::where('empid', $employee->employee_code)
+                            ->where('date', $date)
+                            ->where('location', $locationKey)
+                            ->first();
+                        if ($existing) {
+                            if ($existing->posted) {
+                                continue;
+                            }
+                            $existing->update([
+                                'amount' => $cleanAmount,
+                                'payment_status' => 'paid',
+                                'posted' => true
+                            ]);
+                        } else {
+                            throw $e;
+                        }
+                    }
+
+                    $this->checkAndCreatePreviousClaimForPlotting($employee, $date, $locationKey, $cleanAmount);
                 }
             }
         }
