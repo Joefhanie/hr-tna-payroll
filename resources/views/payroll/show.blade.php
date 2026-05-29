@@ -67,7 +67,7 @@
                         <th class="px-6 py-3 text-right">Deductions</th>
                         <th class="px-6 py-3 text-right">Net</th>
                         <th class="px-6 py-3">Status</th>
-                        <th class="w-12"></th>
+                        <th class="px-6 py-3 text-center whitespace-nowrap">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -101,7 +101,7 @@
                             <td class="px-6 py-4 text-right text-slate-600">₱{{ number_format($payslip->total_deductions, 2) }}</td>
                             <td class="px-6 py-4 text-right font-semibold text-slate-900">₱{{ number_format($payslip->net_pay, 2) }}</td>
                             <td class="px-6 py-4"><span class="badge {{ $payslipStatusColor }}">{{ $payslipStatusLabels[$payslip->status] ?? 'Unknown' }}</span></td>
-                            <td class="px-4 py-4 text-center">
+                            <td class="px-6 py-4 text-center">
                                 <button type="button" class="text-indigo-500 hover:text-indigo-700 transition flex items-center justify-center w-full" title="View Breakdown"
                                         onclick="viewPayslip('{{ addslashes($payslip->employee->full_name) }}', {{ $baseSalary }}, '{{ $frequency }}', {{ $payslip->gross_pay }}, {{ $payslip->total_deductions }}, {{ $payslip->net_pay }}, {{ json_encode($payslip->lineItems) }})">
                                     <i class="ti ti-eye text-[1.15rem]"></i>
