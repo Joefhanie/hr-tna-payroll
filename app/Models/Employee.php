@@ -17,6 +17,7 @@ class Employee extends Model
 
     protected $fillable = [
         'employee_code',
+        'masterlist_id',
         'first_name',
         'last_name',
         'middle_name',
@@ -49,6 +50,7 @@ class Employee extends Model
         'hire_date' => 'date',
         'regularization_date' => 'date',
         'termination_date' => 'date',
+        'masterlist_id' => 'integer',
         'status' => 'integer',
         'employment_type' => 'integer',
     ];
@@ -110,6 +112,14 @@ class Employee extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    /**
+     * Get the imported masterlist record for the employee.
+     */
+    public function masterlist(): BelongsTo
+    {
+        return $this->belongsTo(Masterlist::class, 'masterlist_id');
     }
 
     /**
