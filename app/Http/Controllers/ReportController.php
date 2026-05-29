@@ -108,8 +108,8 @@ class ReportController extends Controller
         ]);
 
         $validator = Validator::make($filters, [
-            'start_date' => ['nullable', 'date'],
-            'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date'   => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'status'     => ['nullable', 'string', 'max:255'],
             'pay_run_id' => ['nullable', 'string', 'max:255'],
         ]);
@@ -535,14 +535,35 @@ class ReportController extends Controller
      */
     private function applyDateRangeFilters($query, Request $request, string $column, bool $timestampColumn = false)
     {
-        if ($request->filled('start_date')) {
-            $startDate = Carbon::parse($request->start_date)->startOfDay();
-            $query->where($column, '>=', $timestampColumn ? $startDate : $startDate->toDateString());
+        if (! $request->filled('start_date') && ! $request->filled('end_date')) {
+            return $query;
         }
 
-        if ($request->filled('end_date')) {
-            $endDate = Carbon::parse($request->end_date)->endOfDay();
-            $query->where($column, '<=', $timestampColumn ? $endDate : $endDate->toDateString());
+        $startDate = $request->filled('start_date')
+            ? Carbon::parse($request->start_date)->startOfDay()
+            : null;
+        $endDate = $request->filled('end_date')
+            ? Carbon::parse($request->end_date)->endOfDay()
+            : null;
+
+        if ($timestampColumn) {
+            if ($startDate && $endDate) {
+                $query->whereBetween($column, [$startDate, $endDate]);
+            } elseif ($startDate) {
+                $query->where($column, '>=', $startDate);
+            } elseif ($endDate) {
+                $query->where($column, '<=', $endDate);
+            }
+
+            return $query;
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween($column, [$startDate->toDateString(), $endDate->toDateString()]);
+        } elseif ($startDate) {
+            $query->whereDate($column, '>=', $startDate->toDateString());
+        } elseif ($endDate) {
+            $query->whereDate($column, '<=', $endDate->toDateString());
         }
 
         return $query;
