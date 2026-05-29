@@ -101,7 +101,7 @@
                 <label for="start_date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     Start Date <span class="text-slate-400 font-normal text-[10px] lowercase">(attendance, leaves, claims & disputes)</span>
                 </label>
-                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}"
+                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" max="{{ request('end_date') }}"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
             </div>
             <div class="flex-1 min-w-[200px]">
@@ -182,11 +182,17 @@
             const startDateInput = document.getElementById('start_date');
             const endDateInput = document.getElementById('end_date');
             const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
 
             endDateInput.min = startDate;
+            startDateInput.max = endDate;
 
             if (startDate && endDateInput.value && endDateInput.value < startDate) {
                 endDateInput.value = '';
+            }
+
+            if (endDate && startDateInput.value && startDateInput.value > endDate) {
+                startDateInput.value = '';
             }
         }
 
@@ -223,6 +229,7 @@
             document.getElementById('start_date').value = '';
             document.getElementById('end_date').value = '';
             document.getElementById('end_date').min = '';
+            document.getElementById('start_date').max = '';
         }
 
         syncDateConstraints();
