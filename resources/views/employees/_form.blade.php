@@ -13,6 +13,20 @@
         ['label' => 'Employment',  'color' => 'emerald'],
     ];
 
+    $nationalityCountryOptions = [
+        ['nationality' => 'Filipino', 'country' => 'Philippines'],
+        ['nationality' => 'Chinese', 'country' => 'China'],
+        ['nationality' => 'American', 'country' => 'United States'],
+        ['nationality' => 'Japanese', 'country' => 'Japan'],
+        ['nationality' => 'Korean', 'country' => 'South Korea'],
+        ['nationality' => 'Indian', 'country' => 'India'],
+        ['nationality' => 'Australian', 'country' => 'Australia'],
+        ['nationality' => 'British', 'country' => 'United Kingdom'],
+        ['nationality' => 'Canadian', 'country' => 'Canada'],
+        ['nationality' => 'Singaporean', 'country' => 'Singapore'],
+        ['nationality' => 'Thai', 'country' => 'Thailand'],
+    ];
+
     // Pre-calculate all descendant department IDs for each department
     $departmentChildrenMap = [];
     foreach ($departments as $dept) {
@@ -101,24 +115,8 @@
             <label class="{{ $lbl }}" for="nationality">Nationality</label>
             <select id="nationality" name="nationality" class="{{ $sel }}">
                 <option value="">Select nationality</option>
-                @foreach ([
-                    'Filipino',
-                    'American',
-                    'Australian',
-                    'British',
-                    'Canadian',
-                    'Chinese',
-                    'Indian',
-                    'Indonesian',
-                    'Japanese',
-                    'Korean',
-                    'Malaysian',
-                    'Singaporean',
-                    'Thai',
-                    'Vietnamese',
-                    'Other'
-                ] as $nationality)
-                    <option value="{{ $nationality }}" @selected(old('nationality', $employee->nationality ?? '') === $nationality)>{{ $nationality }}</option>
+                @foreach ($nationalityCountryOptions as $option)
+                    <option value="{{ $option['nationality'] }}" @selected(old('nationality', $employee->nationality ?? '') === $option['nationality'])>{{ $option['nationality'] }}</option>
                 @endforeach
             </select>
             @error('nationality')<p class="{{ $err }}">{{ $message }}</p>@enderror
@@ -204,14 +202,9 @@
         <div>
             <label class="{{ $lbl }}" for="country">Country</label>
             <select id="country" name="country" class="{{ $sel }}">
-                <option value="Philippines" @selected(old('country', $employee->country ?? 'Philippines') === 'Philippines')>Philippines</option>
-                <option value="United States" @selected(old('country', $employee->country ?? '') === 'United States')>United States</option>
-                <option value="Singapore" @selected(old('country', $employee->country ?? '') === 'Singapore')>Singapore</option>
-                <option value="Japan" @selected(old('country', $employee->country ?? '') === 'Japan')>Japan</option>
-                <option value="Australia" @selected(old('country', $employee->country ?? '') === 'Australia')>Australia</option>
-                <option value="United Kingdom" @selected(old('country', $employee->country ?? '') === 'United Kingdom')>United Kingdom</option>
-                <option value="United Arab Emirates" @selected(old('country', $employee->country ?? '') === 'United Arab Emirates')>United Arab Emirates</option>
-                <option value="Canada" @selected(old('country', $employee->country ?? '') === 'Canada')>Canada</option>
+                @foreach ($nationalityCountryOptions as $option)
+                    <option value="{{ $option['country'] }}" @selected(old('country', $employee->country ?? '') === $option['country'])>{{ $option['country'] }}</option>
+                @endforeach
             </select>
             @error('country')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
