@@ -811,6 +811,21 @@
                 return '—';
             }
 
+            if (typeof timeValue === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(timeValue)) {
+                const [hoursRaw, minutesRaw] = timeValue.split(':');
+                let hours = parseInt(hoursRaw, 10);
+                if (Number.isNaN(hours)) {
+                    return timeValue;
+                }
+
+                const minutes = minutesRaw.substring(0, 2);
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+
+                return `${hours}:${minutes} ${ampm}`;
+            }
+
             const parts = String(timeValue).split(':');
             if (parts.length < 2) {
                 return String(timeValue);
@@ -881,8 +896,8 @@
             }
 
             records.forEach(record => {
-                const timeIn = formatTimeValue(record.check_in);
-                const timeOut = formatTimeValue(record.check_out);
+                const timeIn = formatTimeValue(record.check_in_time ?? record.check_in);
+                const timeOut = formatTimeValue(record.check_out_time ?? record.check_out);
 
                 let computedStatus = record.status;
                 const statusKey = isNaN(computedStatus) ? String(computedStatus).toLowerCase() : parseInt(computedStatus);
@@ -901,9 +916,9 @@
                 if (shift) {
                     let workedHours = null;
 
-                    if (record.check_in && record.check_out) {
-                        const checkIn = new Date(`1970-01-01T${record.check_in}`);
-                        const checkOut = new Date(`1970-01-01T${record.check_out}`);
+                    if ((record.check_in_time ?? record.check_in) && (record.check_out_time ?? record.check_out)) {
+                        const checkIn = new Date(`1970-01-01T${record.check_in_time ?? record.check_in}`);
+                        const checkOut = new Date(`1970-01-01T${record.check_out_time ?? record.check_out}`);
 
                         if (!Number.isNaN(checkIn.getTime()) && !Number.isNaN(checkOut.getTime())) {
                             let workedMinutes = (checkOut.getTime() - checkIn.getTime()) / 60000;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\Department;
+use App\Models\Masterlist;
 use App\Models\Position;
 use App\Models\User;
 use App\Services\OnboardingAssignmentService;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class EmployeeController extends Controller
 {
@@ -217,6 +219,45 @@ class EmployeeController extends Controller
             $validated['employee_code'] = $employeeCode !== ''
                 ? $employeeCode
                 : $this->generateTemporaryEmployeeCode();
+
+            $masterlistId = $request->session()->pull('pending_masterlist_id');
+            $masterlist = null;
+
+            if ($masterlistId) {
+                $masterlist = Masterlist::find($masterlistId);
+            }
+
+            if (! $masterlist) {
+                $masterlist = Masterlist::create([
+                    'name' => trim(collect([
+                        $validated['first_name'] ?? '',
+                        $validated['middle_name'] ?? '',
+                        $validated['last_name'] ?? '',
+                    ])->filter()->implode(' ')),
+                    'contact_number' => (string) ($validated['phone'] ?? ''),
+                    'email' => $validated['email'],
+                    'emergency_contact' => '',
+                    'company_id' => 1,
+                    'uid' => (string) Str::uuid(),
+                    'is_admin' => 0,
+                    'status' => (int) $validated['status'],
+                    'created_by' => (int) auth()->id(),
+                ]);
+            } else {
+                $masterlist->update([
+                    'name' => trim(collect([
+                        $validated['first_name'] ?? '',
+                        $validated['middle_name'] ?? '',
+                        $validated['last_name'] ?? '',
+                    ])->filter()->implode(' ')),
+                    'contact_number' => (string) ($validated['phone'] ?? ''),
+                    'email' => $validated['email'],
+                    'status' => (int) $validated['status'],
+                    'updated_by' => (int) auth()->id(),
+                ]);
+            }
+
+            $validated['masterlist_id'] = $masterlist->id;
 
             $employee = Employee::create($validated);
 

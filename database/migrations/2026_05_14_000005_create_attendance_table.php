@@ -13,17 +13,16 @@ return new class extends Migration
     {
         if (!Schema::hasTable('attendance')) {
             Schema::create('attendance', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->date('attendance_date');
-            $table->time('check_in')->nullable();
-            $table->time('check_out')->nullable();
-            // status codes: 1=present, 2=late, 3=absent, 4=excused
-            $table->tinyInteger('status')->default(1);
-            $table->text('notes')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->foreignId('emp_id')->constrained('employees')->cascadeOnDelete();
+                $table->foreignId('shift_id')->nullable()->constrained('shifts')->nullOnDelete();
+                $table->enum('punch_type', ['in', 'out']);
+                $table->date('attendance_date');
+                $table->time('time')->nullable();
+                $table->tinyInteger('status')->default(1)->comment('1=Present, 2=Late, 3=Absent, 4=Excused');
+                $table->timestamps();
 
-            $table->unique(['user_id', 'attendance_date']);
+                $table->index(['emp_id', 'attendance_date'], 'idx_attendance_emp_date');
             });
         }
     }

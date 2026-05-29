@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\CompanyDocument;
 use App\Models\CompanySetting;
 use App\Models\Employee;
+use App\Models\Masterlist;
 use App\Models\Position;
 use App\Models\User;
 use App\Services\OnboardingAssignmentService;
@@ -16,6 +17,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrganizationController extends Controller
@@ -105,15 +108,35 @@ class OrganizationController extends Controller
             ],
         ]);
 
-        $user = User::create([
-            'name' => $validated['username'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'role' => $validated['role'] ?? 4,
-            'status' => 2,
-            'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
-        ]);
+        $user = DB::transaction(function () use ($validated, $associateEmployee) {
+            $user = User::create([
+                'name' => $validated['username'],
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+                'role' => $validated['role'] ?? 4,
+                'status' => 2,
+                'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
+            ]);
+
+            if (! $associateEmployee) {
+                $masterlist = Masterlist::create([
+                    'name' => $validated['username'],
+                    'contact_number' => '',
+                    'email' => $validated['email'],
+                    'emergency_contact' => '',
+                    'company_id' => 1,
+                    'uid' => (string) Str::uuid(),
+                    'is_admin' => (int) ($validated['role'] ?? 4) === 4 ? 1 : 0,
+                    'status' => 1,
+                    'created_by' => auth()->id() ?? 0,
+                ]);
+
+                session()->put('pending_masterlist_id', $masterlist->id);
+            }
+
+            return $user;
+        });
 
         if (! empty($validated['employee_id'])) {
             $employee = Employee::find($validated['employee_id']);

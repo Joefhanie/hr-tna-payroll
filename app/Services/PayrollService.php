@@ -99,7 +99,8 @@ class PayrollService
             return 0;
         }
 
-        return Attendance::where('user_id', $employee->user->id)
+        return Attendance::where('emp_id', $employee->id)
+            ->where('punch_type', 'in')
             ->whereBetween('attendance_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->whereIn('status', [1, 2])
             ->distinct('attendance_date')
@@ -369,9 +370,11 @@ class PayrollService
             return $empty;
         }
 
-        $attendanceRecords = Attendance::where('user_id', $employee->user->id)
+        $attendanceRecords = Attendance::where('emp_id', $employee->id)
+            ->where('punch_type', 'in')
             ->whereBetween('attendance_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->orderBy('attendance_date')
+            ->orderBy('time')
             ->get();
 
         // Fetch all approved leave requests and their paid/unpaid status overlapping this period

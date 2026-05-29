@@ -27,9 +27,11 @@ class DashboardController extends Controller
 
             $todayAttendanceRecord = $userId > 0
                 ? Attendance::query()
-                    ->where('user_id', $userId)
+                    ->where('emp_id', $employeeId)
+                    ->where('punch_type', 'in')
                     ->where('attendance_date', $today)
                     ->latest('attendance_date')
+                    ->latest('time')
                     ->latest('id')
                     ->first()
                 : null;
@@ -70,8 +72,10 @@ class DashboardController extends Controller
 
             $todayAttendance = $userId > 0
                 ? Attendance::with('user')
-                    ->where('user_id', $userId)
+                    ->where('emp_id', $employeeId)
+                    ->where('punch_type', 'in')
                     ->latest('attendance_date')
+                    ->latest('time')
                     ->latest('id')
                     ->limit(8)
                     ->get()
@@ -145,6 +149,7 @@ class DashboardController extends Controller
 
         // Today's Attendance
         $todayAttendance = Attendance::with('user')
+            ->where('punch_type', 'in')
             ->where('attendance_date', $today)
             ->get();
 

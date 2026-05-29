@@ -39,7 +39,7 @@
                                 Date</th>
                             <th
                                 class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
-                                Work Assignment</th>
+                                Location</th>
                             <th
                                 class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">
                                 Supervisor</th>
@@ -61,7 +61,7 @@
                                 <td class="px-4 py-3 text-sm text-slate-600">{{ $day['supervisor'] }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700">
                                     <input type="text" inputmode="text" maxlength="10"
-                                        name="entries[{{ $day['date_string'] }}]" placeholder="0.00"
+                                        name="entries[{{ $day['date_string'] }}][{{ $day['workplace'] }}]" placeholder="0.00"
                                         value="{{ $day['amount'] > 0 ? number_format($day['amount'], 2, '.', '') : '' }}"
                                         oninput="this.value = this.value.replace(/[^\d,.']/g, '').slice(0, 10)"
                                         @if(!empty($day['posted'])) readonly @endif
