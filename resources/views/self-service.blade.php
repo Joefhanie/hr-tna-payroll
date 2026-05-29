@@ -91,8 +91,8 @@
                                 <div class="flex items-center justify-center">
                                     <a href="{{ route('self-service.profile', $request['id']) }}" class="text-slate-600 transition hover:text-slate-900">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487a2.5 2.5 0 113.536 3.536L8.75 19.67 4 20l.33-4.75L16.862 4.487z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 6l3 3"></path>
                                         </svg>
                                     </a>
                                 </div>

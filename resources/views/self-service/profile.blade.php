@@ -108,13 +108,11 @@
         </div>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
         <button type="button" onclick="switchProfileTab('leaves')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $leaveRequestTarget }}">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-3 5h6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                    <i class="ti ti-calendar-plus text-xl leading-none"></i>
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-900">Leave Requests</p>
@@ -125,8 +123,8 @@
         </button>
 
         <button type="button" onclick="switchProfileTab('updates')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $profileUpdateTarget }}">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5h2m-1 0v14m7-7H5" />
                     </svg>
@@ -140,8 +138,8 @@
         </button>
 
         <button type="button" onclick="switchProfileTab('payslips')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -155,8 +153,8 @@
         </button>
 
         <button type="button" onclick="switchProfileTab('documents')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $documentUploadTarget }}">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
@@ -170,11 +168,9 @@
         </button>
 
         <button type="button" onclick="switchProfileTab('overtime-requests')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $overtimeRequestTarget }}">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m5-7a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                    <i class="ti ti-clock text-xl leading-none"></i>
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-900">Overtime</p>
@@ -185,11 +181,9 @@
         </button>
 
         <button type="button" onclick="switchProfileTab('night-differential-requests')" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:bg-slate-50" data-request-modal="{{ $nightDifferentialRequestTarget }}">
-            <div class="flex items-center gap-2">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m5-7a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                    <i class="ti ti-clock text-xl leading-none"></i>
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-900">Night Differential</p>
