@@ -875,15 +875,8 @@ class PayrollController extends Controller
     private function fieldRecordDates(?string $fromDate = null, ?string $toDate = null): array
     {
         if (empty($fromDate) || empty($toDate)) {
-            $latestDate = DB::table('field_records')->max('Date');
-            if ($latestDate) {
-                $latestCarbon = Carbon::parse($latestDate);
-                $fromDate = $latestCarbon->copy()->startOfWeek()->toDateString();
-                $toDate = $latestCarbon->copy()->endOfWeek()->toDateString();
-            } else {
-                $fromDate = Carbon::now()->startOfWeek()->toDateString();
-                $toDate = Carbon::now()->endOfWeek()->toDateString();
-            }
+            $fromDate = Carbon::now()->startOfWeek()->toDateString();
+            $toDate = Carbon::now()->endOfWeek()->toDateString();
         }
 
         $start = Carbon::parse($fromDate);
