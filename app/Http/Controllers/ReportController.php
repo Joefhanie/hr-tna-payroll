@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 
 class ReportController extends Controller
 {
@@ -98,12 +99,26 @@ class ReportController extends Controller
      */
     public function download(string $type, Request $request)
     {
-        $request->validate([
+        $filters = $request->only([
+            'start_date',
+            'end_date',
+            'status',
+            'pay_run_id',
+        ]);
+
+        $validator = Validator::make($filters, [
             'start_date' => ['nullable', 'date'],
-            'end_date'   => ['nullable', 'date'],
+            'end_date'   => ['nullable', 'date', 'after_or_equal:start_date'],
             'status'     => ['nullable', 'string', 'max:255'],
             'pay_run_id' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('reports', $filters)
+                ->withErrors($validator)
+                ->withInput();
+        }
 
         $now = Carbon::now()->format('Y-m-d');
 
@@ -213,13 +228,7 @@ class ReportController extends Controller
         // Fetch attendance logs
         $query = Attendance::with(['user.employee', 'shift'])->orderByDesc('attendance_date');
 
-        // Optional date filters
-        if ($request->filled('start_date')) {
-            $query->where('attendance_date', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->where('attendance_date', '<=', $request->end_date);
-        }
+        $this->applyDateRangeFilters($query, $request, 'attendance_date');
 
         $attendances = $query->get();
 
@@ -337,12 +346,7 @@ class ReportController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('start_date')) {
-            $query->where('start_date', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->where('end_date', '<=', $request->end_date);
-        }
+        $this->applyDateRangeFilters($query, $request, 'start_date');
 
         $leaves = $query->get();
 
@@ -432,12 +436,7 @@ class ReportController extends Controller
             ->latest('created_at');
 
         // Optional date filters (by claim_date)
-        if ($request->filled('start_date')) {
-            $query->where('claim_date', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->where('claim_date', '<=', $request->end_date);
-        }
+        $this->applyDateRangeFilters($query, $request, 'claim_date');
 
         $claims = $query->get();
 
@@ -497,12 +496,7 @@ class ReportController extends Controller
             ->latest('created_at');
 
         // Optional date filters (by created_at)
-        if ($request->filled('start_date')) {
-            $query->where('created_at', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->where('created_at', '<=', $request->end_date . ' 23:59:59');
-        }
+        $this->applyDateRangeFilters($query, $request, 'created_at', true);
 
         $disputes = $query->get();
 
@@ -530,5 +524,23 @@ class ReportController extends Controller
                 ]);
             }
         });
+    }
+
+    /**
+     * Apply the selected report date range to a query.
+     */
+    private function applyDateRangeFilters($query, Request $request, string $column, bool $timestampColumn = false)
+    {
+        if ($request->filled('start_date')) {
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $query->where($column, '>=', $timestampColumn ? $startDate : $startDate->toDateString());
+        }
+
+        if ($request->filled('end_date')) {
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+            $query->where($column, '<=', $timestampColumn ? $endDate : $endDate->toDateString());
+        }
+
+        return $query;
     }
 }

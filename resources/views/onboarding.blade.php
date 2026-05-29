@@ -199,7 +199,7 @@
                                                           </label>
                                                           <input type="file" id="onboardingFile_{{ $task['id'] }}" name="document_file" required
                                                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="sr-only">
-                                                          
+
                                                           {{-- Selected file pill --}}
                                                           <div id="onboardingFilePill_{{ $task['id'] }}" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm">
                                                               <svg class="h-4 w-4 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -491,7 +491,7 @@
                     </button>
                 </div>
 
-                <form method="POST" action="{{ $taskFormAction }}" class="space-y-4" id="onboarding-task-form" data-create-action="{{ route('onboarding.tasks.store', $selectedEmployee['id']) }}">
+                <form method="POST" action="{{ $taskFormAction }}" class="space-y-4" id="onboarding-task-form" data-create-action="{{ route('onboarding.tasks.store', $selectedEmployee['id']) }}" data-update-action="{{ route('onboarding.tasks.update', ['task' => '__TASK__']) }}">
                     @csrf
                     <input type="hidden" name="task_id" id="task_form_task_id" value="{{ old('task_id') }}">
                     <div id="task-form-method-spoof">
@@ -706,10 +706,11 @@
             const modalSubtitle = document.getElementById('task-modal-subtitle');
             const submitButton = document.getElementById('task-form-submit');
             const createAction = form.dataset.createAction;
+            const updateAction = form.dataset.updateAction;
 
             const setTaskFormMode = (mode, task = null) => {
                 if (mode === 'edit' && task) {
-                    form.action = `/onboarding/tasks/${task.id}`;
+                    form.action = updateAction.replace('__TASK__', task.id);
                     taskIdInput.value = task.id;
                     methodSpoof.innerHTML = '<input type="hidden" name="_method" value="PUT">';
                     modalTitle.textContent = 'Edit Task';
@@ -950,7 +951,7 @@
                 const form = fileInput?.closest('form');
                 form?.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    
+
                     const submitBtn = form.querySelector('button[type="submit"]');
                     const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
                     if (submitBtn) {

@@ -2,10 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\Shift;
 use App\Database\Schema\Grammars\LegacyMySqlGrammar;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,181 +38,278 @@ class AppServiceProvider extends ServiceProvider
 
         if (!app()->runningInConsole()) {
             try {
-                if (\Illuminate\Support\Facades\Schema::hasTable('employees') && \Illuminate\Support\Facades\Schema::hasTable('leave_requests')) {
-                    $today = now()->toDateString();
-
-                    // 1. Revert employees marked as On Leave (3) whose leave duration has ended (no approved leave for today)
-                    \App\Models\Employee::where('status', 3)
-                        ->whereNotExists(function ($query) use ($today) {
-                            $query->select(\Illuminate\Support\Facades\DB::raw(1))
-                                ->from('leave_requests')
-                                ->whereColumn('leave_requests.employee_id', 'employees.id')
-                                ->where('leave_requests.status', 2) // Approved
-                                ->where('leave_requests.start_date', '<=', $today)
-                                ->where('leave_requests.end_date', '>=', $today);
-                        })
-                        ->update(['status' => 1]); // Revert to Active
-
-                    // 2. Set employees to On Leave (3) if they have an approved leave covering today
-                    \App\Models\Employee::whereIn('status', [1, 2])
-                        ->whereExists(function ($query) use ($today) {
-                            $query->select(\Illuminate\Support\Facades\DB::raw(1))
-                                ->from('leave_requests')
-                                ->whereColumn('leave_requests.employee_id', 'employees.id')
-                                ->where('leave_requests.status', 2) // Approved
-                                ->where('leave_requests.start_date', '<=', $today)
-                                ->where('leave_requests.end_date', '>=', $today);
-                        })
-                        ->update(['status' => 3]);
-
-                    // 3. Auto-mark employees as Absent (insert attendance status 3)
-                    // If their shift start time on a scheduled day has passed, and they have no attendance record.
-                    // We check today and the past 7 days to cover any gaps.
-                    // 3. Auto-mark employees as Absent/Excused, and sync with latest shift schedules/leaves
-                    if (\Illuminate\Support\Facades\Schema::hasTable('attendance')) {
-                        $checkDaysCount = 7;
-                        $allEmployees = \App\Models\Employee::whereHas('user')->get();
-
-                        for ($i = 0; $i < $checkDaysCount; $i++) {
-                            $checkDate = now()->subDays($i);
-                            $dateStr = $checkDate->toDateString();
-                            $dayOfWeek = $checkDate->format('D');
-
-                            foreach ($allEmployees as $employee) {
-                                /** @var \App\Models\Employee $employee */
-                                $user = $employee->user;
-                                if (!$user) continue;
-
-                                // Get active shift for this day
-                                $dayShift = $employee->getActiveShiftForDate($checkDate);
-
-                                // Find any existing attendance record for this day
-                                $existingRecord = \App\Models\Attendance::where('user_id', $user->id)
-                                    ->where('attendance_date', $dateStr)
-                                    ->first();
-
-                                $isScheduled = $dayShift && is_array($dayShift->days_of_week) && in_array($dayOfWeek, $dayShift->days_of_week);
-
-                                if ($isScheduled) {
-                                    // Get shift start datetime in Asia/Manila timezone
-                                    $shiftStart = \Carbon\Carbon::parse($dateStr . ' ' . $dayShift->start_time, 'Asia/Manila');
-
-                                    // Has the shift started yet?
-                                    if (now('Asia/Manila')->gt($shiftStart)) {
-                                        // Should be marked absent/excused/on leave
-                                        $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
-                                            ->where('employee_id', $employee->id)
-                                            ->where('status', 2) // Approved
-                                            ->where('start_date', '<=', $dateStr)
-                                            ->where('end_date', '>=', $dateStr)
-                                            ->exists();
-
-                                        $hasApprovedPaidLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
-                                            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
-                                            ->where('leave_requests.employee_id', $employee->id)
-                                            ->where('leave_requests.status', 2) // Approved
-                                            ->where('leave_types.is_paid', 1) // Paid
-                                            ->where('leave_requests.start_date', '<=', $dateStr)
-                                            ->where('leave_requests.end_date', '>=', $dateStr)
-                                            ->exists();
-
-                                        $expectedStatus = $hasApprovedLeave ? 4 : 3; // 4 = On Leave, 3 = Absent
-                                        $expectedNotes = $hasApprovedLeave
-                                            ? ($hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave')
-                                            : 'Auto-marked absent: no time-in by shift start.';
-
-                                        if ($existingRecord) {
-                                            $shouldOverride = false;
-                                            if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
-                                                $shouldOverride = true;
-                                            } elseif ($hasApprovedPaidLeave) {
-                                                $shouldOverride = true;
-                                            }
-
-                                            if ($shouldOverride) {
-                                                if ($existingRecord->shift_id != $dayShift->id || $existingRecord->status != $expectedStatus) {
-                                                    $existingRecord->update([
-                                                        'shift_id' => $dayShift->id,
-                                                        'status' => $expectedStatus,
-                                                        'notes' => $expectedNotes,
-                                                    ]);
-                                                }
-                                            }
-                                        } else {
-                                            // Create new auto-absent/leave record
-                                            \App\Models\Attendance::create([
-                                                'user_id' => $user->id,
-                                                'shift_id' => $dayShift->id,
-                                                'attendance_date' => $dateStr,
-                                                'status' => $expectedStatus,
-                                                'notes' => $expectedNotes,
-                                            ]);
-                                        }
-                                    } else {
-                                        // Shift has not started yet.
-                                        // But if they have an approved leave, they should be marked "On Leave" now!
-                                        $hasApprovedLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
-                                            ->where('employee_id', $employee->id)
-                                            ->where('status', 2) // Approved
-                                            ->where('start_date', '<=', $dateStr)
-                                            ->where('end_date', '>=', $dateStr)
-                                            ->exists();
-
-                                        $hasApprovedPaidLeave = \Illuminate\Support\Facades\DB::table('leave_requests')
-                                            ->join('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
-                                            ->where('leave_requests.employee_id', $employee->id)
-                                            ->where('leave_requests.status', 2) // Approved
-                                            ->where('leave_types.is_paid', 1) // Paid
-                                            ->where('leave_requests.start_date', '<=', $dateStr)
-                                            ->where('leave_requests.end_date', '>=', $dateStr)
-                                            ->exists();
-
-                                        if ($hasApprovedLeave) {
-                                            if ($existingRecord) {
-                                                $shouldOverride = false;
-                                                if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
-                                                    $shouldOverride = true;
-                                                } elseif ($hasApprovedPaidLeave) {
-                                                    $shouldOverride = true;
-                                                }
-
-                                                if ($shouldOverride && $existingRecord->status != 4) {
-                                                    $existingRecord->update([
-                                                        'status' => 4,
-                                                        'notes' => $hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave (Overrode Check-in)' : 'Auto-marked: Approved Leave (Prioritized)',
-                                                    ]);
-                                                }
-                                            } else {
-                                                \App\Models\Attendance::create([
-                                                    'user_id' => $user->id,
-                                                    'shift_id' => $dayShift->id,
-                                                    'attendance_date' => $dateStr,
-                                                    'status' => 4, // On Leave
-                                                    'notes' => $hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave (Prioritized)',
-                                                ]);
-                                            }
-                                        } else {
-                                            // Delete any existing auto-generated record
-                                            if ($existingRecord && is_null($existingRecord->check_in) && is_null($existingRecord->check_out) && in_array($existingRecord->status, [3, 4])) {
-                                                $existingRecord->delete();
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Not scheduled to work today
-                                    // Delete any existing auto-generated record
-                                    if ($existingRecord && is_null($existingRecord->check_in) && is_null($existingRecord->check_out) && in_array($existingRecord->status, [3, 4])) {
-                                        $existingRecord->delete();
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (
+                    Schema::hasTable('employees')
+                    && Schema::hasTable('leave_requests')
+                    && Schema::hasTable('leave_types')
+                    && Schema::hasTable('attendance')
+                ) {
+                    $today = now('Asia/Manila');
+                    $this->syncEmployeeLeaveStatuses($today);
+                    $this->syncAutoGeneratedAttendanceRows($today);
                 }
             } catch (\Throwable $e) {
                 // Silently ignore to avoid breaking early migrations/installs
             }
         }
+    }
+
+    private function syncEmployeeLeaveStatuses(Carbon $today): void
+    {
+        $todayString = $today->toDateString();
+
+        Employee::where('status', 3)
+            ->whereNotExists(function ($query) use ($todayString) {
+                $query->select(DB::raw(1))
+                    ->from('leave_requests')
+                    ->whereColumn('leave_requests.employee_id', 'employees.id')
+                    ->where('leave_requests.status', 2)
+                    ->where('leave_requests.start_date', '<=', $todayString)
+                    ->where('leave_requests.end_date', '>=', $todayString);
+            })
+            ->update(['status' => 1]);
+
+        Employee::whereIn('status', [1, 2])
+            ->whereExists(function ($query) use ($todayString) {
+                $query->select(DB::raw(1))
+                    ->from('leave_requests')
+                    ->whereColumn('leave_requests.employee_id', 'employees.id')
+                    ->where('leave_requests.status', 2)
+                    ->where('leave_requests.start_date', '<=', $todayString)
+                    ->where('leave_requests.end_date', '>=', $todayString);
+            })
+            ->update(['status' => 3]);
+    }
+
+    private function syncAutoGeneratedAttendanceRows(Carbon $today): void
+    {
+        $employees = Employee::query()
+            ->whereHas('user')
+            ->with([
+                'user:id,employee_id',
+                'shiftAssignments.shift',
+            ])
+            ->get(['id']);
+
+        if ($employees->isEmpty()) {
+            return;
+        }
+
+        $rangeEnd = $today->copy()->endOfDay();
+        $rangeStart = $today->copy()->subDays(6)->startOfDay();
+        $employeeIds = $employees->pluck('id')->all();
+        $userIds = $employees->pluck('user.id')->filter()->all();
+
+        $leaveLookups = $this->buildLeaveLookups($employeeIds, $rangeStart, $rangeEnd);
+        $attendanceLookup = Attendance::query()
+            ->whereIn('user_id', $userIds)
+            ->whereBetween('attendance_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->get()
+            ->keyBy(function (Attendance $attendance) {
+                return $attendance->user_id . '|' . $attendance->attendance_date->toDateString();
+            });
+
+        for ($offset = 0; $offset < 7; $offset++) {
+            $checkDate = $today->copy()->subDays($offset);
+            $dateString = $checkDate->toDateString();
+            $dayOfWeek = $checkDate->format('D');
+
+            foreach ($employees as $employee) {
+                $user = $employee->user;
+                if (!$user) {
+                    continue;
+                }
+
+                $dayShift = $this->resolveActiveShiftFromLoadedAssignments($employee, $checkDate);
+                $existingRecord = $attendanceLookup->get($user->id . '|' . $dateString);
+
+                if (!$dayShift || !is_array($dayShift->days_of_week) || !in_array($dayOfWeek, $dayShift->days_of_week, true)) {
+                    if ($this->isAutoGeneratedAttendanceRecord($existingRecord)) {
+                        $existingRecord->delete();
+                    }
+
+                    continue;
+                }
+
+                $shiftStart = Carbon::parse($dateString . ' ' . $dayShift->start_time, 'Asia/Manila');
+                $hasApprovedLeave = isset($leaveLookups['approved'][$employee->id][$dateString]);
+                $hasApprovedPaidLeave = isset($leaveLookups['paid'][$employee->id][$dateString]);
+
+                if ($today->gt($shiftStart)) {
+                    $expectedStatus = $hasApprovedLeave ? 4 : 3;
+                    $expectedNotes = $hasApprovedLeave
+                        ? ($hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave')
+                        : 'Auto-marked absent: no time-in by shift start.';
+
+                    if ($existingRecord) {
+                        $shouldOverride = false;
+
+                        if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
+                            $shouldOverride = true;
+                        } elseif ($hasApprovedPaidLeave) {
+                            $shouldOverride = true;
+                        }
+
+                        if ($shouldOverride && (
+                            (int) $existingRecord->shift_id !== (int) $dayShift->id ||
+                            (int) $existingRecord->status !== $expectedStatus
+                        )) {
+                            $existingRecord->update([
+                                'shift_id' => $dayShift->id,
+                                'status' => $expectedStatus,
+                                'notes' => $expectedNotes,
+                            ]);
+                        }
+                    } else {
+                        Attendance::create([
+                            'user_id' => $user->id,
+                            'shift_id' => $dayShift->id,
+                            'attendance_date' => $dateString,
+                            'status' => $expectedStatus,
+                            'notes' => $expectedNotes,
+                        ]);
+                    }
+
+                    continue;
+                }
+
+                if ($hasApprovedLeave) {
+                    if ($existingRecord) {
+                        $shouldOverride = false;
+
+                        if (is_null($existingRecord->check_in) && is_null($existingRecord->check_out)) {
+                            $shouldOverride = true;
+                        } elseif ($hasApprovedPaidLeave) {
+                            $shouldOverride = true;
+                        }
+
+                        if ($shouldOverride && (int) $existingRecord->status !== 4) {
+                            $existingRecord->update([
+                                'status' => 4,
+                                'notes' => $hasApprovedPaidLeave
+                                    ? 'Auto-marked: Approved Paid Leave (Overrode Check-in)'
+                                    : 'Auto-marked: Approved Leave (Prioritized)',
+                            ]);
+                        }
+                    } else {
+                        Attendance::create([
+                            'user_id' => $user->id,
+                            'shift_id' => $dayShift->id,
+                            'attendance_date' => $dateString,
+                            'status' => 4,
+                            'notes' => $hasApprovedPaidLeave ? 'Auto-marked: Approved Paid Leave' : 'Auto-marked: Approved Leave (Prioritized)',
+                        ]);
+                    }
+
+                    continue;
+                }
+
+                if ($this->isAutoGeneratedAttendanceRecord($existingRecord)) {
+                    $existingRecord->delete();
+                }
+            }
+        }
+    }
+
+    private function buildLeaveLookups(array $employeeIds, Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $lookups = [
+            'approved' => [],
+            'paid' => [],
+        ];
+
+        if (empty($employeeIds)) {
+            return $lookups;
+        }
+
+        $approvedLeaves = DB::table('leave_requests')
+            ->leftJoin('leave_types', 'leave_requests.leave_type_id', '=', 'leave_types.id')
+            ->whereIn('leave_requests.employee_id', $employeeIds)
+            ->where('leave_requests.status', 2)
+            ->where('leave_requests.start_date', '<=', $rangeEnd->toDateString())
+            ->where('leave_requests.end_date', '>=', $rangeStart->toDateString())
+            ->select('leave_requests.employee_id', 'leave_requests.start_date', 'leave_requests.end_date', 'leave_types.is_paid')
+            ->get();
+
+        foreach ($approvedLeaves as $leave) {
+            $leaveStart = Carbon::parse(max($leave->start_date, $rangeStart->toDateString()));
+            $leaveEnd = Carbon::parse(min($leave->end_date, $rangeEnd->toDateString()));
+
+            if ($leaveEnd->lt($leaveStart)) {
+                continue;
+            }
+
+            $cursor = $leaveStart->copy();
+
+            while ($cursor->lte($leaveEnd)) {
+                $dateString = $cursor->toDateString();
+                $lookups['approved'][$leave->employee_id][$dateString] = true;
+
+                if ((int) $leave->is_paid === 1) {
+                    $lookups['paid'][$leave->employee_id][$dateString] = true;
+                }
+
+                $cursor->addDay();
+            }
+        }
+
+        return $lookups;
+    }
+
+    private function resolveActiveShiftFromLoadedAssignments(Employee $employee, Carbon $date): ?Shift
+    {
+        if (!$employee->relationLoaded('shiftAssignments')) {
+            return $employee->getActiveShiftForDate($date);
+        }
+
+        $dayOfWeek = $date->format('D');
+        $dateString = $date->toDateString();
+
+        $assignments = $employee->shiftAssignments
+            ->filter(function ($assignment) use ($dateString) {
+                $effectiveFrom = $assignment->effective_from instanceof Carbon
+                    ? $assignment->effective_from->toDateString()
+                    : Carbon::parse($assignment->effective_from)->toDateString();
+
+                $effectiveTo = $assignment->effective_to
+                    ? (($assignment->effective_to instanceof Carbon)
+                        ? $assignment->effective_to->toDateString()
+                        : Carbon::parse($assignment->effective_to)->toDateString())
+                    : null;
+
+                return $effectiveFrom <= $dateString && (!$effectiveTo || $effectiveTo >= $dateString);
+            })
+            ->sortByDesc(function ($assignment) {
+                return $assignment->effective_from instanceof Carbon
+                    ? $assignment->effective_from->timestamp
+                    : Carbon::parse($assignment->effective_from)->timestamp;
+            })
+            ->values();
+
+        if (Schema::hasColumn('shift_assignments', 'status')) {
+            $assignments = $assignments->filter(function ($assignment) {
+                return $assignment->status === null || (int) $assignment->status !== 13;
+            })->values();
+        }
+
+        foreach ($assignments as $assignment) {
+            if ($assignment->shift && is_array($assignment->shift->days_of_week) && in_array($dayOfWeek, $assignment->shift->days_of_week, true)) {
+                return $assignment->shift;
+            }
+        }
+
+        return $assignments->first()?->shift;
+    }
+
+    private function isAutoGeneratedAttendanceRecord($attendance): bool
+    {
+        if (!$attendance) {
+            return false;
+        }
+
+        return is_null($attendance->check_in)
+            && is_null($attendance->check_out)
+            && in_array((int) $attendance->status, [3, 4], true);
     }
 
     private function configureLegacyMysqlSchema(): void

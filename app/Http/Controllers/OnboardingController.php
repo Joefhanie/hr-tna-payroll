@@ -35,7 +35,7 @@ class OnboardingController extends Controller
     {
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|StreamedResponse
     {
         $user = Auth::user();
         $role = (int) ($user?->role ?? 0);
@@ -133,6 +133,10 @@ class OnboardingController extends Controller
             ->values();
 
         $selectedEmployee = $employees->firstWhere('id', $selectedEmployeeId) ?? $employees->first();
+
+        if ($request->boolean('export')) {
+            return $this->exportOnboardingCsv($employees);
+        }
 
         return view('onboarding', [
             'employees' => $employees,
@@ -376,6 +380,57 @@ class OnboardingController extends Controller
         abort_unless(Storage::disk('public')->exists($companyDocument->file_path), 404);
 
         return Storage::disk('public')->download($companyDocument->file_path, $companyDocument->file_name);
+    }
+
+    private function exportOnboardingCsv($employees): StreamedResponse
+    {
+        $filename = 'onboarding_export_' . now()->format('Ymd_His') . '.csv';
+
+        $responseHeaders = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=' . $filename,
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () use ($employees) {
+            $file = fopen('php://output', 'w');
+
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($file, [
+                'Employee Code',
+                'Employee Name',
+                'Onboarding Type',
+                'Status',
+                'Progress',
+                'Task Count',
+                'Completed Tasks',
+                'Pending Tasks',
+                'Hire Date',
+            ]);
+
+            foreach ($employees as $employee) {
+                $tasks = collect($employee['tasks'] ?? []);
+                $taskCount = $tasks->count();
+                $completedTasks = $tasks->where('completed', true)->count();
+
+                fputcsv($file, [
+                    $employee['employee_code'] ?? '',
+                    $employee['name'] ?? '',
+                    $employee['type'] ?? '',
+                    $employee['status'] ?? '',
+                    $employee['progress'] ?? 0,
+                    $taskCount,
+                    $completedTasks,
+                    max(0, $taskCount - $completedTasks),
+                    $employee['hire_date'] ?? '',
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     private function buildEmployeeCard(Employee $employee, bool $includeAllTasks): array
