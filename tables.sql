@@ -1,5 +1,5 @@
 -- ============================================================
---  HR SYSTEM — MySQL / MariaDB
+--  HR SYSTEM â€” MySQL / MariaDB
 --  Modules: Employee Info, Onboarding, Timekeeping, Leave,
 --           Payroll, Benefits, Self-Service, Reporting
 -- ============================================================
@@ -26,7 +26,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 
 -- ============================================================
---  MODULE 1 — EMPLOYEE INFORMATION MANAGEMENT
+--  MODULE 1 â€” EMPLOYEE INFORMATION MANAGEMENT
 -- ============================================================
 
 CREATE TABLE users (
@@ -162,7 +162,7 @@ CREATE TABLE employee_documents (
 
 
 -- ============================================================
---  MODULE 2 — EMPLOYEE ONBOARDING
+--  MODULE 2 â€” EMPLOYEE ONBOARDING
 -- ============================================================
 -- NOTE: Several onboarding/timekeeping/benefits/self-service tables
 -- were archived to the ARCHIVE section at the end of this file because
@@ -170,7 +170,7 @@ CREATE TABLE employee_documents (
 
 
 -- ============================================================
---  MODULE 3 — TIMEKEEPING AND ATTENDANCE
+--  MODULE 3 â€” TIMEKEEPING AND ATTENDANCE
 -- ============================================================
 
 CREATE TABLE shifts (
@@ -270,7 +270,7 @@ CREATE TABLE timesheets (
 
 
 -- ============================================================
---  MODULE 4 — LEAVE AND ABSENCE MANAGEMENT
+--  MODULE 4 â€” LEAVE AND ABSENCE MANAGEMENT
 -- ============================================================
 
 CREATE TABLE leave_types (
@@ -337,7 +337,7 @@ CREATE TABLE public_holidays (
 
 
 -- ============================================================
---  MODULE 5 — PAYROLL PROCESSING
+--  MODULE 5 â€” PAYROLL PROCESSING
 -- ============================================================
 
 CREATE TABLE pay_runs (
@@ -477,7 +477,7 @@ CREATE TABLE employee_deduction_rule (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
---  MODULE 6 — BENEFITS ADMINISTRATION
+--  MODULE 6 â€” BENEFITS ADMINISTRATION
 -- ============================================================
 
 CREATE TABLE benefit_plans (
@@ -537,7 +537,7 @@ CREATE TABLE allowances (
 
 
 -- ============================================================
---  MODULE 7 — SELF-SERVICE PORTAL
+--  MODULE 7 â€” SELF-SERVICE PORTAL
 -- ============================================================
 
 CREATE TABLE reimbursement_requests (
@@ -599,7 +599,7 @@ CREATE TABLE portal_activity_logs (
 
 
 -- ============================================================
---  MODULE 8 — HR REPORTING AND DASHBOARDS
+--  MODULE 8 â€” HR REPORTING AND DASHBOARDS
 -- ============================================================
 
 CREATE TABLE report_definitions (
@@ -620,8 +620,8 @@ CREATE TABLE report_schedules (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     report_id       INT UNSIGNED     NOT NULL,
     frequency       ENUM('Daily','Weekly','Monthly') NOT NULL,
-    day_of_week     TINYINT          NULL COMMENT '0=Sun, 6=Sat — for weekly',
-    day_of_month    TINYINT          NULL COMMENT '1-31 — for monthly',
+    day_of_week     TINYINT          NULL COMMENT '0=Sun, 6=Sat â€” for weekly',
+    day_of_month    TINYINT          NULL COMMENT '1-31 â€” for monthly',
     recipients_json JSON             NOT NULL COMMENT 'Array of email addresses',
     is_active       TINYINT          NOT NULL DEFAULT 1,
     last_run_at     DATETIME         NULL
@@ -657,12 +657,12 @@ CREATE TABLE workforce_snapshots (
 
 
 
-/* ARCHIVE SECTION START — removed CREATE TABLE blocks
+/* ARCHIVE SECTION START â€” removed CREATE TABLE blocks
    Timestamp: 2026-05-18
    Reason: No code references detected during scan. Restore by copying
    the desired CREATE block back into the main body above this comment.
 
-   (CREATE blocks follow — kept for reference)
+   (CREATE blocks follow â€” kept for reference)
 
 */
 
@@ -914,8 +914,8 @@ CREATE TABLE report_schedules (
     id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     report_id       INT UNSIGNED     NOT NULL,
     frequency       ENUM('Daily','Weekly','Monthly') NOT NULL,
-    day_of_week     TINYINT          NULL COMMENT '0=Sun, 6=Sat — for weekly',
-    day_of_month    TINYINT          NULL COMMENT '1-31 — for monthly',
+    day_of_week     TINYINT          NULL COMMENT '0=Sun, 6=Sat â€” for weekly',
+    day_of_month    TINYINT          NULL COMMENT '1-31 â€” for monthly',
     recipients_json JSON             NOT NULL COMMENT 'Array of email addresses',
     is_active       TINYINT          NOT NULL DEFAULT 1,
     last_run_at     DATETIME         NULL,
@@ -966,20 +966,21 @@ CREATE TABLE audit_logs (
 
 
 -- ============================================================
---  MODULE 3B — ATTENDANCE (Additional to Timekeeping)
+--  MODULE 3B â€” ATTENDANCE (Additional to Timekeeping)
 -- ============================================================
 
 CREATE TABLE attendance (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    emp_id              INT UNSIGNED     NOT NULL,
+    user_id             INT UNSIGNED     NOT NULL,
     shift_id            INT UNSIGNED     NULL,
-    punch_type          ENUM('in','out') NOT NULL COMMENT 'Indicates whether the punch is an in or out entry',
     attendance_date     DATE             NOT NULL,
-    time                TIME             NULL,
+    check_in            DATETIME         NULL,
+    check_out           DATETIME         NULL,
     status              INT              NOT NULL DEFAULT 1 COMMENT '1=Present, 2=Late, 3=Absent, 4=Excused',
+    notes               TEXT             NULL,
     created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_att_emp_date (emp_id, attendance_date)
+    INDEX idx_att_user_date (user_id, attendance_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
