@@ -434,7 +434,9 @@
                     if (colors[key]) circle.classList.remove(colors[key]);
                 });
             });
-            circle.classList.remove('border-slate-200', 'bg-white', 'text-slate-400');
+            circle.classList.remove('border-slate-200', 'bg-white', 'text-slate-400', 'text-white');
+            num.classList.remove('text-white', 'text-slate-400', 'text-indigo-600', 'text-sky-600', 'text-emerald-600');
+            label.classList.remove('text-slate-400', 'text-indigo-600', 'text-sky-600', 'text-emerald-600');
 
             const colors = colorMap[color] || colorMap.indigo;
 
@@ -442,16 +444,18 @@
                 // Completed
                 circle.classList.add(colors.border, colors.bg, 'text-white');
                 num.classList.add('hidden'); check.classList.remove('hidden');
-                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
+                label.classList.add(colors.text);
             } else if (s === current) {
                 // Active
                 circle.classList.add(colors.border, colors.bgLight, colors.text);
                 num.classList.remove('hidden'); check.classList.add('hidden');
-                label.classList.remove('text-slate-400'); label.classList.add(colors.text);
+                num.classList.add(colors.text);
+                label.classList.add(colors.text);
             } else {
                 // Future
                 circle.classList.add('border-slate-200', 'bg-white', 'text-slate-400');
                 num.classList.remove('hidden'); check.classList.add('hidden');
+                num.classList.add('text-slate-400');
                 label.classList.add('text-slate-400');
             }
         });

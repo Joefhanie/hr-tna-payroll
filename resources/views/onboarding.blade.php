@@ -25,9 +25,10 @@
                                 type="search"
                                 name="q"
                                 value="{{ $filters['q'] ?? '' }}"
-                                placeholder="Search by name, code, email..."
+                                placeholder="Search by name, code, hire date..."
+                                autocomplete="off"
                                 class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                data-auto-submit-search
+                                id="onboarding-search"
                             >
                         </div>
                     </div>
@@ -269,7 +270,7 @@
                     <div class="min-h-0 flex-1 overflow-y-scroll pr-1">
                         <div class="flex flex-col gap-3">
                         @forelse ($employees as $emp)
-                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-indigo-600 bg-indigo-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md">
+                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="onboarding-employee-card rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-indigo-600 bg-indigo-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md" data-filter-hidden="false">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
                                         <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
@@ -301,6 +302,9 @@
                                 No employees matched the current search and filters.
                             </div>
                         @endforelse
+                        <div id="onboarding-client-empty" class="hidden rounded-[0.8rem] border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                            No employees matched the current search.
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -579,18 +583,40 @@
     <script>
         (() => {
             const filterForm = document.getElementById('onboarding-filters-form');
-            const searchField = filterForm?.querySelector('[data-auto-submit-search]');
-            let filterSubmitTimer = null;
+            const searchField = document.getElementById('onboarding-search');
+
+            function filterOnboardingEmployees() {
+                const term = (searchField?.value || '').trim().toLowerCase();
+                const cards = document.querySelectorAll('.onboarding-employee-card');
+                const emptyState = document.getElementById('onboarding-client-empty');
+
+                let visibleCount = 0;
+
+                cards.forEach((card) => {
+                    const searchable = card.textContent.toLowerCase();
+                    const isVisible = !term || searchable.includes(term);
+                    card.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
+                    card.classList.toggle('hidden', !isVisible);
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                if (emptyState) {
+                    emptyState.classList.toggle('hidden', visibleCount !== 0);
+                }
+            }
 
             searchField?.addEventListener('input', () => {
-                if (!filterForm) {
-                    return;
-                }
+                filterOnboardingEmployees();
+                updateTaExportUrl();
+            });
 
-                window.clearTimeout(filterSubmitTimer);
-                filterSubmitTimer = window.setTimeout(() => {
-                    filterForm.submit();
-                }, 250);
+            searchField?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                }
             });
 
             filterForm?.querySelectorAll('[data-auto-submit-filter]')?.forEach((field) => {
@@ -603,20 +629,26 @@
             const exportButton = document.getElementById('onboarding-export');
             const exportInput = document.getElementById('onboarding-export-input');
 
+            const getCleanOnboardingUrl = () => {
+                const url = new URL(filterForm?.action || window.location.href, window.location.origin);
+                const employee = filterForm?.querySelector('input[name="employee"]')?.value || '';
+
+                url.searchParams.delete('q');
+                url.searchParams.delete('onboarding_status');
+                url.searchParams.delete('department');
+                url.searchParams.delete('export');
+
+                if (employee) {
+                    url.searchParams.set('employee', employee);
+                } else {
+                    url.searchParams.delete('employee');
+                }
+
+                return url.toString();
+            };
+
             clearButton?.addEventListener('click', () => {
-                if (!filterForm) {
-                    return;
-                }
-
-                filterForm.querySelectorAll('input[type="search"], select').forEach((field) => {
-                    field.value = '';
-                });
-
-                if (exportInput) {
-                    exportInput.value = '0';
-                }
-
-                filterForm.submit();
+                window.location.href = getCleanOnboardingUrl();
             });
 
             exportButton?.addEventListener('click', () => {
@@ -679,6 +711,8 @@
             if (!form) {
                 return;
             }
+
+            filterOnboardingEmployees();
 
             const ownerSelect = form.querySelector('[data-assigned-role]');
             const actionGroup = form.querySelector('[data-employee-action-group]');
