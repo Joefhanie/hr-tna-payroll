@@ -291,7 +291,7 @@
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
                     <div class="relative">
                         <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
-                        <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
+                        <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}" autocomplete="off"
                             placeholder="Search by name, code, email…"
                             class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
@@ -316,50 +316,96 @@
                         class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
 
+                <button type="button" id="timekeeping-clear"
+                    class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                    Clear
+                </button>
+
                 @if(auth()->user()->role === 4)
-                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
-                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
-                            class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-                            Clear Filters
-                        </a>
-                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
-                            class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Export CSV
-                        </a>
-                    @else
-                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
-                            class="col-span-2 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Export CSV
-                        </a>
-                    @endif
-                @else
-                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
-                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
-                            class="col-span-2 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-                            Clear Filters
-                        </a>
-                    @endif
+                    <a href="{{ route('timekeeping.export') }}" id="btnExport"
+                        class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export CSV
+                    </a>
                 @endif
             </form>
             <script>
-                (function() {
-                    let debounceTimer;
+                document.addEventListener('DOMContentLoaded', function() {
                     const searchInput = document.getElementById('filterSearch');
-                    if (searchInput) {
-                        searchInput.addEventListener('input', function() {
-                            clearTimeout(debounceTimer);
-                            debounceTimer = setTimeout(function() {
-                                document.getElementById('filterForm').submit();
-                            }, 500);
+                    const clearButton = document.getElementById('timekeeping-clear');
+                    const exportButton = document.getElementById('btnExport');
+                    const filterForm = document.getElementById('filterForm');
+
+                    function getAttendanceRows() {
+                        return Array.from(document.querySelectorAll('#attendanceTable tbody tr.group'));
+                    }
+
+                    function getAttendanceCards() {
+                        return Array.from(document.querySelectorAll('[id^="attendance-card-"]'));
+                    }
+
+                    function updateExportUrl() {
+                        if (!exportButton) {
+                            return;
+                        }
+
+                        const params = new URLSearchParams();
+                        const q = searchInput?.value?.trim() || '';
+                        const status = document.getElementById('filterStatus')?.value || '';
+                        const date = document.getElementById('filterDate')?.value || '';
+
+                        if (q) params.set('q', q);
+                        if (status) params.set('status', status);
+                        if (date) params.set('date', date);
+                        params.set('tab', 'list');
+
+                        exportButton.href = `{{ route('timekeeping.export') }}${[...params].length ? '?' + params.toString() : ''}`;
+                    }
+
+                    function getCleanListUrl() {
+                        const params = new URLSearchParams();
+                        params.set('tab', 'list');
+                        return `{{ route('timekeeping.index') }}?${params.toString()}`;
+                    }
+
+                    function filterAttendanceRows() {
+                        const term = (searchInput?.value || '').trim().toLowerCase();
+
+                        getAttendanceRows().forEach((row) => {
+                            const searchable = row.textContent.toLowerCase();
+                            const isVisible = !term || searchable.includes(term);
+                            row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
+                        });
+
+                        getAttendanceCards().forEach((card) => {
+                            const searchable = card.textContent.toLowerCase();
+                            card.classList.toggle('hidden', !!term && !searchable.includes(term));
                         });
                     }
-                })();
+
+                    searchInput?.addEventListener('input', function() {
+                        filterAttendanceRows();
+                        updateExportUrl();
+                    });
+
+                    searchInput?.addEventListener('keydown', function(event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                        }
+                    });
+
+                    clearButton?.addEventListener('click', function() {
+                        window.location.href = getCleanListUrl();
+                    });
+
+                    document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
+                    document.getElementById('filterDate')?.addEventListener('change', updateExportUrl);
+
+                    filterAttendanceRows();
+                    updateExportUrl();
+                });
             </script>
             <!-- Desktop View -->
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
