@@ -971,16 +971,17 @@ CREATE TABLE audit_logs (
 
 CREATE TABLE attendance (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id             INT UNSIGNED     NOT NULL,
+    emp_id              INT UNSIGNED     NOT NULL,
     shift_id            INT UNSIGNED     NULL,
+    punch_type          VARCHAR(10)      NOT NULL,
     attendance_date     DATE             NOT NULL,
-    check_in            DATETIME         NULL,
-    check_out           DATETIME         NULL,
-    status              INT              NOT NULL DEFAULT 1 COMMENT '1=Present, 2=Late, 3=Absent, 4=Excused',
-    notes               TEXT             NULL,
-    created_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_att_user_date (user_id, attendance_date)
+    time                TIME             NULL,
+    status              TINYINT          NOT NULL DEFAULT 1 COMMENT '1=Present, 2=Late, 3=Absent, 4=Excused',
+    created_at          DATETIME         NULL,
+    updated_at          DATETIME         NULL,
+    INDEX idx_attendance_emp_date (emp_id, attendance_date),
+    CONSTRAINT attendance_emp_id_foreign FOREIGN KEY (emp_id) REFERENCES employees (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT attendance_shift_id_fk FOREIGN KEY (shift_id) REFERENCES shifts (id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 

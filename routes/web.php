@@ -150,7 +150,16 @@ Route::middleware('auth')->group(function () {
 
             $record->time_label = $record->time ? Carbon::parse($record->time)->format('Y-m-d H:i:s') : 'N/A';
 
-            $record->function_label = 'Function #' . (string) $record->function;
+            $functionMap = [
+                1 => 'Check In',
+                2 => 'Check Out',
+                3 => 'Break In',
+                4 => 'Break Out',
+            ];
+            $funcCode = (int) $record->function;
+            $record->function_label = isset($functionMap[$funcCode])
+                ? $functionMap[$funcCode] . ' (' . $funcCode . ')'
+                : 'Function #' . $funcCode;
             $record->status_label = 'Status #' . (string) $record->status;
 
             return $record;
