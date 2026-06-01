@@ -210,7 +210,7 @@ class TimekeepingController extends Controller
         $request->validate([
             'date'   => ['nullable', 'date'],
             'q'      => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
         ]);
 
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
@@ -445,11 +445,13 @@ class TimekeepingController extends Controller
             3 => 'Absent',
             4 => 'On Leave',
             5 => 'Shift Not Started',
+            6 => 'On Break',
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
             'excused' => 'On Leave',
             'not_started' => 'Shift Not Started',
+            'on_break' => 'On Break',
         ];
 
         $normalizeStatus = function ($status) {
@@ -472,7 +474,7 @@ class TimekeepingController extends Controller
         $activeAttendance = $todayAttendance->first(function ($attendance) use ($normalizeStatus) {
             $status = $normalizeStatus($attendance->status);
 
-            return in_array($status, [1, 'present', 2, 'late'], true) && $attendance->check_in;
+            return in_array($status, [1, 'present', 2, 'late', 6, 'on_break'], true) && $attendance->check_in;
         }) ?? $todayAttendance->first();
 
         $openAttendanceMap = Schema::hasTable('attendance')
@@ -523,7 +525,7 @@ class TimekeepingController extends Controller
         $request->validate([
             'date'   => ['nullable', 'date'],
             'q'      => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
         ]);
 
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
@@ -581,7 +583,8 @@ class TimekeepingController extends Controller
                 2 => 'Late',
                 3 => 'Absent',
                 4 => 'On Leave',
-                5 => 'Shift Not Started'
+                5 => 'Shift Not Started',
+                6 => 'On Break',
             ];
 
             foreach ($todayAttendance as $att) {

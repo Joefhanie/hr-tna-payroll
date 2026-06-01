@@ -21,11 +21,16 @@ class CompanySetting extends Model
         'website',
         'tin',
         'industry',
+        'use_machine',
         'logo_path',
         'logo_dark_path',
         'brand_primary_color',
         'brand_secondary_color',
         'brand_accent_color',
+    ];
+
+    protected $casts = [
+        'use_machine' => 'boolean',
     ];
 
     /**

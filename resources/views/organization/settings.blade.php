@@ -136,6 +136,23 @@
                     </div>
 
                     <div class="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
+                        <h3 class="text-base font-semibold text-slate-900">Timekeeping Device</h3>
+                        <p class="mt-1 text-sm text-slate-500">Enable machine settings and machine-related setup screens.</p>
+                        <div class="mt-3 flex items-center gap-3">
+                            <input type="hidden" name="use_machine" value="0">
+                            <input
+                                id="use_machine"
+                                name="use_machine"
+                                type="checkbox"
+                                value="1"
+                                @checked((bool) old('use_machine', $settings->use_machine))
+                                class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            >
+                            <label for="use_machine" class="text-sm font-medium text-slate-700">Use machine</label>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                             <div>
                                 <h3 class="text-base font-semibold text-slate-900">Workspace Branding</h3>

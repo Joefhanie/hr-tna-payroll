@@ -307,6 +307,8 @@ class ProfileController extends Controller
                 return 'Absent';
             case 4:
                 return 'On Leave';
+            case 6:
+                return 'On Break';
             default:
                 return 'Present';
         }

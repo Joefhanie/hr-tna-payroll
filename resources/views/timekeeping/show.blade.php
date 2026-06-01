@@ -18,10 +18,12 @@
             2 => 'Late',
             3 => 'Absent',
             4 => 'On Leave',
+            6 => 'On Break',
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
             'excused' => 'On Leave',
+            'on_break' => 'On Break',
         ];
         
         $statusClasses = [
@@ -29,10 +31,12 @@
             2 => 'bg-amber-100 text-amber-700 border-amber-200',
             3 => 'bg-rose-100 text-rose-700 border-rose-200',
             4 => 'bg-sky-100 text-sky-700 border-sky-200',
+            6 => 'bg-orange-100 text-orange-700 border-orange-200',
             'present' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
             'late' => 'bg-amber-100 text-amber-700 border-amber-200',
             'absent' => 'bg-rose-100 text-rose-700 border-rose-200',
             'excused' => 'bg-sky-100 text-sky-700 border-sky-200',
+            'on_break' => 'bg-orange-100 text-orange-700 border-orange-200',
         ];
     @endphp
 
