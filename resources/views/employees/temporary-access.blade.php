@@ -694,18 +694,24 @@
             const term = (document.getElementById('ta-search')?.value || '').trim().toLowerCase();
             document.querySelectorAll('#ta-table .ta-row').forEach((row) => {
                 if (!term) {
-                    row.style.display = '';
+                    row.setAttribute('data-filter-hidden', 'false');
                     return;
                 }
 
                 const searchable = row.textContent.toLowerCase();
-                row.style.display = searchable.includes(term) ? '' : 'none';
+                row.setAttribute('data-filter-hidden', searchable.includes(term) ? 'false' : 'true');
             });
         }
 
         document.getElementById('ta-search')?.addEventListener('input', function () {
             filterTemporaryAccessRows();
             updateTaExportUrl();
+        });
+
+        document.getElementById('ta-search')?.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
         });
 
         document.getElementById('taFromDate')?.addEventListener('change', updateTaExportUrl);
