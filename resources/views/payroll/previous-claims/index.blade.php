@@ -30,7 +30,7 @@
         </div>
         <div class="flex items-center gap-2">
             @if($isHR)
-            <a href="{{ route('payroll.previous-claims.export') }}" id="btnExport"
+            <a href="{{ route('payroll.previous-claims.export', request()->query()) }}" id="btnExport"
                 class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg transition border border-slate-200 flex items-center gap-2 font-medium text-sm">
                 <i class="ti ti-download text-base"></i> Export CSV
             </a>
@@ -68,6 +68,7 @@
     </div>
     @endif
 
+
     {{-- Live Filters --}}
     <div class="card p-4 mb-4">
         <div class="flex flex-wrap gap-3 items-end">
@@ -104,7 +105,9 @@
                     <select id="filterType" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">All Types</option>
                         @foreach($claimTypes as $ct)
-                            <option value="{{ strtolower($ct) }}" {{ ($filters['type'] ?? '') === strtolower($ct) ? 'selected' : '' }}>{{ $ct }}</option>
+                            @if($ct !== 'Overtime' && $ct !== 'Night Differential')
+                                <option value="{{ strtolower($ct) }}" {{ ($filters['type'] ?? '') === strtolower($ct) ? 'selected' : '' }}>{{ $ct }}</option>
+                            @endif
                         @endforeach
                     </select>
                 </div>
@@ -326,7 +329,9 @@
                                 class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Select type…</option>
                                 @foreach($claimTypes as $ct)
-                                    <option value="{{ $ct }}">{{ $ct }}</option>
+                                    @if($ct !== 'Overtime' && $ct !== 'Night Differential')
+                                        <option value="{{ $ct }}">{{ $ct }}</option>
+                                    @endif
                                 @endforeach
                             </select>
                         @endif

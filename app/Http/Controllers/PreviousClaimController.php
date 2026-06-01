@@ -53,6 +53,8 @@ class PreviousClaimController extends Controller
         // Claim type filter
         if ($request->filled('type')) {
             $query->where('claim_type', $request->type);
+        } else {
+            $query->whereNotIn('claim_type', ['Overtime', 'Night Differential']);
         }
 
         // Date range filters (by claim_date)
@@ -126,20 +128,33 @@ class PreviousClaimController extends Controller
 
         $claims = $this->buildQuery($request)->get();
 
+        $type = $request->input('type');
+        $isOvertimePage = $type === 'Overtime';
+        $isNightDifferentialPage = $type === 'Night Differential';
+
         // Summary stats (for HR)
-        $totalPending  = PreviousClaim::where('status', 1)->count();
-        $totalApproved = PreviousClaim::where('status', 2)->count();
-        $totalDeclined = PreviousClaim::where('status', 3)->count();
-        $totalAmount   = PreviousClaim::where('status', 2)->sum('amount');
+        $statsQuery = PreviousClaim::query();
+        if ($isOvertimePage) {
+            $statsQuery->where('claim_type', 'Overtime');
+        } elseif ($isNightDifferentialPage) {
+            $statsQuery->where('claim_type', 'Night Differential');
+        } else {
+            $statsQuery->whereNotIn('claim_type', ['Overtime', 'Night Differential']);
+        }
+
+        if ($user && $user->role === 1 && $user->employee_id) {
+            $statsQuery->where('employee_id', $user->employee_id);
+        }
+
+        $totalPending      = (clone $statsQuery)->where('status', 1)->count();
+        $totalApproved     = (clone $statsQuery)->where('status', 2)->count();
+        $totalDeclined     = (clone $statsQuery)->where('status', 3)->count();
+        $totalAmount       = (clone $statsQuery)->where('status', 2)->sum('amount');
 
         // List of open pay runs for the "Assign to Pay Run" modal (HR only)
         $openPayRuns = $user?->role === 4
             ? PayRun::whereIn('status', [1, 2])->orderByDesc('period_start')->get()
             : collect();
-
-        $type = $request->input('type');
-        $isOvertimePage = $type === 'Overtime';
-        $isNightDifferentialPage = $type === 'Night Differential';
 
         $pageTitle = 'Previous Claims';
         if ($isOvertimePage) {
