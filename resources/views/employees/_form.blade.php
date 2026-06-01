@@ -9,8 +9,22 @@
 
     $steps = [
         ['label' => 'Personal',    'color' => 'indigo'],
-        ['label' => 'Contact',     'color' => 'sky'],
-        ['label' => 'Employment',  'color' => 'emerald'],
+        ['label' => 'Contact',     'color' => 'indigo'],
+        ['label' => 'Employment',  'color' => 'indigo'],
+    ];
+
+    $nationalityCountryOptions = [
+        ['nationality' => 'Filipino', 'country' => 'Philippines'],
+        ['nationality' => 'Chinese', 'country' => 'China'],
+        ['nationality' => 'American', 'country' => 'United States'],
+        ['nationality' => 'Japanese', 'country' => 'Japan'],
+        ['nationality' => 'Korean', 'country' => 'South Korea'],
+        ['nationality' => 'Indian', 'country' => 'India'],
+        ['nationality' => 'Australian', 'country' => 'Australia'],
+        ['nationality' => 'British', 'country' => 'United Kingdom'],
+        ['nationality' => 'Canadian', 'country' => 'Canada'],
+        ['nationality' => 'Singaporean', 'country' => 'Singapore'],
+        ['nationality' => 'Thai', 'country' => 'Thailand'],
     ];
 
     // Pre-calculate all descendant department IDs for each department
@@ -83,8 +97,8 @@
             @error('last_name')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="gender">Gender</label>
-            <select id="gender" name="gender" class="{{ $sel }}">
+            <label class="{{ $lbl }}" for="gender">Gender <span class="text-red-500">*</span></label>
+            <select id="gender" name="gender" class="{{ $sel }}" required>
                 <option value="">Select gender</option>
                 @foreach (['Male', 'Female', 'Non-binary', 'Prefer not to say'] as $gender)
                     <option value="{{ $gender }}" @selected(old('gender', $employee->gender ?? '') === $gender)>{{ $gender }}</option>
@@ -93,39 +107,23 @@
             @error('gender')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="birth_date">Birth Date</label>
-            <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', optional($employee->birth_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="birth_date">Birth Date <span class="text-red-500">*</span></label>
+            <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', optional($employee->birth_date ?? null)->format('Y-m-d')) }}" class="{{ $inp }}" required>
             @error('birth_date')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="nationality">Nationality</label>
-            <select id="nationality" name="nationality" class="{{ $sel }}">
+            <label class="{{ $lbl }}" for="nationality">Nationality <span class="text-red-500">*</span></label>
+            <select id="nationality" name="nationality" class="{{ $sel }}" required>
                 <option value="">Select nationality</option>
-                @foreach ([
-                    'Filipino',
-                    'American',
-                    'Australian',
-                    'British',
-                    'Canadian',
-                    'Chinese',
-                    'Indian',
-                    'Indonesian',
-                    'Japanese',
-                    'Korean',
-                    'Malaysian',
-                    'Singaporean',
-                    'Thai',
-                    'Vietnamese',
-                    'Other'
-                ] as $nationality)
-                    <option value="{{ $nationality }}" @selected(old('nationality', $employee->nationality ?? '') === $nationality)>{{ $nationality }}</option>
+                @foreach ($nationalityCountryOptions as $option)
+                    <option value="{{ $option['nationality'] }}" @selected(old('nationality', $employee->nationality ?? '') === $option['nationality'])>{{ $option['nationality'] }}</option>
                 @endforeach
             </select>
             @error('nationality')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="marital_status">Marital Status</label>
-            <select id="marital_status" name="marital_status" class="{{ $sel }}">
+            <label class="{{ $lbl }}" for="marital_status">Marital Status <span class="text-red-500">*</span></label>
+            <select id="marital_status" name="marital_status" class="{{ $sel }}" required>
                 <option value="">Select status</option>
                 @foreach (['Single', 'Married', 'Widowed', 'Divorced', 'Separated'] as $status)
                     <option value="{{ $status }}" @selected(old('marital_status', $employee->marital_status ?? '') === $status)>{{ $status }}</option>
@@ -139,7 +137,7 @@
 {{-- ── Step 2: Contact & Address ─────────────────────────────────────── --}}
 <div class="wizard-panel hidden" data-panel="2">
     <div class="mb-7 flex items-center gap-4">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-white shadow-sm">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
@@ -157,7 +155,7 @@
             @error('email')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="phone_display">Phone Number</label>
+            <label class="{{ $lbl }}" for="phone_display">Phone Number <span class="text-red-500">*</span></label>
             <div class="relative flex rounded-lg border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20">
                 <div class="flex items-center border-r border-slate-200 bg-slate-100/50 rounded-l-lg overflow-hidden">
                     <select id="phone_country" class="bg-transparent px-3 py-3 text-sm font-semibold text-slate-700 outline-none border-none cursor-pointer focus:ring-0 focus:outline-none">
@@ -171,14 +169,14 @@
                         <option value="CA">🇨🇦 +1</option>
                     </select>
                 </div>
-                <input id="phone_display" type="text" placeholder="e.g. 917 123 4567" class="w-full bg-transparent px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none">
+                <input id="phone_display" type="text" placeholder="e.g. 917 123 4567" class="w-full bg-transparent px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none" required>
                 <input id="phone" name="phone" type="hidden" value="{{ old('phone', $employee->phone ?? '') }}">
             </div>
             @error('phone')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div class="sm:col-span-2">
-            <label class="{{ $lbl }}" for="address_line1">Address Line 1</label>
-            <input id="address_line1" name="address_line1" type="text" value="{{ old('address_line1', $employee->address_line1 ?? '') }}" placeholder="Street / Barangay" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="address_line1">Address Line 1 <span class="text-red-500">*</span></label>
+            <input id="address_line1" name="address_line1" type="text" value="{{ old('address_line1', $employee->address_line1 ?? '') }}" placeholder="Street / Barangay" class="{{ $inp }}" required>
             @error('address_line1')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div class="sm:col-span-2">
@@ -187,31 +185,26 @@
             @error('address_line2')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="city">City / Municipality</label>
-            <input id="city" name="city" type="text" value="{{ old('city', $employee->city ?? '') }}" placeholder="e.g. Quezon City" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="city">City / Municipality <span class="text-red-500">*</span></label>
+            <input id="city" name="city" type="text" value="{{ old('city', $employee->city ?? '') }}" placeholder="e.g. Quezon City" class="{{ $inp }}" required>
             @error('city')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="province">Province / State</label>
-            <input id="province" name="province" type="text" value="{{ old('province', $employee->province ?? '') }}" placeholder="e.g. Metro Manila" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="province">Province / State <span class="text-red-500">*</span></label>
+            <input id="province" name="province" type="text" value="{{ old('province', $employee->province ?? '') }}" placeholder="e.g. Metro Manila" class="{{ $inp }}" required>
             @error('province')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="postal_code">Postal Code</label>
-            <input id="postal_code" name="postal_code" type="text" value="{{ old('postal_code', $employee->postal_code ?? '') }}" placeholder="e.g. 1100" class="{{ $inp }}">
+            <label class="{{ $lbl }}" for="postal_code">Postal Code <span class="text-red-500">*</span></label>
+            <input id="postal_code" name="postal_code" type="text" value="{{ old('postal_code', $employee->postal_code ?? '') }}" placeholder="e.g. 1100" class="{{ $inp }}" required>
             @error('postal_code')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="country">Country</label>
-            <select id="country" name="country" class="{{ $sel }}">
-                <option value="Philippines" @selected(old('country', $employee->country ?? 'Philippines') === 'Philippines')>Philippines</option>
-                <option value="United States" @selected(old('country', $employee->country ?? '') === 'United States')>United States</option>
-                <option value="Singapore" @selected(old('country', $employee->country ?? '') === 'Singapore')>Singapore</option>
-                <option value="Japan" @selected(old('country', $employee->country ?? '') === 'Japan')>Japan</option>
-                <option value="Australia" @selected(old('country', $employee->country ?? '') === 'Australia')>Australia</option>
-                <option value="United Kingdom" @selected(old('country', $employee->country ?? '') === 'United Kingdom')>United Kingdom</option>
-                <option value="United Arab Emirates" @selected(old('country', $employee->country ?? '') === 'United Arab Emirates')>United Arab Emirates</option>
-                <option value="Canada" @selected(old('country', $employee->country ?? '') === 'Canada')>Canada</option>
+            <label class="{{ $lbl }}" for="country">Country <span class="text-red-500">*</span></label>
+            <select id="country" name="country" class="{{ $sel }}" required>
+                @foreach ($nationalityCountryOptions as $option)
+                    <option value="{{ $option['country'] }}" @selected(old('country', $employee->country ?? '') === $option['country'])>{{ $option['country'] }}</option>
+                @endforeach
             </select>
             @error('country')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
@@ -221,7 +214,7 @@
 {{-- ── Step 3: Employment Details ────────────────────────────────────── --}}
 <div class="wizard-panel hidden" data-panel="3">
     <div class="mb-7 flex items-center gap-4">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
@@ -254,8 +247,8 @@
             @error('employment_type')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="department_id">Department</label>
-            <select id="department_id" name="department_id" class="{{ $sel }}">
+            <label class="{{ $lbl }}" for="department_id">Department <span class="text-red-500">*</span></label>
+            <select id="department_id" name="department_id" class="{{ $sel }}" required>
                 <option value="">Select department</option>
                 @foreach ($departments as $department)
                     <option value="{{ $department->id }}" @selected(old('department_id', $employee->department_id ?? '') == $department->id)>{{ $department->name }}</option>
@@ -264,8 +257,8 @@
             @error('department_id')<p class="{{ $err }}">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="{{ $lbl }}" for="position_id">Position</label>
-            <select id="position_id" name="position_id" class="{{ $sel }} disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+            <label class="{{ $lbl }}" for="position_id">Position <span class="text-red-500">*</span></label>
+            <select id="position_id" name="position_id" class="{{ $sel }} disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" required>
                 <option value="">Select position</option>
                 @foreach ($positions as $position)
                     <option value="{{ $position->id }}" data-department-id="{{ $position->department_id }}" @selected(old('position_id', $employee->position_id ?? '') == $position->id)>{{ $position->title }}</option>
@@ -326,15 +319,15 @@
 
 {{-- ── Navigation Buttons ────────────────────────────────────────────── --}}
 <div class="mt-10 flex items-center justify-between border-t border-slate-100 pt-8">
-    <button type="button" id="wizard-prev"
-            class="hidden rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-        ← Previous
-    </button>
-    <div class="ml-auto flex items-center gap-3">
-        <a href="{{ route('employees.index') }}"
+      <a href="{{ route('employees.index') }}"
            class="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
             Cancel
         </a>
+    <div class="ml-auto flex items-center gap-3">
+        <button type="button" id="wizard-prev"
+            class="hidden rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+        ← Previous
+        </button>
         <button type="button" id="wizard-next"
                 class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
             Next →

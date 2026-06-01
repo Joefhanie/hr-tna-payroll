@@ -381,12 +381,38 @@
                         <span class="sidebar-nav-label whitespace-nowrap font-medium">Departments</span>
                     </a>
 
-                    <a href="{{ $settingsHref }}" class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }}">
-                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
-                            <i class="ti ti-settings sidebar-icon text-xl"></i>
-                        </span>
-                        <span class="sidebar-nav-label whitespace-nowrap font-medium">Settings</span>
-                    </a>
+                    @php
+                        $machineSettingsRouteExists = \Illuminate\Support\Facades\Route::has('organization.settings.machine-settings');
+                        $machineSettingsHref = $machineSettingsRouteExists ? route('organization.settings.machine-settings') : url('/organization/settings/machine-settings');
+                    @endphp
+
+                    <details class="sidebar-group" @if (request()->routeIs('organization.settings') || request()->routeIs('organization.settings.*') || request()->routeIs('organization.settings.machine-settings')) open @endif>
+                        <summary class="sidebar-link {{ $settingsActive ? 'sidebar-link-active' : '' }} cursor-pointer list-none">
+                            <a href="{{ $settingsHref }}" class="flex flex-1 items-center gap-[0.1rem] text-inherit no-underline">
+                                <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                    <i class="ti ti-settings sidebar-icon text-xl"></i>
+                                </span>
+                                <span class="sidebar-nav-label whitespace-nowrap font-medium">Settings</span>
+                            </a>
+                            <span class="text-xs text-slate-400">▾</span>
+                        </summary>
+
+                        <div class="mt-1 space-y-1 pl-2">
+                            <a href="{{ $settingsHref }}" class="sidebar-link sidebar-link-sub {{ request()->routeIs('organization.settings') ? 'sidebar-link-active' : '' }}">
+                                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                                    <i class="ti ti-point sidebar-icon text-base"></i>
+                                </span>
+                                <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">Company Settings</span>
+                            </a>
+
+                            <a href="{{ $machineSettingsHref }}" class="sidebar-link sidebar-link-sub {{ request()->routeIs('organization.settings.machine-settings') ? 'sidebar-link-active' : '' }}">
+                                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                                    <i class="ti ti-point sidebar-icon text-base"></i>
+                                </span>
+                                <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">Machines</span>
+                            </a>
+                        </div>
+                    </details>
                     @endif
                 </nav>
             </div>

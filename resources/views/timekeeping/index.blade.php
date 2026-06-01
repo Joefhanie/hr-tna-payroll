@@ -53,6 +53,7 @@
             <h1 class="text-[1.65rem] font-bold text-[#06112e]">Timekeeping</h1>
             <p class="mt-1 text-sm text-slate-500">Track and manage employee attendance records.</p>
         </div>
+        @if(auth()->user()->role === 4)
         <div class="flex gap-2">
                 <button type="button"
                     onclick="document.getElementById('manualEntryModal').classList.replace('hidden', 'flex')"
@@ -61,6 +62,7 @@
                 Manual Entry
             </button>
         </div>
+        @endif
     </div>
 
     <div class="mb-4 h-px w-full bg-slate-200"></div>

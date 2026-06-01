@@ -20,6 +20,8 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Models\Machine;
+use App\Models\MachineSetting;
 
 class OrganizationController extends Controller
 {
@@ -483,6 +485,44 @@ class OrganizationController extends Controller
         $settings->save();
 
         return redirect()->route('organization.settings')->with('success', 'Brand colors restored to the original system palette.');
+    }
+
+    /**
+     * Show Machine Settings submodule list and form.
+     */
+    public function machineSettings(): View
+    {
+        $machines = Machine::orderBy('description')->get();
+        $settings = MachineSetting::with('machine')->orderBy('machine_id')->get();
+
+        return view('organization.machine-settings', compact('machines', 'settings'));
+    }
+
+    /**
+     * Store a machine setting row.
+     */
+    public function storeMachineSetting(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'machine_id' => ['required', 'integer', 'exists:machine,id'],
+            'description' => ['required', 'string', 'max:250'],
+            'value' => ['required', 'string', 'max:250'],
+            'type' => ['nullable', 'string', 'max:250'],
+        ]);
+
+        MachineSetting::create($validated);
+
+        return redirect()->route('organization.settings.machine-settings')->with('success', 'Machine setting saved.');
+    }
+
+    /**
+     * Delete a machine setting.
+     */
+    public function destroyMachineSetting(MachineSetting $machineSetting): RedirectResponse
+    {
+        $machineSetting->delete();
+
+        return redirect()->route('organization.settings.machine-settings')->with('success', 'Machine setting deleted.');
     }
 
     public function storeCompanyDocument(Request $request): RedirectResponse
