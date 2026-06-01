@@ -49,28 +49,49 @@ class TapRecordAttendanceService
             return null;
         }
 
-        $mappedPunches = $this->resolvePunchesFromFunctionSettings($tapRecords);
+        // Function code mapping (from function_settings table):
+        //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
+        $checkInTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 1);
+        $checkOutTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 2);
+        $hasFunctionCodes = $checkInTaps->isNotEmpty() || $checkOutTaps->isNotEmpty();
 
-        if ($mappedPunches !== null) {
-            $timeInTap = $mappedPunches['time_in'];
-            $timeOutTap = $mappedPunches['time_out'];
-        } else {
-            $timeInTap = $tapRecords->first();
-            $timeOutTap = null;
+        // Use function-specific taps when available; fall back to first/last for
+        // records without a function code (legacy / untyped imports).
+        $timeInTap = $checkInTaps->isNotEmpty()
+            ? $checkInTaps->first()
+            : ($hasFunctionCodes ? null : $tapRecords->first());
 
-            if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
-                $shiftEnd = $shift->getShiftEndDateTime($date);
-                $tapsAfterShift = $tapRecords->filter(function ($tap) use ($shiftEnd) {
-                    return Carbon::parse($tap->time)->gte($shiftEnd);
-                });
-
-                $timeOutTap = $tapsAfterShift->isNotEmpty()
-                    ? $tapsAfterShift->last()
-                    : $tapRecords->last();
-            }
+        if (!$timeInTap) {
+            return null;
         }
 
         $timeIn = Carbon::parse($timeInTap->time);
+
+        $timeOutTap = null;
+
+        if ($checkOutTaps->isNotEmpty()) {
+            // Prefer the last Check Out tap after shift end; otherwise the last Check Out of the day.
+            if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
+                $shiftEnd = $shift->getShiftEndDateTime($date);
+                $checkOutsAfterShift = $checkOutTaps->filter(
+                    fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+                );
+                $timeOutTap = $checkOutsAfterShift->isNotEmpty()
+                    ? $checkOutsAfterShift->last()
+                    : $checkOutTaps->last();
+            } else {
+                $timeOutTap = $checkOutTaps->last();
+            }
+        } elseif (!$hasFunctionCodes && $shift && $now->gte($shift->getShiftEndDateTime($date))) {
+            // Legacy fallback: no function codes at all — use last tap after shift end.
+            $shiftEnd = $shift->getShiftEndDateTime($date);
+            $tapsAfterShift = $tapRecords->filter(
+                fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+            );
+            $timeOutTap = $tapsAfterShift->isNotEmpty()
+                ? $tapsAfterShift->last()
+                : $tapRecords->last();
+        }
 
         $timeOut = $timeOutTap ? Carbon::parse($timeOutTap->time) : null;
 
@@ -121,6 +142,7 @@ class TapRecordAttendanceService
     public function syncAll(): int
     {
         $tapRecords = DB::table('tap_records')
+            ->select('employee_id', 'masterlist_id', 'time', 'function')
             ->where(function ($query) {
                 $query->whereNotNull('employee_id')
                     ->orWhereNotNull('masterlist_id');
