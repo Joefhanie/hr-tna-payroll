@@ -346,6 +346,52 @@ class PayrollService
     }
 
     /**
+     * Build the payslip line item adjustment for an approved dispute.
+     *
+     * The disputed amount is treated as the revised amount for the original
+     * line item. A deduction disputed downward becomes an earning credit, and
+     * a bonus disputed downward becomes a deduction.
+     */
+    public function buildDisputeAdjustment(PayslipDispute $dispute): ?array
+    {
+        $lineItem = $dispute->lineItem;
+        $disputedAmount = round((float) $dispute->dispute_amount, 2);
+
+        if ($disputedAmount <= 0) {
+            return null;
+        }
+
+        $referenceLabel = $lineItem?->description
+            ?: Str::limit($dispute->dispute_reason, 50);
+
+        if (! $lineItem) {
+            return [
+                'component_type' => 1,
+                'description' => 'Disputes: ' . $referenceLabel,
+                'amount' => $disputedAmount,
+                'is_taxable' => true,
+            ];
+        }
+
+        $originalAmount = round((float) $lineItem->amount, 2);
+        $componentType = (int) $lineItem->component_type;
+        $netAdjustment = $componentType === 2
+            ? $originalAmount - $disputedAmount
+            : $disputedAmount - $originalAmount;
+
+        if ($netAdjustment === 0.0) {
+            return null;
+        }
+
+        return [
+            'component_type' => $netAdjustment > 0 ? 1 : 2,
+            'description' => 'Disputes: ' . $referenceLabel,
+            'amount' => round(abs($netAdjustment), 2),
+            'is_taxable' => (bool) ($lineItem->is_taxable ?? true),
+        ];
+    }
+
+    /**
      * Calculate attendance-based bonuses and deductions for a pay period.
      */
     public function calculateAttendanceAdjustments(Employee $employee, Carbon $periodStart, Carbon $periodEnd, float $baseGross, ?SalaryRecord $salaryRecord = null, bool $proratedGross = false): array
@@ -861,24 +907,21 @@ class PayrollService
                 ->get();
 
             foreach ($approvedDisputes as $dispute) {
-                $disputeAmount = round((float) $dispute->dispute_amount, 2);
+                $adjustment = $this->buildDisputeAdjustment($dispute);
 
-                if ($disputeAmount <= 0) {
+                if (!$adjustment) {
                     continue;
                 }
 
-                $referenceLabel = $dispute->lineItem?->description
-                    ?: Str::limit($dispute->dispute_reason, 50);
-
                 PayslipLineItem::create([
                     'payslip_id'     => $payslip->id,
-                    'component_type' => 1,
-                    'description'    => 'Disputes: ' . $referenceLabel,
-                    'amount'         => $disputeAmount,
-                    'is_taxable'     => true,
+                    'component_type' => $adjustment['component_type'],
+                    'description'    => $adjustment['description'],
+                    'amount'         => $adjustment['amount'],
+                    'is_taxable'     => $adjustment['is_taxable'],
                 ]);
 
-                $approvedDisputesTotal += $disputeAmount;
+                $approvedDisputesTotal += (float) $adjustment['amount'];
                 if (is_null($dispute->adjustment_pay_run_id)) {
                     $dispute->adjustment_pay_run_id = $payRun->id;
                     $dispute->adjustment_payslip_id = $payslip->id;
