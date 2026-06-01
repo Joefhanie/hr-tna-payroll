@@ -59,7 +59,9 @@ class SalaryController extends Controller
             'pay_frequency' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
         ]);
 
-        $employees = $this->buildQuery($request)
+        $employees = Employee::with(['salaryRecords', 'position', 'department'])
+            ->orderBy('first_name')
+            ->orderBy('last_name')
             ->get();
 
         $departments = \App\Models\Department::all();

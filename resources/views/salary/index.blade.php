@@ -40,7 +40,7 @@
             </div>
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
-                <select name="department_id" id="filterDepartment" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="department_id" id="filterDepartment" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Departments</option>
                     @foreach($departments as $dept)
                         <option value="{{ $dept->id }}" {{ ($filters['department_id'] ?? '') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
@@ -49,7 +49,7 @@
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Pay Frequency</label>
-                <select name="pay_frequency" id="filterPayFrequency" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="pay_frequency" id="filterPayFrequency" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Frequencies</option>
                     <option value="1" {{ ($filters['pay_frequency'] ?? '') == '1' ? 'selected' : '' }}>Hourly</option>
                     <option value="2" {{ ($filters['pay_frequency'] ?? '') == '2' ? 'selected' : '' }}>Daily</option>
@@ -59,9 +59,9 @@
                     <option value="6" {{ ($filters['pay_frequency'] ?? '') == '6' ? 'selected' : '' }}>Annual</option>
                 </select>
             </div>
-            <a href="{{ route('salary.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+            <button type="button" id="salary-clear" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
-            </a>
+            </button>
             @if(auth()->user()->role === 4)
             <a href="{{ route('salary.export') }}" id="btnExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@
                             $activeSalary = $employee->salaryRecords->where('end_date', null)->first();
                             $payFrequencyLabels = [1 => 'Hourly', 2 => 'Daily', 3 => 'Weekly', 4 => 'Bi-weekly', 5 => 'Monthly', 6 => 'Annual'];
                         @endphp
-                        <tr>
+                        <tr class="salary-row" data-department-id="{{ $employee->department_id }}" data-pay-frequency="{{ $activeSalary?->pay_frequency ?? '' }}">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     @if ($employee->profile_picture)
@@ -166,38 +166,71 @@
     </div>
 
     <script>
-        // Update export button URL dynamically based on form inputs
-        function updateExportUrl() {
-            const q = document.getElementById('filterSearch')?.value || '';
-            const departmentId = document.getElementById('filterDepartment')?.value || '';
-            const payFrequency = document.getElementById('filterPayFrequency')?.value || '';
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('filterSearch');
+            const deptSelect = document.getElementById('filterDepartment');
+            const freqSelect = document.getElementById('filterPayFrequency');
+            const clearButton = document.getElementById('salary-clear');
+            const exportButton = document.getElementById('btnExport');
 
-            let url = "{{ route('salary.export') }}";
-            const params = [];
-            if (q) params.push(`q=${encodeURIComponent(q)}`);
-            if (departmentId) params.push(`department_id=${encodeURIComponent(departmentId)}`);
-            if (payFrequency) params.push(`pay_frequency=${encodeURIComponent(payFrequency)}`);
-            if (params.length > 0) {
-                url += `?${params.join('&')}`;
+            function getSalaryRows() {
+                return Array.from(document.querySelectorAll('#salaryRecordsTable tbody tr.salary-row'));
             }
-            const exportBtn = document.getElementById('btnExport');
-            if (exportBtn) exportBtn.href = url;
-        }
 
-        document.getElementById('filterSearch')?.addEventListener('input', updateExportUrl);
-        document.getElementById('filterDepartment')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterPayFrequency')?.addEventListener('change', updateExportUrl);
+            function updateExportUrl() {
+                if (!exportButton) return;
 
-        // Auto-filter search input with debounce
-        let debounceTimer;
-        document.getElementById('filterSearch')?.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function() {
-                document.getElementById('filterForm')?.submit();
-            }, 500);
+                const params = new URLSearchParams();
+                const q = searchInput?.value?.trim() || '';
+                const dept = deptSelect?.value || '';
+                const freq = freqSelect?.value || '';
+
+                if (q) params.set('q', q);
+                if (dept) params.set('department_id', dept);
+                if (freq) params.set('pay_frequency', freq);
+
+                exportButton.href = `{{ route('salary.export') }}${[...params].length ? '?' + params.toString() : ''}`;
+            }
+
+            function filterSalaries() {
+                const qTerm = (searchInput?.value || '').trim().toLowerCase();
+                const deptVal = deptSelect?.value || '';
+                const freqVal = freqSelect?.value || '';
+
+                getSalaryRows().forEach((row) => {
+                    const searchable = row.textContent.toLowerCase();
+                    const rowDeptId = row.getAttribute('data-department-id') || '';
+                    const rowFreq = row.getAttribute('data-pay-frequency') || '';
+
+                    const matchesSearch = !qTerm || searchable.includes(qTerm);
+                    const matchesDept = !deptVal || rowDeptId === deptVal;
+                    const matchesFreq = !freqVal || rowFreq === freqVal;
+
+                    const isVisible = matchesSearch && matchesDept && matchesFreq;
+                    row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
+                });
+
+                updateExportUrl();
+            }
+
+            searchInput?.addEventListener('input', filterSalaries);
+            deptSelect?.addEventListener('change', filterSalaries);
+            freqSelect?.addEventListener('change', filterSalaries);
+
+            clearButton?.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (deptSelect) deptSelect.value = '';
+                if (freqSelect) freqSelect.value = '';
+                filterSalaries();
+            });
+
+            searchInput?.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                }
+            });
+
+            filterSalaries();
         });
-
-        // Run once on load
-        updateExportUrl();
     </script>
 </x-app-layout>

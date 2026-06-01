@@ -216,30 +216,9 @@ class TimekeepingController extends Controller
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
         $selectedDateCarbon = Carbon::parse($selectedDate);
 
-        // Get unfiltered list for summary counts
+        // Get unfiltered list for summary counts and client-side filtering in index view
         $unfilteredAttendance = $this->buildTodayAttendance($request);
-
-        // Apply filters to $todayAttendance
         $todayAttendance = $unfilteredAttendance;
-        if ($request->filled('q')) {
-            $qLower = strtolower($request->input('q'));
-            $todayAttendance = $todayAttendance->filter(function ($att) use ($qLower) {
-                $emp = $att->user?->employee;
-                if (!$emp) return false;
-                return str_contains(strtolower($emp->first_name), $qLower)
-                    || str_contains(strtolower($emp->last_name), $qLower)
-                    || str_contains(strtolower($emp->middle_name), $qLower)
-                    || str_contains(strtolower($emp->employee_code), $qLower)
-                    || str_contains(strtolower($emp->email), $qLower);
-            });
-        }
-
-        if ($request->filled('status')) {
-            $statusVal = (int) $request->input('status');
-            $todayAttendance = $todayAttendance->filter(function ($att) use ($statusVal) {
-                return ((int) $att->status) === $statusVal;
-            });
-        }
 
         /** @var \App\Models\User $user */
         $user = auth()->user();
@@ -880,8 +859,115 @@ class TimekeepingController extends Controller
             $employeesQuery->whereIn('id', $allowedEmployeeIds);
         }
         $employees = $employeesQuery->get();
+        $departments = \App\Models\Department::orderBy('name')->get();
 
-        return view('timekeeping.shift-schedule', compact('employees'));
+        return view('timekeeping.shift-schedule', compact('employees', 'departments'));
+    }
+
+    public function exportShiftSchedule(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        if ($user->role !== 4) {
+            abort(403, 'Unauthorized action. Exports are restricted to HR only.');
+        }
+
+        $request->validate([
+            'q'             => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+
+        $allowedEmployeeIds = $this->getAllowedEmployeeIds($user);
+
+        $employeesQuery = \App\Models\Employee::with(['department', 'currentShifts.shift']);
+        if ($allowedEmployeeIds !== null) {
+            $employeesQuery->whereIn('id', $allowedEmployeeIds);
+        }
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $employeesQuery->where(function ($query) use ($q) {
+                $query->where('first_name', 'like', "%{$q}%")
+                    ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhere('middle_name', 'like', "%{$q}%")
+                    ->orWhere('employee_code', 'like', "%{$q}%");
+            });
+        }
+
+        if ($request->filled('department_id')) {
+            $employeesQuery->where('department_id', $request->input('department_id'));
+        }
+
+        $employees = $employeesQuery->get();
+
+        $filename = "shift_schedule_export_" . now()->format('Ymd_His') . ".csv";
+
+        $responseHeaders = [
+            'Content-type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        return response()->stream(function () use ($employees) {
+            $file = fopen('php://output', 'w');
+
+            // Add UTF-8 BOM for proper encoding support in Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'Employee Code',
+                'Employee Name',
+                'Department',
+                'Schedules',
+                'Working Days'
+            ]);
+
+            foreach ($employees as $employee) {
+                $activeShifts = $employee->currentShifts ?? collect();
+                if ($activeShifts->isEmpty() && $employee->currentShift) {
+                    $activeShifts = collect([$employee->currentShift]);
+                }
+
+                $schedulesList = [];
+                $workingDaysList = [];
+
+                foreach ($activeShifts as $assignment) {
+                    if ($assignment->shift) {
+                        $shift = $assignment->shift;
+                        
+                        if ($shift->is_flexible && $shift->flexible_until_time) {
+                            $timeStr = \Carbon\Carbon::parse($shift->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($shift->flexible_until_time)->format('g:i A') . ' to ' . \Carbon\Carbon::parse($shift->end_time)->format('g:i A');
+                        } else {
+                            $flex = $shift->is_flexible ? ' [Flex]' : '';
+                            $timeStr = \Carbon\Carbon::parse($shift->start_time)->format('h:i A') . ' - ' . \Carbon\Carbon::parse($shift->end_time)->format('h:i A') . $flex;
+                        }
+                        
+                        $daysStr = implode(', ', array_map(function($d) { return substr($d, 0, 3); }, $shift->days_of_week ?? []));
+                        $schedulesList[] = "{$timeStr} ({$daysStr})";
+
+                        if (is_array($shift->days_of_week)) {
+                            $workingDaysList = array_merge($workingDaysList, $shift->days_of_week);
+                        }
+                    }
+                }
+
+                $workingDaysList = array_unique($workingDaysList);
+                $workingDaysStr = count($workingDaysList) > 0 ? implode(', ', $workingDaysList) : 'Not assigned';
+                $schedulesStr = count($schedulesList) > 0 ? implode('; ', $schedulesList) : 'Not assigned';
+
+                fputcsv($file, [
+                    $employee->employee_code,
+                    $employee->full_name,
+                    $employee->department->name ?? 'Unassigned',
+                    $schedulesStr,
+                    $workingDaysStr
+                ]);
+            }
+
+            fclose($file);
+        }, 200, $responseHeaders);
     }
 
     public function saveShiftSchedule(Request $request)
