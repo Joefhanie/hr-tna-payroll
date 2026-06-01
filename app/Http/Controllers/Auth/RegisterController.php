@@ -189,6 +189,8 @@ class RegisterController extends Controller
                 ),
             ]);
 
+            $masterlist->update(['emp_id' => $employee->id]);
+
             $user->update([
                 'employee_id' => $employee->id,
             ]);

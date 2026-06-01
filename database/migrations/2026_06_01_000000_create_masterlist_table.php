@@ -8,19 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('masterlist')) {
             Schema::create('masterlist', function (Blueprint $table) {
                 $table->engine = 'InnoDB';
                 $table->charset = 'utf8mb4';
                 $table->collation = 'utf8mb4_general_ci';
 
                 $table->increments('id');
+                $table->integer('emp_id')->nullable();
                 $table->string('name', 250);
                 $table->string('contact_number', 20);
                 $table->string('email', 250);
                 $table->string('emergency_contact', 50);
-                $table->integer('company_id');
-                $table->string('uid', 250);
+                $table->string('uid', 250)->nullable();
                 $table->integer('is_admin');
                 $table->integer('status');
                 $table->dateTime('created_at')->useCurrent();
@@ -31,7 +30,6 @@ return new class extends Migration
                 $table->integer('deleted_by')->nullable();
                 $table->boolean('is_deleted')->nullable();
             });
-        }
     }
 
     public function down(): void
