@@ -113,4 +113,77 @@
             </div>
         </div>
     </div>
+
+    <!-- Documents Section -->
+    <div class="mb-4 rounded-lg bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900">Documents & Records</h2>
+        </div>
+
+        <div class="space-y-3">
+            @forelse ($employee->documents as $document)
+                @php
+                    $docName = $document->display_name ?? $document->file_name;
+                    $docType = $document->doc_type ?? $document->document_type ?? 'Document';
+                    $docDate = optional($document->uploaded_at ?? $document->created_at ?? $document->issued_date)->format('M d, Y');
+                    $filePath = $document->file_url ?? $document->file_path ?? null;
+
+                    // Calculate human-readable size
+                    $fileSize = $document->file_size_kb ?? $document->file_size ?? null;
+                    $fileSizeLabel = null;
+                    if ($fileSize !== null) {
+                        $kilobytes = (float) $fileSize;
+                        if ($document->file_size !== null && $document->file_size_kb === null) {
+                            $kilobytes = round($kilobytes / 1024, 2);
+                        }
+                        $fileSizeLabel = number_format($kilobytes, $kilobytes >= 10 ? 0 : 2) . ' KB';
+                    }
+                @endphp
+                <div class="flex items-center justify-between rounded-lg border border-slate-200 p-4 transition hover:bg-slate-50/30">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">{{ $docName }}</p>
+                            <p class="text-xs text-slate-500">
+                                {{ $docType }} | {{ $docDate ?? 'N/A' }}{{ $fileSizeLabel ? ' | ' . $fileSizeLabel : '' }}
+                            </p>
+                        </div>
+                    </div>
+                    @if ($filePath)
+                        <div class="flex items-center gap-2">
+                            <a href="{{ route('media.file', ['path' => ltrim($filePath, '/')]) }}" target="_blank"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                View
+                            </a>
+                            <a href="{{ route('media.file', ['path' => ltrim($filePath, '/'), 'download' => 1]) }}"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                                <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download
+                            </a>
+                        </div>
+                    @else
+                        <span class="text-xs font-medium text-slate-400">No file</span>
+                    @endif
+                </div>
+            @empty
+                <div class="rounded-lg border border-dashed border-slate-200 py-10 text-center">
+                    <svg class="mx-auto h-10 w-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="mt-2 text-sm font-medium text-slate-500">No documents found for this employee.</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
 </x-app-layout>

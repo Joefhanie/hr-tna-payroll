@@ -59,10 +59,10 @@ class EmployeeController extends Controller
     public function index(Request $request): View
     {
         $request->validate([
-            'q'               => ['nullable', 'string', 'max:255'],
-            'status'          => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
             'employment_type' => ['nullable', 'integer', 'in:1,2,3,4'],
-            'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
         $employees = $this->buildQuery($request)
@@ -86,28 +86,28 @@ class EmployeeController extends Controller
         }
 
         $request->validate([
-            'q'               => ['nullable', 'string', 'max:255'],
-            'status'          => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
             'employment_type' => ['nullable', 'integer', 'in:1,2,3,4'],
-            'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
         $employees = $this->buildQuery($request)->get();
         $filename = "employees_export_" . now()->format('Ymd_His') . ".csv";
 
         $responseHeaders = [
-            'Content-type'        => 'text/csv',
+            'Content-type' => 'text/csv',
             'Content-Disposition' => "attachment; filename={$filename}",
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         return response()->stream(function () use ($employees) {
             $file = fopen('php://output', 'w');
 
             // Add UTF-8 BOM for proper encoding support in Excel
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             fputcsv($file, [
                 'ID',
@@ -227,7 +227,7 @@ class EmployeeController extends Controller
                 $masterlist = Masterlist::find($masterlistId);
             }
 
-            if (! $masterlist) {
+            if (!$masterlist) {
                 $masterlist = Masterlist::create([
                     'name' => trim(collect([
                         $validated['first_name'] ?? '',
@@ -237,8 +237,7 @@ class EmployeeController extends Controller
                     'contact_number' => (string) ($validated['phone'] ?? ''),
                     'email' => $validated['email'],
                     'emergency_contact' => '',
-                    'company_id' => 1,
-                    'uid' => (string) Str::uuid(),
+                    'uid' => null,
                     'is_admin' => 0,
                     'status' => (int) $validated['status'],
                     'created_by' => (int) auth()->id(),
@@ -521,7 +520,7 @@ class EmployeeController extends Controller
         $employees = $this->temporaryAccessEmployeesQuery()
             ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
             ->get()
-            ->filter(fn (Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
+            ->filter(fn(Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
             ->values();
 
         $allEmployees = $this->temporaryAccessEmployeesQuery()
@@ -554,7 +553,7 @@ class EmployeeController extends Controller
         $employees = $this->temporaryAccessEmployeesQuery()
             ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
             ->get()
-            ->filter(fn (Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
+            ->filter(fn(Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
             ->values();
 
         $filename = 'temporary_access_' . now()->format('Ymd_His') . '.csv';
@@ -645,9 +644,13 @@ class EmployeeController extends Controller
     {
         abort_if(auth()->user()->role !== 4, 403, 'Unauthorized access to temporary access details.');
 
-        $employee->load(['department', 'position', 'user.temporaryAssignments' => function ($query) {
-            $query->orderBy('created_at', 'desc')->with('grantedBy');
-        }]);
+        $employee->load([
+            'department',
+            'position',
+            'user.temporaryAssignments' => function ($query) {
+                $query->orderBy('created_at', 'desc')->with('grantedBy');
+            }
+        ]);
 
         return view('employees.temporary-access-show', compact('employee'));
     }
@@ -658,8 +661,8 @@ class EmployeeController extends Controller
     private function temporaryAccessEmployeesQuery()
     {
         return Employee::whereDoesntHave('user', function ($query) {
-                $query->whereIn('role', [2, 4]);
-            });
+            $query->whereIn('role', [2, 4]);
+        });
     }
 
     /**

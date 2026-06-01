@@ -628,7 +628,7 @@ class SelfServiceController extends Controller
         EmployeeDocument::create($attributes);
 
         return redirect()
-            ->route('self-service.profile', $employee)
+            ->back()
             ->with('success', 'Document uploaded successfully.');
     }
 
