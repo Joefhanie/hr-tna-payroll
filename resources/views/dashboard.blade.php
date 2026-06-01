@@ -120,7 +120,7 @@
                         <div class="rounded-2xl border border-slate-200 px-4 py-3.5">
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
-                                    <p class="truncate text-[0.98rem] font-semibold text-slate-950">{{ $attendance->user->display_name }}</p>
+                                    <p class="truncate text-[0.98rem] font-semibold text-slate-950">{{ $attendance->user?->display_name ?? $attendance->employee?->full_name ?? 'Unknown' }}</p>
                                     <p class="mt-1 text-sm text-slate-500">In: {{ $attendance->check_in ? $attendance->check_in->format('H:i') : '--' }} <span class="px-1.5 text-slate-300">|</span> Out: {{ $attendance->check_out ? $attendance->check_out->format('H:i') : '--' }}</p>
                                 </div>
                                 @php $s = $attendance->status; @endphp

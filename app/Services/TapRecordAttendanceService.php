@@ -167,16 +167,7 @@ class TapRecordAttendanceService
 
     public function syncForTapRecord(object $tapRecord): ?Attendance
     {
-        $employeeId = $tapRecord->masterlist_id ?? $tapRecord->employee_id ?? null;
-
-        if (!$employeeId) {
-            return null;
-        }
-
-        $employee = Employee::with(['user', 'shiftAssignments.shift'])
-            ->where('masterlist_id', $employeeId)
-            ->first()
-            ?? Employee::with(['user', 'shiftAssignments.shift'])->find($tapRecord->employee_id ?? null);
+        $employee = $this->resolveEmployeeFromTapRecord($tapRecord);
 
         if (!$employee || !$employee->user) {
             return null;
@@ -201,20 +192,26 @@ class TapRecordAttendanceService
         }
 
         $employeeRefs = $tapRecords
-            ->map(function ($tapRecord) {
-                return $tapRecord->masterlist_id ?? $tapRecord->employee_id;
+            ->flatMap(function ($tapRecord) {
+                return [$tapRecord->masterlist_id, $tapRecord->employee_id];
             })
             ->filter()
             ->unique()
             ->values();
 
-        $employees = Employee::with(['user', 'shiftAssignments.shift'])
+        $employeesById = Employee::with(['user', 'shiftAssignments.shift'])
+            ->whereIn('id', $employeeRefs)
+            ->get()
+            ->keyBy('id');
+
+        $employeesByMasterlist = Employee::with(['user', 'shiftAssignments.shift'])
             ->whereIn('masterlist_id', $employeeRefs)
             ->get()
             ->keyBy('masterlist_id');
 
-        $recordsByEmployeeDate = $tapRecords->groupBy(function ($tapRecord) {
-            $employeeRef = $tapRecord->masterlist_id ?? $tapRecord->employee_id;
+        $recordsByEmployeeDate = $tapRecords->groupBy(function ($tapRecord) use ($employeesByMasterlist, $employeesById) {
+            $employee = $this->resolveEmployeeFromTapRecord($tapRecord, $employeesByMasterlist, $employeesById);
+            $employeeRef = $employee?->masterlist_id ?? $employee?->id ?? ($tapRecord->masterlist_id ?? $tapRecord->employee_id);
 
             return $employeeRef . '|' . Carbon::parse($tapRecord->time)->toDateString();
         });
@@ -223,7 +220,8 @@ class TapRecordAttendanceService
 
         foreach ($recordsByEmployeeDate as $groupKey => $records) {
             [$employeeRef, $tapDate] = explode('|', $groupKey, 2);
-            $employee = $employees->get((int) $employeeRef);
+            $employee = $employeesByMasterlist->get((int) $employeeRef)
+                ?? $employeesById->get((int) $employeeRef);
 
             if (!$employee || !$employee->user) {
                 continue;
@@ -235,6 +233,32 @@ class TapRecordAttendanceService
         }
 
         return $synced;
+    }
+
+    private function resolveEmployeeFromTapRecord(object $tapRecord, ?Collection $employeesByMasterlist = null, ?Collection $employeesById = null): ?Employee
+    {
+        $masterlistId = $tapRecord->masterlist_id ?? null;
+        $employeeId = $tapRecord->employee_id ?? null;
+
+        if ($employeesByMasterlist && $masterlistId && $employeesByMasterlist->has((int) $masterlistId)) {
+            return $employeesByMasterlist->get((int) $masterlistId);
+        }
+
+        if ($employeesById && $masterlistId && $employeesById->has((int) $masterlistId)) {
+            return $employeesById->get((int) $masterlistId);
+        }
+
+        if ($employeesById && $employeeId && $employeesById->has((int) $employeeId)) {
+            return $employeesById->get((int) $employeeId);
+        }
+
+        return Employee::with(['user', 'shiftAssignments.shift'])
+            ->when($masterlistId, function ($query) use ($masterlistId) {
+                $query->where('masterlist_id', $masterlistId);
+            }, function ($query) use ($employeeId) {
+                $query->whereKey($employeeId);
+            })
+            ->first();
     }
 
     protected function resolveStatus(?\App\Models\Shift $shift, ?Carbon $timeIn, ?Carbon $timeOut): int

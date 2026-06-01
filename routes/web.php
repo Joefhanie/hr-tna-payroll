@@ -16,6 +16,7 @@ use App\Http\Controllers\SelfServiceController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
 use App\Models\Employee;
+use App\Models\Masterlist;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -180,10 +181,18 @@ Route::middleware('auth')->group(function () {
 
         $employee = Employee::findOrFail($validated['employee_id']);
         $tapTime = Carbon::parse($validated['tap_time']);
+        $masterlistId = $employee->masterlist?->id
+            ?? Masterlist::query()->where('emp_id', $employee->id)->value('id');
+
+        if (!$masterlistId) {
+            return back()->withErrors([
+                'employee_id' => 'Selected employee is not linked to a masterlist record.',
+            ])->withInput();
+        }
 
         DB::table('tap_records')->insert([
             'employee_id' => $employee->id,
-            'masterlist_id' => $employee->masterlist_id,
+            'masterlist_id' => $masterlistId,
             'machine_id' => $validated['machine_id'],
             'time' => $tapTime->toDateTimeString(),
             'function' => $validated['function'],
