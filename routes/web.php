@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
 
         $tapRecords = DB::table('tap_records as tap')
             ->leftJoin('employees as employee_by_id', 'tap.employee_id', '=', 'employee_by_id.id')
-            ->leftJoin('employees as employee_by_masterlist', 'tap.masterlist_id', '=', 'employee_by_masterlist.id')
+            ->leftJoin('employees as employee_by_masterlist', 'tap.masterlist_id', '=', 'employee_by_masterlist.masterlist_id')
             ->leftJoin('users as creator', 'tap.created_by', '=', 'creator.id')
             ->leftJoin('users as updater', 'tap.updated_by', '=', 'updater.id')
             ->leftJoin('users as deleter', 'tap.deleted_by', '=', 'deleter.id')
@@ -121,9 +121,9 @@ Route::middleware('auth')->group(function () {
             ->paginate(25);
 
         $tapRecords->getCollection()->transform(function ($record) {
-            $employeeFirst = $record->employee_first_name_by_id ?? $record->employee_first_name_by_masterlist;
-            $employeeMiddle = $record->employee_middle_name_by_id ?? $record->employee_middle_name_by_masterlist;
-            $employeeLast = $record->employee_last_name_by_id ?? $record->employee_last_name_by_masterlist;
+            $employeeFirst = $record->employee_first_name_by_masterlist ?? $record->employee_first_name_by_id;
+            $employeeMiddle = $record->employee_middle_name_by_masterlist ?? $record->employee_middle_name_by_id;
+            $employeeLast = $record->employee_last_name_by_masterlist ?? $record->employee_last_name_by_id;
 
             $employeeParts = array_filter([
                 $employeeFirst,
@@ -133,10 +133,10 @@ Route::middleware('auth')->group(function () {
 
             $record->employee_label = $employeeParts
                 ? trim(implode(' ', $employeeParts))
-                : ($record->employee_id ? 'Employee #' . $record->employee_id : 'Unlinked record');
+                : ($record->masterlist_id ? 'Masterlist #' . $record->masterlist_id : ($record->employee_id ? 'Employee #' . $record->employee_id : 'Unlinked record'));
 
-            $record->employee_code_label = $record->employee_code_by_id
-                ?? $record->employee_code_by_masterlist
+            $record->employee_code_label = $record->employee_code_by_masterlist
+                ?? $record->employee_code_by_id
                 ?? 'N/A';
 
             $record->created_by_label = $record->created_by_name
@@ -183,7 +183,7 @@ Route::middleware('auth')->group(function () {
 
         DB::table('tap_records')->insert([
             'employee_id' => $employee->id,
-            'masterlist_id' => $employee->id,
+            'masterlist_id' => $employee->masterlist_id,
             'machine_id' => $validated['machine_id'],
             'time' => $tapTime->toDateTimeString(),
             'function' => $validated['function'],

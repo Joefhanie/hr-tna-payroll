@@ -238,7 +238,7 @@ class EmployeeController extends Controller
                     'emergency_contact' => '',
                     'uid' => null,
                     'is_admin' => 0,
-                    'status' => (int) $validated['status'],
+                    'status' => 1,
                     'created_by' => (int) auth()->id(),
                 ]);
             } else {
