@@ -24,7 +24,7 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
                 <div class="relative">
                     <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input id="ta-search" name="q" type="search" value="{{ $filters['q'] ?? '' }}" placeholder="Search by name, code, email, position…"
+                    <input id="ta-search" name="q" type="search" value="{{ $filters['q'] ?? '' }}" placeholder="Search by name, code, etc..."
                            class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
             </div>

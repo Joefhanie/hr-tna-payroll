@@ -62,6 +62,13 @@
                     @endforeach
                 </select>
             </div>
+            <div class="min-w-[180px]">
+                <label class="block text-xs font-medium text-slate-600 mb-1">Sort</label>
+                <select name="sort" id="filterSort" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <option value="id_desc" {{ ($filters['sort'] ?? 'id_desc') === 'id_desc' ? 'selected' : '' }}>Descending</option>
+                    <option value="id_asc" {{ ($filters['sort'] ?? '') === 'id_asc' ? 'selected' : '' }}>Ascending</option>
+                </select>
+            </div>
             <button type="button" id="emp-clear" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
             </button>
@@ -257,6 +264,7 @@
         const statusSelect = document.getElementById('filterStatus');
         const empTypeSelect = document.getElementById('filterEmploymentType');
         const deptSelect = document.getElementById('filterDepartment');
+        const sortSelect = document.getElementById('filterSort');
         const clearButton = document.getElementById('emp-clear');
         const exportButton = document.getElementById('btnExport');
 
@@ -268,6 +276,7 @@
             const status = statusSelect?.value || '';
             const employmentType = empTypeSelect?.value || '';
             const departmentId = deptSelect?.value || '';
+            const sort = sortSelect?.value || '';
 
             let url = "{{ route('employees.export') }}";
             const params = [];
@@ -275,6 +284,7 @@
             if (status) params.push(`status=${encodeURIComponent(status)}`);
             if (employmentType) params.push(`employment_type=${encodeURIComponent(employmentType)}`);
             if (departmentId) params.push(`department_id=${encodeURIComponent(departmentId)}`);
+            if (sort) params.push(`sort=${encodeURIComponent(sort)}`);
             if (params.length > 0) {
                 url += `?${params.join('&')}`;
             }
@@ -309,6 +319,57 @@
         statusSelect?.addEventListener('change', filterEmployeeRows);
         empTypeSelect?.addEventListener('change', filterEmployeeRows);
         deptSelect?.addEventListener('change', filterEmployeeRows);
+        function sortEmployeeRows(sortKey) {
+            const tbody = document.querySelector('#emp-table tbody');
+            if (!tbody) return;
+
+            const rows = Array.from(tbody.querySelectorAll(':scope > tr')).filter(row => {
+                if (row.id === 'noResultsRow' || row.id === 'emptyRow') return false;
+                if (row.querySelector('td[colspan]')) return false;
+                return true;
+            });
+
+            const getId = row => parseInt((row.querySelector('td')?.textContent || '').trim()) || 0;
+            const getHireDate = row => {
+                const cell = row.querySelectorAll('td')[5];
+                const txt = cell ? cell.textContent.trim() : '';
+                // Expecting YYYY-MM-DD format; fall back to epoch 0
+                const d = txt ? new Date(txt) : new Date(0);
+                return isNaN(d.getTime()) ? new Date(0) : d;
+            };
+            const getLastName = row => {
+                const nameEl = row.querySelector('.emp-name');
+                const full = nameEl ? nameEl.textContent.trim() : '';
+                const parts = full.split(/\s+/);
+                return parts.length ? parts[parts.length - 1].toLowerCase() : '';
+            };
+
+            rows.sort((a, b) => {
+                switch (sortKey) {
+                    case 'id_asc':
+                        return getId(a) - getId(b);
+                    case 'hire_date_desc':
+                        return getHireDate(b) - getHireDate(a);
+                    case 'hire_date_asc':
+                        return getHireDate(a) - getHireDate(b);
+                    case 'last_name_asc':
+                        return getLastName(a).localeCompare(getLastName(b));
+                    case 'last_name_desc':
+                        return getLastName(b).localeCompare(getLastName(a));
+                    case 'id_desc':
+                    default:
+                        return getId(b) - getId(a);
+                }
+            });
+
+            // Re-append rows in new order
+            rows.forEach(r => tbody.appendChild(r));
+        }
+
+        sortSelect?.addEventListener('change', function() {
+            updateExportUrl();
+            sortEmployeeRows(this.value || 'id_desc');
+        });
 
         searchInput?.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
@@ -321,10 +382,16 @@
             if (statusSelect) statusSelect.value = '';
             if (empTypeSelect) empTypeSelect.value = '';
             if (deptSelect) deptSelect.value = '';
+            if (sortSelect) sortSelect.value = 'id_desc';
+            updateExportUrl();
+            sortEmployeeRows('id_desc');
+            // Also refresh client-side filters
             filterEmployeeRows();
         });
 
         filterEmployeeRows();
+        // Apply initial client-side sort to match the Sort select
+        sortEmployeeRows(sortSelect?.value || 'id_desc');
     </script>
 
 </x-app-layout>

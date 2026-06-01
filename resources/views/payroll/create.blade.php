@@ -45,12 +45,43 @@
 
             <div class="md:col-span-2">
                 <div class="card overflow-hidden">
+                    @php
+                        $employeeDepartments = $employees->pluck('department.name')->filter()->unique()->values();
+                    @endphp
                     <div class="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                         <div>
                             <h2 class="text-lg font-semibold text-slate-900">Select Employees</h2>
                             <p class="mt-1 text-sm text-slate-600">Choose who should be included in this pay run.</p>
                         </div>
                         <button type="button" id="toggleSelectAllBtn" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Select All</button>
+                    </div>
+
+                    <div class="border-b border-slate-200 bg-white px-6 py-4">
+                        <div class="flex flex-wrap gap-3 items-end">
+                            <div class="flex-1 min-w-[180px]">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Search</label>
+                                <div class="relative">
+                                    <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <input type="text" id="payRunEmployeeSearch" placeholder="Search employee name…"
+                                        class="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                            <div class="min-w-[180px]">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
+                                <select id="payRunDepartmentFilter" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">All Departments</option>
+                                    @foreach($employeeDepartments as $departmentName)
+                                        <option value="{{ $departmentName }}">{{ $departmentName }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="button" id="payRunClearFilters" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                                Clear
+                            </button>
+                        </div>
+                        <p id="payRunFilterCount" class="mt-2 text-xs text-slate-400 hidden"></p>
                     </div>
 
                     <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -99,11 +130,16 @@
     <x-slot:scripts>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                const activePayRuns = {!! json_encode($activePayRuns ?? []) !!};
                 const btn = document.getElementById('toggleSelectAllBtn');
                 const checkboxes = document.querySelectorAll('.employee-checkbox');
+                const searchInput = document.getElementById('payRunEmployeeSearch');
+                const departmentFilter = document.getElementById('payRunDepartmentFilter');
+                const clearFiltersBtn = document.getElementById('payRunClearFilters');
+                const filterCount = document.getElementById('payRunFilterCount');
+                const rows = Array.from(document.querySelectorAll('.employee-row'));
                 const startInput = document.querySelector('input[name="period_start"]');
                 const endInput = document.querySelector('input[name="period_end"]');
-                const activePayRuns = @json($activePayRuns ?? []);
                 const deductGovToggle = document.getElementById('deductGovContribToggle');
                 const deductGovHelp = document.getElementById('deductGovContribHelp');
 
@@ -156,6 +192,35 @@
                         btn.textContent = 'Unselect All';
                     } else {
                         btn.textContent = 'Select All';
+                    }
+                }
+
+                function applyEmployeeFilters() {
+                    const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+                    const department = (departmentFilter?.value || '').trim().toLowerCase();
+
+                    let visibleCount = 0;
+
+                    rows.forEach(row => {
+                        const employeeName = (row.querySelector('td:nth-child(2)')?.textContent || '').trim().toLowerCase();
+                        const employeeDepartment = (row.querySelector('td:nth-child(3)')?.textContent || '').trim().toLowerCase();
+
+                        const matchesSearch = !searchTerm || employeeName.includes(searchTerm);
+                        const matchesDepartment = !department || employeeDepartment === department;
+                        const visible = matchesSearch && matchesDepartment;
+
+                        row.style.display = visible ? '' : 'none';
+                        if (visible) visibleCount++;
+                    });
+
+                    if (filterCount) {
+                        const isFiltered = searchTerm || department;
+                        if (isFiltered) {
+                            filterCount.textContent = `Showing ${visibleCount} of ${rows.length} employee${rows.length !== 1 ? 's' : ''}`;
+                            filterCount.classList.remove('hidden');
+                        } else {
+                            filterCount.classList.add('hidden');
+                        }
                     }
                 }
 
@@ -226,9 +291,18 @@
                 startInput?.addEventListener('change', updateGovernmentContributionToggle);
                 endInput?.addEventListener('change', updateGovernmentContributionToggle);
 
+                searchInput?.addEventListener('input', applyEmployeeFilters);
+                departmentFilter?.addEventListener('change', applyEmployeeFilters);
+                clearFiltersBtn?.addEventListener('click', function () {
+                    if (searchInput) searchInput.value = '';
+                    if (departmentFilter) departmentFilter.value = '';
+                    applyEmployeeFilters();
+                });
+
                 // Initialize state
                 updateEmployeeAvailability();
                 updateGovernmentContributionToggle();
+                applyEmployeeFilters();
             });
         </script>
     </x-slot:scripts>
