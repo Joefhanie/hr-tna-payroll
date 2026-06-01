@@ -505,8 +505,18 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</td>
-                                <td class="px-4 py-3 text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</td>
+                                <td class="px-4 py-3 text-slate-900">
+                                    <span>{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</span>
+                                    @if($attendance->break_in)
+                                        <div class="text-[10px] text-slate-400 mt-0.5"><span class="font-semibold">{{ $tap3Remark }}:</span> {{ $attendance->break_in }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-slate-900">
+                                    <span>{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</span>
+                                    @if($attendance->break_out)
+                                        <div class="text-[10px] text-slate-400 mt-0.5"><span class="font-semibold">{{ $tap4Remark }}:</span> {{ $attendance->break_out }}</div>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ $pillClass }}">{{ $statusLabel }}</span>
                                 </td>
@@ -639,12 +649,18 @@
                                     <span class="font-semibold text-slate-800 text-base">
                                         {{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}
                                     </span>
+                                    @if($attendance->break_in)
+                                        <span class="block text-[10px] text-slate-400 mt-1"><span class="font-semibold">{{ $tap3Remark }}:</span> {{ $attendance->break_in }}</span>
+                                    @endif
                                 </div>
                                 <div>
                                     <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time Out</span>
                                     <span class="font-semibold text-slate-800 text-base">
                                         {{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}
                                     </span>
+                                    @if($attendance->break_out)
+                                        <span class="block text-[10px] text-slate-400 mt-1"><span class="font-semibold">{{ $tap4Remark }}:</span> {{ $attendance->break_out }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -804,6 +820,8 @@
     <script>
         const calendarAttendanceData = @json($calendarData);
         const calendarStatusLabels = @json($attendanceStatusLabels);
+        const tap3Remark = @json($tap3Remark);
+        const tap4Remark = @json($tap4Remark);
 
         const calendarStatusClasses = {
             '1': 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -1003,12 +1021,46 @@
                     }
                 }
 
+                if (record.break_duration > 0) {
+                    shiftBadgesHtml += `
+                        <span class="text-[9px] text-slate-400 font-medium" title="Break Duration">
+                            <i class="ti ti-coffee"></i> ${record.break_duration}m break
+                        </span>
+                    `;
+                }
+
                 const card = document.createElement('div');
-                card.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-sm transition hover:shadow-md';
+                card.className = 'bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm transition hover:shadow-md';
+
+                let breakRowHtml = '';
+                if (record.break_in) {
+                    const bIn  = formatTimeValue(record.break_in);
+                    const bOut = record.break_out ? formatTimeValue(record.break_out) : '—';
+                    breakRowHtml = `
+                        <hr class="border-slate-100 my-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">${tap3Remark}:</span>
+                            <span class="text-[0.7rem] font-bold text-slate-600">${bIn}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">${tap4Remark}:</span>
+                            <span class="text-[0.7rem] font-bold text-slate-600">${bOut}</span>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
-                    <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-0.5">In: ${timeIn}</p>
-                    <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Out: ${timeOut}</p>
-                    <p class="text-sm font-bold text-[#06112e] mb-3">${employeeName}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">IN:</span>
+                        <span class="text-sm font-semibold text-slate-800">${timeIn}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-0.5">
+                        <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">OUT:</span>
+                        <span class="text-sm font-semibold text-slate-800">${timeOut}</span>
+                    </div>
+                    ${breakRowHtml}
+                    <hr class="border-slate-100 my-2">
+                    <p class="text-sm font-bold text-[#06112e] mb-2">${employeeName}</p>
                     <div class="flex flex-wrap gap-1.5 items-center">
                         <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider ${statusClass}">${statusLabel}</span>
                         ${shiftBadgesHtml}

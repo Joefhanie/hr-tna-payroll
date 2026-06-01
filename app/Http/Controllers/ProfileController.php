@@ -308,7 +308,10 @@ class ProfileController extends Controller
             case 4:
                 return 'On Leave';
             case 6:
-                return 'On Break';
+                $breakRemark = \Illuminate\Support\Facades\Cache::remember('break_remark', 3600, function () {
+                    return \Illuminate\Support\Facades\DB::table('function_settings')->where('setting_value', 3)->value('remarks') ?: 'On Break';
+                });
+                return $breakRemark;
             default:
                 return 'Present';
         }

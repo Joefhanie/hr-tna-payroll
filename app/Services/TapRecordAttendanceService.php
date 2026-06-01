@@ -11,10 +11,6 @@ use Illuminate\Support\Facades\DB;
 
 class TapRecordAttendanceService
 {
-    protected ?bool $useMachine = null;
-
-    protected ?array $functionSettingIdsByValue = null;
-
     public function __construct(protected ShiftService $shiftService)
     {
     }
@@ -53,7 +49,7 @@ class TapRecordAttendanceService
         //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
         $checkInTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 1);
         $checkOutTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 2);
-        $hasFunctionCodes = $checkInTaps->isNotEmpty() || $checkOutTaps->isNotEmpty();
+        $hasFunctionCodes = $tapRecords->contains(fn($t) => isset($t->function) && in_array((int) $t->function, [1, 2, 3, 4], true));
 
         // Use function-specific taps when available; fall back to first/last for
         // records without a function code (legacy / untyped imports).
@@ -61,11 +57,28 @@ class TapRecordAttendanceService
             ? $checkInTaps->first()
             : ($hasFunctionCodes ? null : $tapRecords->first());
 
-        if (!$timeInTap) {
+        $existingInPunch = Attendance::query()
+            ->where('emp_id', $employee->id)
+            ->where('attendance_date', $dateString)
+            ->where('punch_type', 'in')
+            ->first();
+
+        $manualTimeIn = null;
+        if ($existingInPunch && $existingInPunch->time) {
+            $existingTimeStr = Carbon::parse($existingInPunch->time)->format('H:i:s');
+            $isFromTap = $tapRecords->contains(function ($t) use ($existingTimeStr) {
+                return $t->time && Carbon::parse($t->time)->format('H:i:s') === $existingTimeStr;
+            });
+            if (!$isFromTap) {
+                $manualTimeIn = Carbon::parse($existingInPunch->time);
+            }
+        }
+
+        if (!$timeInTap && !$existingInPunch) {
             return null;
         }
 
-        $timeIn = Carbon::parse($timeInTap->time);
+        $timeIn = $manualTimeIn ?? ($timeInTap ? Carbon::parse($timeInTap->time) : Carbon::parse($existingInPunch->time));
 
         $timeOutTap = null;
 
@@ -93,11 +106,32 @@ class TapRecordAttendanceService
                 : $tapRecords->last();
         }
 
-        $timeOut = $timeOutTap ? Carbon::parse($timeOutTap->time) : null;
+        $existingOutPunch = Attendance::query()
+            ->where('emp_id', $employee->id)
+            ->where('attendance_date', $dateString)
+            ->where('punch_type', 'out')
+            ->first();
 
-        $status = ($mappedPunches !== null && ($mappedPunches['is_on_break'] ?? false))
-            ? 6
-            : $this->resolveStatus($shift, $timeIn, $timeOut);
+        $manualTimeOut = null;
+        if ($existingOutPunch && $existingOutPunch->time) {
+            $existingTimeStr = Carbon::parse($existingOutPunch->time)->format('H:i:s');
+            $isFromTap = $tapRecords->contains(function ($t) use ($existingTimeStr) {
+                return $t->time && Carbon::parse($t->time)->format('H:i:s') === $existingTimeStr;
+            });
+            if (!$isFromTap) {
+                $manualTimeOut = Carbon::parse($existingOutPunch->time);
+            }
+        }
+
+        $timeOut = $manualTimeOut ?? ($timeOutTap ? Carbon::parse($timeOutTap->time) : null);
+
+        $lastBreakTap = $tapRecords
+            ->filter(fn($t) => isset($t->function) && in_array((int) $t->function, [3, 4], true))
+            ->sortBy(fn($t) => Carbon::parse($t->time)->timestamp)
+            ->last();
+        $isOnBreak = $lastBreakTap && (int) $lastBreakTap->function === 3;
+
+        $status = $isOnBreak ? 6 : $this->resolveStatus($shift, $timeIn, $timeOut);
 
         $attendance = Attendance::upsertPunch(
             $employee->id,
@@ -241,167 +275,5 @@ class TapRecordAttendanceService
         }
 
         return $assignments->first()?->shift;
-    }
-
-    private function resolvePunchesFromFunctionSettings(Collection $tapRecords): ?array
-    {
-        if (!$this->isMachineEnabled()) {
-            return null;
-        }
-
-        $functionColumn = $this->resolveTapFunctionColumn($tapRecords);
-
-        if ($functionColumn === null) {
-            return null;
-        }
-
-        $functionSettingIdsByValue = $this->getFunctionSettingIdsByValue();
-
-        if (!isset($functionSettingIdsByValue[1], $functionSettingIdsByValue[2])) {
-            return null;
-        }
-
-        $timeInCandidates = $this->resolveFunctionCandidates($functionSettingIdsByValue, 1);
-        $timeOutCandidates = $this->resolveFunctionCandidates($functionSettingIdsByValue, 2);
-        $breakInCandidates = isset($functionSettingIdsByValue[3])
-            ? $this->resolveFunctionCandidates($functionSettingIdsByValue, 3)
-            : [];
-        $breakOutCandidates = isset($functionSettingIdsByValue[4])
-            ? $this->resolveFunctionCandidates($functionSettingIdsByValue, 4)
-            : [];
-
-        $timeInTap = $tapRecords->first(function ($tap) use ($functionColumn, $timeInCandidates) {
-            return in_array((int) data_get($tap, $functionColumn), $timeInCandidates, true);
-        });
-
-        if (!$timeInTap) {
-            return null;
-        }
-
-        $timeInMoment = Carbon::parse($timeInTap->time);
-        $timeOutTap = $tapRecords
-            ->filter(function ($tap) use ($functionColumn, $timeOutCandidates, $timeInMoment) {
-                if (!in_array((int) data_get($tap, $functionColumn), $timeOutCandidates, true)) {
-                    return false;
-                }
-
-                return Carbon::parse($tap->time)->gte($timeInMoment);
-            })
-            ->last();
-
-        return [
-            'time_in' => $timeInTap,
-            'time_out' => $timeOutTap,
-            'break_in' => $this->resolveTapBySettingValue($tapRecords, $functionColumn, 3),
-            'break_out' => $this->resolveTapBySettingValue($tapRecords, $functionColumn, 4),
-            'is_on_break' => $this->isOnBreakState($tapRecords, $functionColumn, $breakInCandidates, $breakOutCandidates),
-        ];
-    }
-
-    private function isOnBreakState(Collection $tapRecords, string $functionColumn, array $breakInCandidates, array $breakOutCandidates): bool
-    {
-        if ($breakInCandidates === [] || $breakOutCandidates === []) {
-            return false;
-        }
-
-        $lastBreakTap = $tapRecords
-            ->filter(function ($tap) use ($functionColumn, $breakInCandidates, $breakOutCandidates) {
-                $tapFunction = (int) data_get($tap, $functionColumn);
-
-                return in_array($tapFunction, $breakInCandidates, true)
-                    || in_array($tapFunction, $breakOutCandidates, true);
-            })
-            ->sortBy(function ($tap) {
-                return Carbon::parse($tap->time)->timestamp;
-            })
-            ->last();
-
-        if (!$lastBreakTap) {
-            return false;
-        }
-
-        return in_array((int) data_get($lastBreakTap, $functionColumn), $breakInCandidates, true);
-    }
-
-    private function resolveTapBySettingValue(Collection $tapRecords, string $functionColumn, int $settingValue): mixed
-    {
-        $functionSettingIdsByValue = $this->getFunctionSettingIdsByValue();
-
-        if (!isset($functionSettingIdsByValue[$settingValue])) {
-            return null;
-        }
-
-        $candidates = $this->resolveFunctionCandidates($functionSettingIdsByValue, $settingValue);
-
-        return $tapRecords->first(function ($tap) use ($functionColumn, $candidates) {
-            return in_array((int) data_get($tap, $functionColumn), $candidates, true);
-        });
-    }
-
-    private function resolveFunctionCandidates(array $functionSettingIdsByValue, int $settingValue): array
-    {
-        $candidates = [$settingValue];
-        $mappedId = $functionSettingIdsByValue[$settingValue] ?? null;
-
-        if ($mappedId !== null) {
-            $candidates[] = (int) $mappedId;
-        }
-
-        return array_values(array_unique($candidates));
-    }
-
-    private function resolveTapFunctionColumn(Collection $tapRecords): ?string
-    {
-        $firstTap = $tapRecords->first();
-
-        if (!$firstTap) {
-            return null;
-        }
-
-        $tapColumns = array_keys(get_object_vars($firstTap));
-        $candidateColumns = [
-            'function',
-            'function_id',
-            'function_setting_id',
-            'setting_id',
-            'tap_function',
-        ];
-
-        foreach ($candidateColumns as $candidateColumn) {
-            if (in_array($candidateColumn, $tapColumns, true)) {
-                return $candidateColumn;
-            }
-        }
-
-        return null;
-    }
-
-    private function getFunctionSettingIdsByValue(): array
-    {
-        if ($this->functionSettingIdsByValue !== null) {
-            return $this->functionSettingIdsByValue;
-        }
-
-        $this->functionSettingIdsByValue = DB::table('function_settings')
-            ->whereNotNull('setting_value')
-            ->orderBy('id')
-            ->get(['id', 'setting_value'])
-            ->mapWithKeys(function ($row) {
-                return [(int) $row->setting_value => (int) $row->id];
-            })
-            ->all();
-
-        return $this->functionSettingIdsByValue;
-    }
-
-    private function isMachineEnabled(): bool
-    {
-        if ($this->useMachine !== null) {
-            return $this->useMachine;
-        }
-
-        $this->useMachine = (bool) CompanySetting::current()->use_machine;
-
-        return $this->useMachine;
     }
 }
