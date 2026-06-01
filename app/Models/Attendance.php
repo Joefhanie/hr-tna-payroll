@@ -28,6 +28,7 @@ class Attendance extends Model
         'check_out',
         'check_in_time',
         'check_out_time',
+        'employee_display_name',
     ];
 
     protected $casts = [
@@ -105,6 +106,14 @@ class Attendance extends Model
         }
 
         return $this->normalizeTimeString($this->pairedPunchRawTime('out'));
+    }
+
+    public function getEmployeeDisplayNameAttribute(): string
+    {
+        return $this->employee?->full_name
+            ?? $this->user?->display_name
+            ?? $this->user?->name
+            ?? 'Unknown';
     }
 
     public function setUserIdAttribute($value): void

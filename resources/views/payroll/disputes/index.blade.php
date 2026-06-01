@@ -18,7 +18,7 @@
             </a>
             @endif
             <button type="button" id="openDisputeModal"
-                class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
+                class="bg-brand-primary text-white px-5 py-2.5 rounded-lg hover:opacity-90 transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
                 <i class="ti ti-plus text-base"></i> File a Dispute
             </button>
         </div>
@@ -109,7 +109,7 @@
                         data-status="{{ strtolower($statusLabel) }}"
                         data-date="{{ $dispute->created_at->toDateString() }}"
                         data-reason="{{ strtolower($dispute->dispute_reason ?? '') }}">
-                        
+
                         @if($isHR)
                         <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
                             {{ $dispute->employee?->full_name ?? '—' }}
@@ -200,7 +200,7 @@
             </div>
             <form method="POST" action="{{ route('payroll.disputes.store') }}" class="px-6 py-5 space-y-4">
                 @csrf
-                
+
                 @if($isHR)
                 <div>
                     <label class="block text-xs font-medium text-slate-700 mb-1">Employee <span class="text-rose-500">*</span></label>
@@ -258,7 +258,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition">
+                        class="px-5 py-2 rounded-xl bg-brand-primary text-sm font-medium text-white hover:opacity-90 transition">
                         Submit Dispute
                     </button>
                 </div>
@@ -292,7 +292,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700 transition flex items-center gap-2">
+                        class="px-5 py-2 rounded-xl bg-brand-primary text-sm font-medium text-white hover:opacity-90 transition flex items-center gap-2">
                         <i class="ti ti-check"></i> Mark Resolved
                     </button>
                 </div>
@@ -325,7 +325,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-rose-600 text-sm font-medium text-white hover:bg-rose-700 transition flex items-center gap-2">
+                        class="px-5 py-2 rounded-xl bg-brand-primary text-sm font-medium text-white hover:opacity-90 transition">
                         <i class="ti ti-x"></i> Reject Dispute
                     </button>
                 </div>
@@ -364,7 +364,7 @@
                     row.dataset.reason.includes(q);
 
                 const matchStatus = !status || row.dataset.status === status;
-                
+
                 const rowDate = row.dataset.date;
                 const matchDate = (!startDate || rowDate >= startDate) && (!endDate || rowDate <= endDate);
 
@@ -470,7 +470,7 @@
                 try {
                     const res = await fetch(`{{ url('/payroll/disputes/api/payslips') }}/${empId}`);
                     const data = await res.json();
-                    
+
                     if (data.length === 0) {
                         psSelect.innerHTML = '<option value="">No recent payslips found.</option>';
                     } else {
@@ -505,7 +505,7 @@
             try {
                 const res = await fetch(`{{ url('/payroll/disputes/api/payslip-items') }}/${payslipId}`);
                 const data = await res.json();
-                
+
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(item => {
                         currentPayslipItems[item.id] = item.amount;

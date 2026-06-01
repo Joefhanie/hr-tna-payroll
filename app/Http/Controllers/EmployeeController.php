@@ -59,16 +59,44 @@ class EmployeeController extends Controller
     public function index(Request $request): View
     {
         $request->validate([
-            'q' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'q'               => ['nullable', 'string', 'max:255'],
+            'status'          => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'sort'            => ['nullable', 'string', 'in:id_desc,id_asc,hire_date_desc,hire_date_asc,last_name_asc,last_name_desc'],
             'employment_type' => ['nullable', 'integer', 'in:1,2,3,4'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
-        $employees = Employee::with(['department', 'position', 'manager'])->get();
+        // Determine sort option (default to newest first)
+        $sort = $request->input('sort', 'id_desc');
+
+        $query = $this->buildQuery($request);
+        switch ($sort) {
+            case 'id_asc':
+                $query->orderBy('id');
+                break;
+            case 'hire_date_desc':
+                $query->orderByDesc('hire_date');
+                break;
+            case 'hire_date_asc':
+                $query->orderBy('hire_date');
+                break;
+            case 'last_name_asc':
+                $query->orderBy('last_name');
+                break;
+            case 'last_name_desc':
+                $query->orderByDesc('last_name');
+                break;
+            case 'id_desc':
+            default:
+                $query->orderByDesc('id');
+                break;
+        }
+
+        $employees = $query->get();
 
         $departments = Department::all();
-        $filters = $request->only(['q', 'status', 'employment_type', 'department_id']);
+        // Include sort in filters so the view can reflect current selection
+        $filters = $request->only(['q', 'status', 'employment_type', 'department_id', 'sort']);
 
         return view('employees.index', compact('employees', 'departments', 'filters'));
     }
@@ -91,7 +119,32 @@ class EmployeeController extends Controller
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
-        $employees = $this->buildQuery($request)->get();
+        // Apply the same sort logic to exports so exported order matches the UI
+        $sort = $request->input('sort', 'id_desc');
+        $exportQuery = $this->buildQuery($request);
+        switch ($sort) {
+            case 'id_asc':
+                $exportQuery->orderBy('id');
+                break;
+            case 'hire_date_desc':
+                $exportQuery->orderByDesc('hire_date');
+                break;
+            case 'hire_date_asc':
+                $exportQuery->orderBy('hire_date');
+                break;
+            case 'last_name_asc':
+                $exportQuery->orderBy('last_name');
+                break;
+            case 'last_name_desc':
+                $exportQuery->orderByDesc('last_name');
+                break;
+            case 'id_desc':
+            default:
+                $exportQuery->orderByDesc('id');
+                break;
+        }
+
+        $employees = $exportQuery->get();
         $filename = "employees_export_" . now()->format('Ymd_His') . ".csv";
 
         $responseHeaders = [

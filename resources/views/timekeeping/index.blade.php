@@ -473,8 +473,10 @@
                                 $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
                                 $employeeDisplayName = trim((string) (
-                                    optional($attendance->user->employee)->full_name
-                                    ?? ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown')
+                                    $attendance->employee?->full_name
+                                    ?? $attendance->user?->display_name
+                                    ?? $attendance->user?->name
+                                    ?? 'Unknown'
                                 ));
                                 $employeeNameParts = preg_split('/\s+/', $employeeDisplayName, -1, PREG_SPLIT_NO_EMPTY);
                                 if (count($employeeNameParts) >= 3) {
@@ -527,12 +529,16 @@
                                     <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ $pillClass }}">{{ $statusLabel }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-sm">
-                                    <a href="{{ route('timekeeping.show', $attendance->user) }}" class="text-slate-600 hover:text-slate-900 transition" title="View All Records">
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                    </a>
+                                    @if($attendance->user)
+                                        <a href="{{ route('timekeeping.show', $attendance->user) }}" class="text-slate-600 hover:text-slate-900 transition" title="View All Records">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+                                    @else
+                                        <span class="text-slate-300" title="No linked user">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -591,10 +597,12 @@
                         ];
                         $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
-                        $employeeDisplayName = trim((string) (
-                            optional($attendance->user->employee)->full_name
-                            ?? ($attendance->user->display_name ?? $attendance->user->name ?? 'Unknown')
-                        ));
+                            $employeeDisplayName = trim((string) (
+                                $attendance->employee?->full_name
+                                ?? $attendance->user?->display_name
+                                ?? $attendance->user?->name
+                                ?? 'Unknown'
+                            ));
                         $employeeNameParts = preg_split('/\s+/', $employeeDisplayName, -1, PREG_SPLIT_NO_EMPTY);
                         if (count($employeeNameParts) >= 3) {
                             $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
@@ -681,13 +689,17 @@
                                 @endif
                             </div>
                             <div>
-                                <a href="{{ route('timekeeping.show', $attendance->user) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 bg-slate-50 px-3 py-2 rounded-lg transition" title="View All Records">
-                                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    View Records
-                                </a>
+                                @if($attendance->user)
+                                    <a href="{{ route('timekeeping.show', $attendance->user) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 bg-slate-50 px-3 py-2 rounded-lg transition" title="View All Records">
+                                        <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        View Records
+                                    </a>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 border border-slate-200 bg-slate-50 px-3 py-2 rounded-lg" title="No linked user">View Records</span>
+                                @endif
                             </div>
                         </div>
                     </div>
