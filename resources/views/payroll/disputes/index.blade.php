@@ -539,7 +539,7 @@
         document.querySelectorAll('.btn-resolve').forEach(btn => {
             btn.addEventListener('click', function () {
                 resolveSubtitle.textContent = this.dataset.employee;
-                resolveForm.action = `/payroll/disputes/${this.dataset.id}/resolve`;
+                resolveForm.action = `{{ url('/payroll/disputes') }}/${this.dataset.id}/resolve`;
                 openModal(resolveModal);
             });
         });
@@ -554,7 +554,7 @@
         document.querySelectorAll('.btn-reject').forEach(btn => {
             btn.addEventListener('click', function () {
                 rejectSubtitle.textContent = this.dataset.employee;
-                rejectForm.action = `/payroll/disputes/${this.dataset.id}/reject`;
+                rejectForm.action = `{{ url('/payroll/disputes') }}/${this.dataset.id}/reject`;
                 openModal(rejectModal);
             });
         });

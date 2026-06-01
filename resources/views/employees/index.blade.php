@@ -236,7 +236,7 @@
             document.getElementById('terminationEmployeeId').value = employeeId;
             document.getElementById('terminationDate').value = '';
             document.getElementById('terminationReason').value = '';
-            document.getElementById('terminationForm').action = `/employees/${employeeId}/terminate`;
+            document.getElementById('terminationForm').action = `{{ url('/employees') }}/${employeeId}/terminate`;
             document.getElementById('terminationModal').classList.remove('hidden');
             document.getElementById('terminationModal').classList.add('flex');
         }
