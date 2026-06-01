@@ -337,7 +337,7 @@
                     <textarea name="notes" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="Why is this update needed?">{{ old('notes') }}</textarea>
                     <div class="flex items-center justify-end gap-3">
                         <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="profileUpdateModal">Cancel</button>
-                        <button type="submit" class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">Submit Profile Update</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">Submit Profile Update</button>
                     </div>
                 </form>
             </div>
@@ -365,25 +365,25 @@
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">File</label>
                         <label for="profileDocumentFileInput" id="profileDocumentDropZone"
-                            class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 px-4 py-6 text-center transition hover:border-emerald-400 hover:bg-emerald-50/40">
+                            class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 px-4 py-6 text-center transition hover:border-indigo-400 hover:bg-indigo-50/40">
                             <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             <p class="mt-1.5 text-sm text-slate-700">
-                                <span class="font-medium text-emerald-600">Click to upload</span> or drag and drop
+                                <span class="font-medium text-indigo-600">Click to upload</span> or drag and drop
                             </p>
                             <p class="text-xs text-slate-400">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
                         </label>
                         <input type="file" id="profileDocumentFileInput" name="document_file" required
                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="sr-only">
                         {{-- Selected file pill --}}
-                        <div id="profileDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
-                            <svg class="h-4 w-4 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div id="profileDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm">
+                            <svg class="h-4 w-4 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
-                            <span id="profileDocumentFileName" class="flex-1 truncate font-medium text-emerald-700 text-xs"></span>
+                            <span id="profileDocumentFileName" class="flex-1 truncate font-medium text-indigo-700 text-xs"></span>
                             <button type="button" id="profileDocumentFileRemove"
-                                class="ml-1 rounded p-0.5 text-emerald-400 hover:bg-emerald-100 hover:text-emerald-700 transition" title="Remove file">
+                                class="ml-1 rounded p-0.5 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700 transition" title="Remove file">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -401,7 +401,7 @@
                     </div>
                     <div class="flex items-center justify-end gap-3">
                         <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50" data-close-modal="documentUploadModal">Cancel</button>
-                        <button type="submit" class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700">Upload Document</button>
+                        <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">Upload Document</button>
                     </div>
                 </form>
             </div>
@@ -907,14 +907,14 @@
                 if (fileName) fileName.textContent = file.name;
                 filePill?.classList.remove('hidden');
                 filePill?.classList.add('flex');
-                dropZone?.classList.add('border-emerald-400', 'bg-emerald-50/60');
+                dropZone?.classList.add('border-indigo-400', 'bg-indigo-50/60');
             };
 
             const clearPill = () => {
                 if (fileName) fileName.textContent = '';
                 filePill?.classList.add('hidden');
                 filePill?.classList.remove('flex');
-                dropZone?.classList.remove('border-emerald-400', 'bg-emerald-50/60');
+                dropZone?.classList.remove('border-indigo-400', 'bg-indigo-50/60');
             };
 
             const applyFile = (file) => {
@@ -934,11 +934,11 @@
                     dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); });
                 });
                 ['dragenter', 'dragover'].forEach((ev) => {
-                    dropZone.addEventListener(ev, () => dropZone.classList.add('border-emerald-400', 'bg-emerald-50'));
+                    dropZone.addEventListener(ev, () => dropZone.classList.add('border-indigo-400', 'bg-indigo-50'));
                 });
                 ['dragleave', 'drop'].forEach((ev) => {
                     dropZone.addEventListener(ev, () => {
-                        if (!fileInput.files?.length) dropZone.classList.remove('border-emerald-400', 'bg-emerald-50');
+                        if (!fileInput.files?.length) dropZone.classList.remove('border-indigo-400', 'bg-indigo-50');
                     });
                 });
                 dropZone.addEventListener('drop', (e) => {

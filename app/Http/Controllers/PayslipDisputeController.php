@@ -317,25 +317,32 @@ class PayslipDisputeController extends Controller
      */
     public function getPayslips($employeeId)
     {
-        if (Auth::user()->role !== 4) abort(403);
+        try {
+            if (Auth::user()->role !== 4) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
 
-        $payslips = \App\Models\Payslip::with('payRun')
-            ->whereHas('payRun', function($q) {
-                $q->whereNotIn('status', [1, 2, 13]);
-            })
-            ->where('employee_id', $employeeId)
-            ->latest()
-            ->take(12)
-            ->get();
-            
-        $data = $payslips->map(function ($ps) {
-            return [
-                'id' => $ps->id,
-                'name' => $ps->payRun ? $ps->payRun->name . ' (' . \Carbon\Carbon::parse($ps->payRun->period_start)->format('M d') . ' - ' . \Carbon\Carbon::parse($ps->payRun->period_end)->format('M d, Y') . ')' : 'Unknown Pay Run',
-            ];
-        });
+            $payslips = \App\Models\Payslip::with('payRun')
+                ->whereHas('payRun', function($q) {
+                    $q->whereNotIn('status', [1, 2, 13]);
+                })
+                ->where('employee_id', $employeeId)
+                ->latest()
+                ->take(12)
+                ->get();
+                
+            $data = $payslips->map(function ($ps) {
+                return [
+                    'id' => $ps->id,
+                    'name' => $ps->payRun ? $ps->payRun->name . ' (' . \Carbon\Carbon::parse($ps->payRun->period_start)->format('M d') . ' - ' . \Carbon\Carbon::parse($ps->payRun->period_end)->format('M d, Y') . ')' : 'Unknown Pay Run',
+                ];
+            });
 
-        return response()->json($data);
+            return response()->json($data);
+        } catch (\Exception $e) {
+            \Log::error('getPayslips error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

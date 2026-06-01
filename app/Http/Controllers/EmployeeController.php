@@ -65,8 +65,7 @@ class EmployeeController extends Controller
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
-        $employees = $this->buildQuery($request)
-            ->get();
+        $employees = Employee::with(['department', 'position', 'manager'])->get();
 
         $departments = Department::all();
         $filters = $request->only(['q', 'status', 'employment_type', 'department_id']);

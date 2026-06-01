@@ -21,7 +21,7 @@
             <p class="text-slate-600">Viewing the profile for {{ $employee->full_name_with_middle_name }}.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('employees.edit', $employee) }}" class="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition">Edit Employee</a>
+            <a href="{{ route('employees.edit', $employee) }}" class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition">Edit Employee</a>
             <a href="{{ route('employees.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
         </div>
     </div>

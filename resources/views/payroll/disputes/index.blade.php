@@ -468,7 +468,7 @@
                 }
 
                 try {
-                    const res = await fetch(`/payroll/disputes/api/payslips/${empId}`);
+                    const res = await fetch(`{{ url('/payroll/disputes/api/payslips') }}/${empId}`);
                     const data = await res.json();
                     
                     if (data.length === 0) {
@@ -503,7 +503,7 @@
 
             itemSelect.disabled = true;
             try {
-                const res = await fetch(`/payroll/disputes/api/payslip-items/${payslipId}`);
+                const res = await fetch(`{{ url('/payroll/disputes/api/payslip-items') }}/${payslipId}`);
                 const data = await res.json();
                 
                 if (data.items && data.items.length > 0) {

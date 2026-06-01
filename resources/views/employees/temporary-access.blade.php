@@ -31,17 +31,17 @@
 
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">From Date</label>
-                <input type="date" name="from_date" id="taFromDate" value="{{ $filters['from_date'] ?? '' }}" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="date" name="from_date" id="taFromDate" value="{{ $filters['from_date'] ?? '' }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">To Date</label>
-                <input type="date" name="to_date" id="taToDate" value="{{ $filters['to_date'] ?? '' }}" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="date" name="to_date" id="taToDate" value="{{ $filters['to_date'] ?? '' }}" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="min-w-[180px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Position</label>
-                <select name="position_id" id="taPosition" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select name="position_id" id="taPosition" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Positions</option>
                     @foreach ($positions as $position)
                         <option value="{{ $position->id }}" {{ ($filters['position_id'] ?? '') == $position->id ? 'selected' : '' }}>{{ $position->title }}</option>
@@ -51,7 +51,7 @@
 
             <div class="min-w-[180px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
-                <select name="department_id" id="taDepartment" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select name="department_id" id="taDepartment" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Departments</option>
                     @foreach ($departments as $department)
                         <option value="{{ $department->id }}" {{ ($filters['department_id'] ?? '') == $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
@@ -59,9 +59,9 @@
                 </select>
             </div>
 
-            <a href="{{ route('employees.temporary-access') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+            <button type="button" id="ta-clear" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
-            </a>
+            </button>
 
             @if(auth()->user()->role === 4)
                 <a href="{{ route('employees.temporary-access.export') }}" id="btnTaExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
@@ -158,7 +158,7 @@
                             $roleLabel = $baseRole ? ($roleLabels[$baseRole] ?? 'N/A') : 'N/A';
                             $roleColor = $baseRole ? ($roleColors[$baseRole] ?? 'badge-gray') : 'badge-gray';
                         @endphp
-                        <tr class="ta-row hover:bg-slate-50 transition">
+                        <tr class="ta-row hover:bg-slate-50 transition" data-from-date="{{ $temporaryAssignment?->from_date?->format('Y-m-d') ?? '' }}" data-to-date="{{ $temporaryAssignment?->to_date?->format('Y-m-d') ?? '' }}" data-position-id="{{ $employee->position_id }}" data-department-id="{{ $employee->department_id }}">
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->employee_code }}</td>
 
@@ -666,12 +666,22 @@
             window.location.href = url;
         }
 
+        const searchInputTa = document.getElementById('ta-search');
+        const fromDateInput = document.getElementById('taFromDate');
+        const toDateInput = document.getElementById('taToDate');
+        const positionSelect = document.getElementById('taPosition');
+        const departmentSelect = document.getElementById('taDepartment');
+        const clearButtonTa = document.getElementById('ta-clear');
+        const exportButtonTa = document.getElementById('btnTaExport');
+
         function updateTaExportUrl() {
-            const q = document.getElementById('ta-search')?.value || '';
-            const fromDate = document.getElementById('taFromDate')?.value || '';
-            const toDate = document.getElementById('taToDate')?.value || '';
-            const positionId = document.getElementById('taPosition')?.value || '';
-            const departmentId = document.getElementById('taDepartment')?.value || '';
+            if (!exportButtonTa) return;
+
+            const q = searchInputTa?.value || '';
+            const fromDate = fromDateInput?.value || '';
+            const toDate = toDateInput?.value || '';
+            const positionId = positionSelect?.value || '';
+            const departmentId = departmentSelect?.value || '';
 
             let url = "{{ route('employees.temporary-access.export') }}";
             const params = new URLSearchParams();
@@ -685,39 +695,69 @@
             if ([...params].length) {
                 url += '?' + params.toString();
             }
-
-            const exportBtn = document.getElementById('btnTaExport');
-            if (exportBtn) exportBtn.href = url;
+            exportButtonTa.href = url;
         }
 
         function filterTemporaryAccessRows() {
-            const term = (document.getElementById('ta-search')?.value || '').trim().toLowerCase();
+            const term = (searchInputTa?.value || '').trim().toLowerCase();
+            const fromDateVal = fromDateInput?.value || '';
+            const toDateVal = toDateInput?.value || '';
+            const positionVal = positionSelect?.value || '';
+            const departmentVal = departmentSelect?.value || '';
+
             document.querySelectorAll('#ta-table .ta-row').forEach((row) => {
-                if (!term) {
-                    row.setAttribute('data-filter-hidden', 'false');
-                    return;
+                const searchable = row.textContent.toLowerCase();
+                const rowFrom = row.getAttribute('data-from-date') || '';
+                const rowTo = row.getAttribute('data-to-date') || '';
+                const rowPosition = row.getAttribute('data-position-id') || '';
+                const rowDept = row.getAttribute('data-department-id') || '';
+
+                const matchesSearch = !term || searchable.includes(term);
+                const matchesPosition = !positionVal || rowPosition === positionVal;
+                const matchesDept = !departmentVal || rowDept === departmentVal;
+
+                // Date overlap filter check
+                let matchesDates = true;
+                if (fromDateVal || toDateVal) {
+                    if (!rowFrom || !rowTo) {
+                        matchesDates = false;
+                    } else {
+                        if (fromDateVal && rowTo < fromDateVal) {
+                            matchesDates = false;
+                        }
+                        if (toDateVal && rowFrom > toDateVal) {
+                            matchesDates = false;
+                        }
+                    }
                 }
 
-                const searchable = row.textContent.toLowerCase();
-                row.setAttribute('data-filter-hidden', searchable.includes(term) ? 'false' : 'true');
+                const isVisible = matchesSearch && matchesPosition && matchesDept && matchesDates;
+                row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
             });
+
+            updateTaExportUrl();
         }
 
-        document.getElementById('ta-search')?.addEventListener('input', function () {
-            filterTemporaryAccessRows();
-            updateTaExportUrl();
-        });
+        searchInputTa?.addEventListener('input', filterTemporaryAccessRows);
+        fromDateInput?.addEventListener('change', filterTemporaryAccessRows);
+        toDateInput?.addEventListener('change', filterTemporaryAccessRows);
+        positionSelect?.addEventListener('change', filterTemporaryAccessRows);
+        departmentSelect?.addEventListener('change', filterTemporaryAccessRows);
 
-        document.getElementById('ta-search')?.addEventListener('keydown', function (event) {
+        searchInputTa?.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
             }
         });
 
-        document.getElementById('taFromDate')?.addEventListener('change', updateTaExportUrl);
-        document.getElementById('taToDate')?.addEventListener('change', updateTaExportUrl);
-        document.getElementById('taPosition')?.addEventListener('change', updateTaExportUrl);
-        document.getElementById('taDepartment')?.addEventListener('change', updateTaExportUrl);
+        clearButtonTa?.addEventListener('click', function() {
+            if (searchInputTa) searchInputTa.value = '';
+            if (fromDateInput) fromDateInput.value = '';
+            if (toDateInput) toDateInput.value = '';
+            if (positionSelect) positionSelect.value = '';
+            if (departmentSelect) departmentSelect.value = '';
+            filterTemporaryAccessRows();
+        });
 
         document.querySelectorAll('[data-role-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -737,7 +777,5 @@
         });
 
         filterTemporaryAccessRows();
-
-        updateTaExportUrl();
     </script>
 </x-app-layout>
