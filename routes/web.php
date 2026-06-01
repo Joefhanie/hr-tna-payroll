@@ -174,27 +174,27 @@ Route::middleware('auth')->group(function () {
         abort_unless(Schema::hasTable('tap_records'), 404);
 
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
+            'masterlist_id' => 'required|exists:masterlist,id',
             'machine_id' => 'required|integer|min:1',
             'tap_time' => 'required|date',
             'function' => 'required|integer|min:0',
             'status' => 'required|integer|min:0',
         ]);
 
-        $employee = Employee::findOrFail($validated['employee_id']);
-        $tapTime = Carbon::parse($validated['tap_time']);
-        $masterlistId = $employee->masterlist?->id
-            ?? Masterlist::query()->where('emp_id', $employee->id)->value('id');
+        $masterlist = Masterlist::with('employee')->findOrFail($validated['masterlist_id']);
+        $employee = $masterlist->employee;
 
-        if (!$masterlistId) {
+        if (!$employee) {
             return back()->withErrors([
-                'employee_id' => 'Selected employee is not linked to a masterlist record.',
+                'masterlist_id' => 'Selected masterlist record is not linked to an employee.',
             ])->withInput();
         }
 
+        $tapTime = Carbon::parse($validated['tap_time']);
+
         DB::table('tap_records')->insert([
             'employee_id' => $employee->id,
-            'masterlist_id' => $masterlistId,
+            'masterlist_id' => $masterlist->id,
             'machine_id' => $validated['machine_id'],
             'time' => $tapTime->toDateTimeString(),
             'function' => $validated['function'],

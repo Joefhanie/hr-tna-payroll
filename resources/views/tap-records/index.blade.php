@@ -37,17 +37,11 @@
             @csrf
 
             <label class="block">
-                <span class="mb-1 block text-sm font-medium text-slate-700">Employee</span>
-                <select name="employee_id"
-                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Select employee</option>
-                    @foreach ($employees as $employee)
-                        <option value="{{ $employee->id }}" @selected(old('employee_id') == $employee->id)>
-                            {{ $employee->full_name }} ({{ $employee->employee_code }})
-                        </option>
-                    @endforeach
-                </select>
-                @error('employee_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                <span class="mb-1 block text-sm font-medium text-slate-700">Masterlist ID</span>
+                <input type="number" name="masterlist_id" value="{{ old('masterlist_id') }}" min="1"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Enter masterlist primary ID">
+                @error('masterlist_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
             </label>
 
             <label class="block">
