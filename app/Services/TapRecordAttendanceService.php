@@ -33,8 +33,8 @@ class TapRecordAttendanceService
         if ($tapRecords === null) {
             $tapRecords = DB::table('tap_records')
                 ->where(function ($query) use ($employee) {
-                    $query->where('employee_id', $employee->id)
-                        ->orWhere('masterlist_id', $employee->id);
+                    $query->where('masterlist_id', $employee->masterlist_id)
+                        ->orWhere('employee_id', $employee->id);
                 })
                 ->whereBetween('time', [$date->copy()->startOfDay()->toDateTimeString(), $windowEnd->toDateTimeString()])
                 ->orderBy('time')
@@ -45,17 +45,52 @@ class TapRecordAttendanceService
             return null;
         }
 
-        // Function code mapping (from function_settings table):
-        //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
-        $checkInTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 1);
-        $checkOutTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 2);
-        $hasFunctionCodes = $tapRecords->contains(fn($t) => isset($t->function) && in_array((int) $t->function, [1, 2, 3, 4], true));
+        $useFunctionCodes = $this->hasCompleteFunctionSettings();
 
-        // Use function-specific taps when available; fall back to first/last for
-        // records without a function code (legacy / untyped imports).
-        $timeInTap = $checkInTaps->isNotEmpty()
-            ? $checkInTaps->first()
-            : ($hasFunctionCodes ? null : $tapRecords->first());
+        // When the function settings table is incomplete or contains nulls,
+        // treat the tap list as plain punches and use the first/last record.
+        if (! $useFunctionCodes) {
+            $timeInTap = $tapRecords->first();
+            $timeOutTap = $tapRecords->last();
+        } else {
+            // Function code mapping (from function_settings table):
+            //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
+            $checkInTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 1);
+            $checkOutTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 2);
+            $hasFunctionCodes = $tapRecords->contains(fn($t) => isset($t->function) && in_array((int) $t->function, [1, 2, 3, 4], true));
+
+            // Use function-specific taps when available; fall back to first/last for
+            // records without a function code (legacy / untyped imports).
+            $timeInTap = $checkInTaps->isNotEmpty()
+                ? $checkInTaps->first()
+                : ($hasFunctionCodes ? null : $tapRecords->first());
+
+            $timeOutTap = null;
+
+            if ($checkOutTaps->isNotEmpty()) {
+                // Prefer the last Check Out tap after shift end; otherwise the last Check Out of the day.
+                if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
+                    $shiftEnd = $shift->getShiftEndDateTime($date);
+                    $checkOutsAfterShift = $checkOutTaps->filter(
+                        fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+                    );
+                    $timeOutTap = $checkOutsAfterShift->isNotEmpty()
+                        ? $checkOutsAfterShift->last()
+                        : $checkOutTaps->last();
+                } else {
+                    $timeOutTap = $checkOutTaps->last();
+                }
+            } elseif (!$hasFunctionCodes && $shift && $now->gte($shift->getShiftEndDateTime($date))) {
+                // Legacy fallback: no function codes at all — use last tap after shift end.
+                $shiftEnd = $shift->getShiftEndDateTime($date);
+                $tapsAfterShift = $tapRecords->filter(
+                    fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+                );
+                $timeOutTap = $tapsAfterShift->isNotEmpty()
+                    ? $tapsAfterShift->last()
+                    : $tapRecords->last();
+            }
+        }
 
         $existingInPunch = Attendance::query()
             ->where('emp_id', $employee->id)
@@ -79,32 +114,6 @@ class TapRecordAttendanceService
         }
 
         $timeIn = $manualTimeIn ?? ($timeInTap ? Carbon::parse($timeInTap->time) : Carbon::parse($existingInPunch->time));
-
-        $timeOutTap = null;
-
-        if ($checkOutTaps->isNotEmpty()) {
-            // Prefer the last Check Out tap after shift end; otherwise the last Check Out of the day.
-            if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
-                $shiftEnd = $shift->getShiftEndDateTime($date);
-                $checkOutsAfterShift = $checkOutTaps->filter(
-                    fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
-                );
-                $timeOutTap = $checkOutsAfterShift->isNotEmpty()
-                    ? $checkOutsAfterShift->last()
-                    : $checkOutTaps->last();
-            } else {
-                $timeOutTap = $checkOutTaps->last();
-            }
-        } elseif (!$hasFunctionCodes && $shift && $now->gte($shift->getShiftEndDateTime($date))) {
-            // Legacy fallback: no function codes at all — use last tap after shift end.
-            $shiftEnd = $shift->getShiftEndDateTime($date);
-            $tapsAfterShift = $tapRecords->filter(
-                fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
-            );
-            $timeOutTap = $tapsAfterShift->isNotEmpty()
-                ? $tapsAfterShift->last()
-                : $tapRecords->last();
-        }
 
         $existingOutPunch = Attendance::query()
             ->where('emp_id', $employee->id)
@@ -158,13 +167,16 @@ class TapRecordAttendanceService
 
     public function syncForTapRecord(object $tapRecord): ?Attendance
     {
-        $employeeId = $tapRecord->employee_id ?? $tapRecord->masterlist_id ?? null;
+        $employeeId = $tapRecord->masterlist_id ?? $tapRecord->employee_id ?? null;
 
         if (!$employeeId) {
             return null;
         }
 
-        $employee = Employee::with(['user', 'shiftAssignments.shift'])->find($employeeId);
+        $employee = Employee::with(['user', 'shiftAssignments.shift'])
+            ->where('masterlist_id', $employeeId)
+            ->first()
+            ?? Employee::with(['user', 'shiftAssignments.shift'])->find($tapRecord->employee_id ?? null);
 
         if (!$employee || !$employee->user) {
             return null;
@@ -190,19 +202,19 @@ class TapRecordAttendanceService
 
         $employeeRefs = $tapRecords
             ->map(function ($tapRecord) {
-                return $tapRecord->employee_id ?? $tapRecord->masterlist_id;
+                return $tapRecord->masterlist_id ?? $tapRecord->employee_id;
             })
             ->filter()
             ->unique()
             ->values();
 
         $employees = Employee::with(['user', 'shiftAssignments.shift'])
-            ->whereIn('id', $employeeRefs)
+            ->whereIn('masterlist_id', $employeeRefs)
             ->get()
-            ->keyBy('id');
+            ->keyBy('masterlist_id');
 
         $recordsByEmployeeDate = $tapRecords->groupBy(function ($tapRecord) {
-            $employeeRef = $tapRecord->employee_id ?? $tapRecord->masterlist_id;
+            $employeeRef = $tapRecord->masterlist_id ?? $tapRecord->employee_id;
 
             return $employeeRef . '|' . Carbon::parse($tapRecord->time)->toDateString();
         });
@@ -234,6 +246,22 @@ class TapRecordAttendanceService
         $attendanceStatus = $this->shiftService->calculateAttendanceStatus($shift, $timeIn, $timeOut);
 
         return $attendanceStatus['status'] === 'late' ? 2 : 1;
+    }
+
+    private function hasCompleteFunctionSettings(): bool
+    {
+        $values = DB::table('function_settings')
+            ->whereIn('setting_value', [1, 2, 3, 4])
+            ->pluck('setting_value')
+            ->map(fn ($value) => (int) $value)
+            ->unique()
+            ->values();
+
+        $hasNullSetting = DB::table('function_settings')
+            ->whereNull('setting_value')
+            ->exists();
+
+        return ! $hasNullSetting && $values->count() === 4 && $values->sort()->values()->all() === [1, 2, 3, 4];
     }
 
     private function resolveActiveShiftFromLoadedAssignments(Employee $employee, Carbon $date): ?\App\Models\Shift
