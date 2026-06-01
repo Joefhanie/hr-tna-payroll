@@ -10,11 +10,11 @@ class Masterlist extends Model
     protected $table = 'masterlist';
 
     protected $fillable = [
+        'emp_id',
         'name',
         'contact_number',
         'email',
         'emergency_contact',
-        'company_id',
         'uid',
         'is_admin',
         'status',
@@ -25,7 +25,7 @@ class Masterlist extends Model
     ];
 
     protected $casts = [
-        'company_id' => 'integer',
+        'emp_id' => 'integer',
         'is_admin' => 'integer',
         'status' => 'integer',
         'created_by' => 'integer',

@@ -269,6 +269,8 @@ class EmployeeController extends Controller
                 ]);
             }
 
+            $masterlist->update(['emp_id' => $employee->id]);
+
             $pendingUserId = $request->session()->pull('pending_employee_user_id');
 
             if ($pendingUserId) {
