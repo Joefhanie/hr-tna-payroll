@@ -512,6 +512,13 @@
                             </h2>
                             <p class="text-xs text-slate-500 mt-1">Uploaded employment documents and forms</p>
                         </div>
+                        @if ($employee)
+                            <button type="button" onclick="openRequestModal('documentUploadModal')"
+                                class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition shadow-sm">
+                                <i class="ti ti-plus text-base"></i>
+                                Upload Document
+                            </button>
+                        @endif
                     </div>
 
                     <div class="overflow-x-auto rounded-xl border border-slate-100">
@@ -523,6 +530,7 @@
                                     <th class="px-4 py-3.5">Date</th>
                                     <th class="px-4 py-3.5">Size</th>
                                     <th class="px-4 py-3.5">Status</th>
+                                    <th class="px-4 py-3.5 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -548,10 +556,28 @@
                                                 </span>
                                             @endif
                                         </td>
+                                        <td class="px-4 py-3 text-center">
+                                            @if ($document['file_path'])
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <a href="{{ route('media.file', ['path' => ltrim($document['file_path'], '/')]) }}" target="_blank"
+                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-blue-600">
+                                                        <i class="ti ti-eye text-slate-500 text-sm"></i>
+                                                        View
+                                                    </a>
+                                                    <a href="{{ route('media.file', ['path' => ltrim($document['file_path'], '/'), 'download' => 1]) }}"
+                                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-blue-600">
+                                                        <i class="ti ti-download text-slate-500 text-sm"></i>
+                                                        Download
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <span class="text-xs font-medium text-slate-400">No file</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-4 py-8 text-center text-slate-400 italic">No documents found.</td>
+                                        <td colspan="6" class="px-4 py-8 text-center text-slate-400 italic">No documents found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -686,7 +712,19 @@
             const activeBtn = document.getElementById('tab-btn-' + tabId);
             activeBtn.classList.remove('text-slate-600', 'border-transparent');
             activeBtn.classList.add('bg-blue-50', 'text-blue-600', 'border-blue-100', 'font-semibold');
+
+            // Persist active tab in URL hash without scrolling
+            history.replaceState(null, '', '#' + tabId);
         }
+
+        // Restore active tab from URL hash on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash ? window.location.hash.slice(1) : null;
+            const validTabs = ['profile-info', 'leave', 'payslips', 'documents', 'attendance'];
+            if (hash && validTabs.includes(hash)) {
+                switchTab(hash);
+            }
+        });
 
         // Payslip Breakdown Modal and Render helpers
         function escapeHtml(value) {
@@ -827,7 +865,198 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 closePayslipModal();
+                closeRequestModal('documentUploadModal');
             }
+        });
+
+        // ===== Document Upload Modal =====
+        function openRequestModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeRequestModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return;
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        document.querySelectorAll('[data-close-modal]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeRequestModal(button.dataset.closeModal);
+            });
+        });
+
+        document.querySelectorAll('[data-modal-backdrop]').forEach((modal) => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeRequestModal(modal.dataset.modalBackdrop);
+                }
+            });
+        });
+
+        // ===== Drag & Drop File Picker (deferred so modal HTML exists) =====
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput  = document.getElementById('profileDocumentFileInput');
+            const dropZone   = document.getElementById('profileDocumentDropZone');
+            const filePill   = document.getElementById('profileDocumentFilePill');
+            const fileName   = document.getElementById('profileDocumentFileName');
+            const fileRemove = document.getElementById('profileDocumentFileRemove');
+            const fileError  = document.getElementById('profileDocumentFileError');
+
+            if (!fileInput) return;
+
+            const ACCEPTED_EXTS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
+
+            const getExt = (name) => {
+                const match = name.toLowerCase().match(/\.[^.]+$/);
+                return match ? match[0] : '';
+            };
+
+            const showError = (msg) => {
+                if (!fileError) return;
+                fileError.textContent = msg;
+                fileError.classList.remove('hidden');
+            };
+
+            const clearError = () => {
+                if (!fileError) return;
+                fileError.textContent = '';
+                fileError.classList.add('hidden');
+            };
+
+            const showPill = (file) => {
+                if (fileName) fileName.textContent = file.name;
+                if (filePill) {
+                    filePill.classList.remove('hidden');
+                    filePill.classList.add('flex');
+                }
+                if (dropZone) {
+                    dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+                    dropZone.classList.remove('border-slate-200');
+                }
+            };
+
+            const clearPill = () => {
+                if (fileName) fileName.textContent = '';
+                if (filePill) {
+                    filePill.classList.add('hidden');
+                    filePill.classList.remove('flex');
+                }
+                if (dropZone) {
+                    dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+                    dropZone.classList.add('border-slate-200');
+                }
+            };
+
+            const applyFile = (file) => {
+                clearError();
+                const ext = getExt(file.name);
+                if (!ACCEPTED_EXTS.includes(ext)) {
+                    showError(`Invalid file type "${ext || file.name}". Accepted: ${ACCEPTED_EXTS.join(', ')}`);
+                    fileInput.value = '';
+                    clearPill();
+                    return;
+                }
+                showPill(file);
+            };
+
+            if (dropZone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); });
+                });
+                ['dragenter', 'dragover'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => {
+                        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+                        dropZone.classList.remove('border-slate-200');
+                    });
+                });
+                ['dragleave', 'drop'].forEach((ev) => {
+                    dropZone.addEventListener(ev, () => {
+                        if (!fileInput.files?.length) {
+                            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+                            dropZone.classList.add('border-slate-200');
+                        }
+                    });
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer?.files;
+                    if (!files || files.length === 0) return;
+                    fileInput.files = files;
+                    applyFile(files[0]);
+                });
+            }
+
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                if (file) applyFile(file);
+                else { clearPill(); clearError(); }
+            });
+
+            fileRemove?.addEventListener('click', (e) => {
+                e.preventDefault();
+                fileInput.value = '';
+                clearPill();
+                clearError();
+            });
+
+            // AJAX Form Submission — on success, reload to #documents tab
+            const form = fileInput?.closest('form');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Uploading...
+                    `;
+                }
+
+                clearError();
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        // Reload and return to Documents tab
+                        window.location.href = window.location.pathname + '#documents';
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        const errMsg = data.message || (data.errors ? Object.values(data.errors).flat().join(', ') : 'Upload failed. Please check form values.');
+                        showError(errMsg);
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                        }
+                    }
+                } catch (error) {
+                    showError('An unexpected network error occurred.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                }
+            });
         });
 
         // Profile Picture selection previewer
@@ -856,4 +1085,75 @@
             }
         });
     </script>
+
+    @if ($employee)
+    {{-- Document Upload Modal --}}
+    <div id="documentUploadModal" class="fixed inset-0 z-50 hidden bg-black/50 p-4 overflow-y-auto justify-center items-start sm:items-center" data-modal-backdrop="documentUploadModal">
+        <div class="my-auto max-h-[calc(100vh-2rem)] sm:max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="mb-5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Upload Document</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Add a new document to your profile record.</p>
+                </div>
+                <button type="button" class="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" data-close-modal="documentUploadModal">
+                    <i class="ti ti-x text-lg"></i>
+                </button>
+            </div>
+            <form method="POST" action="{{ route('self-service.documents.store', $employee) }}" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Document Name</label>
+                    <input type="text" name="display_name" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="e.g. Health Certificate, Contract Agreement" value="{{ old('display_name') }}">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Document Type <span class="text-red-500">*</span></label>
+                    <input type="text" name="document_type" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="e.g. Government ID, Onboarding, Contract" value="{{ old('document_type') }}">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">File <span class="text-red-500">*</span></label>
+                    <label for="profileDocumentFileInput" id="profileDocumentDropZone"
+                        class="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center transition hover:border-blue-400 hover:bg-blue-50/50">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 mb-2">
+                            <i class="ti ti-cloud-upload text-blue-500 text-2xl"></i>
+                        </div>
+                        <p class="text-sm text-slate-700">
+                            <span class="font-semibold text-blue-600">Click to upload</span> or drag and drop
+                        </p>
+                        <p class="text-xs text-slate-400 mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max 10MB)</p>
+                    </label>
+                    <input type="file" id="profileDocumentFileInput" name="document_file" required
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" class="sr-only">
+
+                    <div id="profileDocumentFilePill" class="hidden mt-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                        <i class="ti ti-paperclip text-slate-400 text-base shrink-0"></i>
+                        <span id="profileDocumentFileName" class="flex-1 truncate font-medium text-slate-700 text-xs"></span>
+                        <button type="button" id="profileDocumentFileRemove"
+                            class="ml-1 rounded-lg p-0.5 text-slate-400 hover:bg-slate-100 hover:text-red-500 transition" title="Remove file">
+                            <i class="ti ti-x text-sm"></i>
+                        </button>
+                    </div>
+                    <p id="profileDocumentFileError" class="hidden mt-1.5 text-xs text-red-600 font-medium"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Expiry Date</label>
+                        <input type="date" name="expiry_date" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" value="{{ old('expiry_date') }}">
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Description</label>
+                    <textarea name="description" rows="3" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Optional notes about this document">{{ old('description') }}</textarea>
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-1">
+                    <button type="button" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" data-close-modal="documentUploadModal">Cancel</button>
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">
+                        <i class="ti ti-upload text-base"></i>
+                        Upload Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
 </x-app-layout>

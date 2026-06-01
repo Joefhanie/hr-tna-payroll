@@ -24,6 +24,7 @@
                     'meta' => 'Active headcount',
                     'icon' => 'users',
                     'iconBg' => 'bg-sky-100 text-sky-700',
+                    'link' => route('employees.index'),
                 ],
                 [
                     'label' => 'New Hires',
@@ -31,6 +32,7 @@
                     'meta' => 'Joined in the last 30 days',
                     'icon' => 'user-plus',
                     'iconBg' => 'bg-emerald-100 text-emerald-700',
+                    'link' => route('employees.index'),
                 ],
                 [
                     'label' => 'On Leave Today',
@@ -38,6 +40,7 @@
                     'meta' => $leavesPendingApproval . ' pending approval',
                     'icon' => 'calendar-days',
                     'iconBg' => 'bg-amber-100 text-amber-700',
+                    'link' => route('leave.index'),
                 ],
                 [
                     'label' => 'Payroll (current)',
@@ -45,6 +48,7 @@
                     'meta' => $payrollProcessing . ' processing',
                     'icon' => 'wallet',
                     'iconBg' => 'bg-violet-100 text-violet-700',
+                    'link' => route('payroll.index'),
                 ],
             ];
         @endphp
@@ -81,7 +85,7 @@
 
             <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
                 @foreach ($statCards as $card)
-                    <div class="rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-sm">
+                    <a href="{{ $card['link'] }}" class="block rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-sm hover:shadow hover:border-slate-300 transition duration-200">
                         <div class="flex items-start justify-between gap-3">
                             <div class="rounded-2xl {{ $card['iconBg'] }} p-3">
                                 <i class="fas fa-{{ $card['icon'] }} text-lg"></i>
@@ -94,7 +98,7 @@
                         <p class="mt-4 text-sm text-slate-500">{{ $card['label'] }}</p>
                         <p class="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">{{ $card['value'] }}</p>
                         <p class="mt-2 text-xs leading-5 text-slate-500 sm:text-sm">{{ $card['meta'] }}</p>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </section>
@@ -198,6 +202,7 @@
                     'icon' => 'clock',
                     'iconBg' => 'bg-sky-100 text-sky-700',
                     'valueClass' => $myStatus === 'No Record' ? 'text-xl' : 'text-2xl',
+                    'link' => auth()->user()->hasPermission('timekeeping.view') ? route('timekeeping.index') : '#',
                 ],
                 [
                     'label' => 'Pending Leaves',
@@ -207,6 +212,7 @@
                     'icon' => 'calendar-event',
                     'iconBg' => 'bg-amber-100 text-amber-700',
                     'valueClass' => 'text-2xl',
+                    'link' => auth()->user()->hasPermission('leaves.view') ? route('leave.index') : '#',
                 ],
                 [
                     'label' => 'Profile Updates',
@@ -216,6 +222,7 @@
                     'icon' => 'edit-circle',
                     'iconBg' => 'bg-violet-100 text-violet-700',
                     'valueClass' => 'text-2xl',
+                    'link' => $personalHubHref,
                 ],
                 [
                     'label' => 'Available Payslips',
@@ -225,6 +232,7 @@
                     'icon' => 'file-invoice',
                     'iconBg' => 'bg-emerald-100 text-emerald-700',
                     'valueClass' => 'text-2xl',
+                    'link' => $personalHubHref . '#payslips',
                 ],
             ];
         @endphp
@@ -274,7 +282,7 @@
 
                 <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
                     @foreach ($personalStatCards as $card)
-                        <div class="rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-3.5 shadow-sm sm:p-4">
+                        <a href="{{ $card['link'] ?? '#' }}" class="block rounded-[1.35rem] border border-slate-200/80 bg-white/90 p-3.5 shadow-sm sm:p-4 hover:shadow hover:border-slate-300 transition duration-200">
                             <div class="flex items-center gap-2.5">
                                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] {{ $card['iconBg'] }}">
                                     <i class="ti ti-{{ $card['icon'] }} text-[1.05rem]"></i>
@@ -286,7 +294,7 @@
                             </div>
                             <p class="mt-3 hidden text-[13px] font-medium leading-5 text-slate-700 sm:block">{{ $card['label'] }}</p>
                             <p class="mt-1 hidden text-[11px] leading-4 text-slate-500 sm:block">{{ $card['meta'] }}</p>
-                        </div>
+                        </a>
                     @endforeach
                 </div>
             </div>

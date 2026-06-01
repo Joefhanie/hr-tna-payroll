@@ -7,6 +7,7 @@ use App\Models\Leave;
 use App\Models\Payroll;
 use App\Models\Employee;
 use App\Models\Payslip;
+use App\Models\PayRun;
 use App\Models\ProfileUpdateRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -136,15 +137,20 @@ class DashboardController extends Controller
         $totalPayroll = 0;
         $payrollProcessing = 0;
 
-        if (Schema::hasTable('payrolls')) {
-            $totalPayroll = Payroll::whereMonth('payroll_date', $currentMonth->month)
-                ->whereYear('payroll_date', $currentMonth->year)
-                ->sum('net_salary');
+        if (Schema::hasTable('pay_runs')) {
+            $currentPayRuns = PayRun::whereYear('period_end', $currentMonth->year)
+                ->whereMonth('period_end', $currentMonth->month)
+                ->where('status', '!=', 13)
+                ->get();
 
-            $payrollProcessing = Payroll::whereMonth('payroll_date', $currentMonth->month)
-                ->whereYear('payroll_date', $currentMonth->year)
-                ->where('status', 1)
-                ->count();
+            $totalPayroll = 0;
+            foreach ($currentPayRuns as $payRun) {
+                if ($payRun instanceof PayRun) {
+                    $totalPayroll += (float) $payRun->payslips()->sum('net_pay');
+                }
+            }
+
+            $payrollProcessing = $currentPayRuns->whereIn('status', [1, 2])->count();
         }
 
         // Today's Attendance
