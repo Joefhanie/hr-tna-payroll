@@ -50,6 +50,47 @@
             @endif
         </div>
 
+        {{-- Filters Form --}}
+        <form id="filterForm" method="GET" action="{{ route('timekeeping.shift-schedule') }}" class="mb-5 grid grid-cols-2 gap-3 items-end sm:flex sm:flex-wrap">
+            <div class="col-span-2 sm:flex-1 sm:min-w-[200px]">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
+                <div class="relative">
+                    <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
+                    <input type="text" name="q" id="filterSearch" value="{{ request('q') }}" autocomplete="off"
+                        placeholder="Search by name or code…"
+                        class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="col-span-1 sm:min-w-[150px]">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Department</label>
+                <select name="department_id" id="filterDepartment"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Departments</option>
+                    @foreach($departments as $dept)
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <button type="button" id="shift-clear"
+                class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                Clear
+            </button>
+
+            @if(auth()->user()->role === 4)
+                <a href="{{ route('timekeeping.shift-schedule.export') }}" id="btnExport"
+                    class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export CSV
+                </a>
+            @endif
+        </form>
+
         <!-- Desktop View -->
         <div class="hidden lg:block overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
@@ -68,7 +109,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white">
                         @forelse($employees as $employee)
-                            <tr class="hover:bg-slate-50/50 transition-colors group" id="row-{{ $employee->id }}">
+                            <tr class="hover:bg-slate-50/50 transition-colors group" id="row-{{ $employee->id }}" data-department-id="{{ $employee->department_id }}">
                                 <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-500">
                                     {{ $employee->employee_code }}
                                 </td>
@@ -266,7 +307,7 @@
                     }
                     $allActiveDays = array_unique($allActiveDays);
                 @endphp
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="card-{{ $employee->id }}">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="card-{{ $employee->id }}" data-department-id="{{ $employee->department_id }}">
                     <!-- Card Header -->
                     <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
                         <div>
@@ -1076,5 +1117,88 @@
             m.classList.remove('hidden');
             m.classList.add('flex');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('filterSearch');
+            const deptSelect = document.getElementById('filterDepartment');
+            const clearButton = document.getElementById('shift-clear');
+            const exportButton = document.getElementById('btnExport');
+
+            function getEmployeeRows() {
+                return Array.from(document.querySelectorAll('#shiftScheduleTable tbody tr[id^="row-"]'));
+            }
+
+            function getEmployeeCards() {
+                return Array.from(document.querySelectorAll('[id^="card-"]'));
+            }
+
+            function updateExportUrl() {
+                if (!exportButton) return;
+
+                const params = new URLSearchParams();
+                const q = searchInput?.value?.trim() || '';
+                const dept = deptSelect?.value || '';
+
+                if (q) params.set('q', q);
+                if (dept) params.set('department_id', dept);
+
+                exportButton.href = `{{ route('timekeeping.shift-schedule.export') }}${[...params].length ? '?' + params.toString() : ''}`;
+            }
+
+            function filterEmployees() {
+                const qTerm = (searchInput?.value || '').trim().toLowerCase();
+                const deptVal = deptSelect?.value || '';
+
+                // Desktop
+                getEmployeeRows().forEach((row) => {
+                    const codeCell = row.cells[0]?.textContent || '';
+                    const nameCell = row.cells[1]?.textContent || '';
+                    const deptCell = row.cells[2]?.textContent || '';
+                    const rowDeptId = row.getAttribute('data-department-id') || '';
+
+                    const matchesSearch = !qTerm || 
+                        codeCell.toLowerCase().includes(qTerm) || 
+                        nameCell.toLowerCase().includes(qTerm) || 
+                        deptCell.toLowerCase().includes(qTerm);
+
+                    const matchesDept = !deptVal || rowDeptId === deptVal;
+
+                    const isVisible = matchesSearch && matchesDept;
+                    row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
+                });
+
+                // Mobile
+                getEmployeeCards().forEach((card) => {
+                    const cardText = card.textContent.toLowerCase();
+                    const cardDeptId = card.getAttribute('data-department-id') || '';
+
+                    const matchesSearch = !qTerm || cardText.includes(qTerm);
+                    const matchesDept = !deptVal || cardDeptId === deptVal;
+
+                    const isVisible = matchesSearch && matchesDept;
+                    card.classList.toggle('hidden', !isVisible);
+                });
+
+                updateExportUrl();
+            }
+
+            searchInput?.addEventListener('input', filterEmployees);
+            deptSelect?.addEventListener('change', filterEmployees);
+
+            clearButton?.addEventListener('click', function() {
+                if (searchInput) searchInput.value = '';
+                if (deptSelect) deptSelect.value = '';
+                filterEmployees();
+            });
+
+            // Prevent enter key from submitting the dummy form if any wraps exist
+            searchInput?.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                }
+            });
+
+            filterEmployees();
+        });
     </script>
 </x-app-layout>

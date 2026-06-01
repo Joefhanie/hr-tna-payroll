@@ -34,7 +34,7 @@
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <select name="status" id="filterStatus" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="status" id="filterStatus" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Statuses</option>
                     <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Active</option>
                     <option value="2" {{ ($filters['status'] ?? '') == '2' ? 'selected' : '' }}>Probationary</option>
@@ -45,7 +45,7 @@
             </div>
             <div class="min-w-[140px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Employment Type</label>
-                <select name="employment_type" id="filterEmploymentType" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="employment_type" id="filterEmploymentType" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Types</option>
                     <option value="1" {{ ($filters['employment_type'] ?? '') == '1' ? 'selected' : '' }}>Full-time</option>
                     <option value="2" {{ ($filters['employment_type'] ?? '') == '2' ? 'selected' : '' }}>Part-time</option>
@@ -55,16 +55,16 @@
             </div>
             <div class="min-w-[160px]">
                 <label class="block text-xs font-medium text-slate-600 mb-1">Department</label>
-                <select name="department_id" id="filterDepartment" onchange="this.form.submit()" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select name="department_id" id="filterDepartment" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="">All Departments</option>
                     @foreach($departments as $dept)
                         <option value="{{ $dept->id }}" {{ ($filters['department_id'] ?? '') == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
                     @endforeach
                 </select>
             </div>
-            <a href="{{ route('employees.index') }}" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+            <button type="button" id="emp-clear" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
                 Clear
-            </a>
+            </button>
             @if(auth()->user()->role === 4)
             <a href="{{ route('employees.export') }}" id="btnExport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium transition flex items-center gap-1.5 ml-auto">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +94,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($employees as $employee)
-                        <tr class="emp-row hover:bg-slate-50 transition">
+                        <tr class="emp-row hover:bg-slate-50 transition" data-status="{{ $employee->status }}" data-employment-type="{{ $employee->employment_type }}" data-department-id="{{ $employee->department_id }}">
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $employee->id }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500 emp-code">{{ $employee->employee_code }}</td>
                             <td class="px-4 py-3">
@@ -253,12 +253,21 @@
             }
         });
 
+        const searchInput = document.getElementById('filterSearch');
+        const statusSelect = document.getElementById('filterStatus');
+        const empTypeSelect = document.getElementById('filterEmploymentType');
+        const deptSelect = document.getElementById('filterDepartment');
+        const clearButton = document.getElementById('emp-clear');
+        const exportButton = document.getElementById('btnExport');
+
         // Update export button URL dynamically based on form inputs
         function updateExportUrl() {
-            const q = document.getElementById('filterSearch')?.value || '';
-            const status = document.getElementById('filterStatus')?.value || '';
-            const employmentType = document.getElementById('filterEmploymentType')?.value || '';
-            const departmentId = document.getElementById('filterDepartment')?.value || '';
+            if (!exportButton) return;
+
+            const q = searchInput?.value || '';
+            const status = statusSelect?.value || '';
+            const employmentType = empTypeSelect?.value || '';
+            const departmentId = deptSelect?.value || '';
 
             let url = "{{ route('employees.export') }}";
             const params = [];
@@ -269,38 +278,53 @@
             if (params.length > 0) {
                 url += `?${params.join('&')}`;
             }
-            const exportBtn = document.getElementById('btnExport');
-            if (exportBtn) exportBtn.href = url;
+            exportButton.href = url;
         }
 
-        document.getElementById('filterSearch')?.addEventListener('input', updateExportUrl);
-        document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterEmploymentType')?.addEventListener('change', updateExportUrl);
-        document.getElementById('filterDepartment')?.addEventListener('change', updateExportUrl);
-
-        // Client-side search filtering
         function filterEmployeeRows() {
-            const term = (document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
-            document.querySelectorAll('#emp-table .emp-row').forEach((row) => {
-                if (!term) {
-                    row.setAttribute('data-filter-hidden', 'false');
-                    return;
-                }
+            const term = (searchInput?.value || '').trim().toLowerCase();
+            const statusVal = statusSelect?.value || '';
+            const empTypeVal = empTypeSelect?.value || '';
+            const deptVal = deptSelect?.value || '';
 
+            document.querySelectorAll('#emp-table .emp-row').forEach((row) => {
                 const searchable = row.textContent.toLowerCase();
-                row.setAttribute('data-filter-hidden', searchable.includes(term) ? 'false' : 'true');
+                const rowStatus = row.getAttribute('data-status') || '';
+                const rowEmpType = row.getAttribute('data-employment-type') || '';
+                const rowDept = row.getAttribute('data-department-id') || '';
+
+                const matchesSearch = !term || searchable.includes(term);
+                const matchesStatus = !statusVal || rowStatus === statusVal;
+                const matchesEmpType = !empTypeVal || rowEmpType === empTypeVal;
+                const matchesDept = !deptVal || rowDept === deptVal;
+
+                const isVisible = matchesSearch && matchesStatus && matchesEmpType && matchesDept;
+                row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
             });
+
+            updateExportUrl();
         }
 
-        document.getElementById('filterSearch')?.addEventListener('input', function () {
+        searchInput?.addEventListener('input', filterEmployeeRows);
+        statusSelect?.addEventListener('change', filterEmployeeRows);
+        empTypeSelect?.addEventListener('change', filterEmployeeRows);
+        deptSelect?.addEventListener('change', filterEmployeeRows);
+
+        searchInput?.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+
+        clearButton?.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (statusSelect) statusSelect.value = '';
+            if (empTypeSelect) empTypeSelect.value = '';
+            if (deptSelect) deptSelect.value = '';
             filterEmployeeRows();
-            updateExportUrl();
         });
 
         filterEmployeeRows();
-
-        // Run once on load
-        updateExportUrl();
     </script>
 
 </x-app-layout>

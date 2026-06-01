@@ -2,6 +2,28 @@
     <x-slot:title>Plotting of Payments</x-slot:title>
     <x-slot:header>Plotting of Payments</x-slot:header>
 
+    <style>
+        .plotting-table-container {
+            width: 100% !important;
+            overflow-x: auto !important;
+        }
+        .plotting-table {
+            table-layout: fixed !important;
+            width: calc(200px + {{ count($dates) }} * ((100% - 200px) / 7)) !important;
+            min-width: 100% !important;
+            border-collapse: separate !important;
+        }
+        .plotting-col-name {
+            width: 200px !important;
+            min-width: 200px !important;
+            max-width: 200px !important;
+        }
+        .plotting-col-date {
+            width: calc((100% - 200px) / 7) !important;
+            min-width: 120px !important;
+        }
+    </style>
+
 
     <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
@@ -80,17 +102,15 @@
                 }
             @endphp
 
-            <div class="mt-6 overflow-hidden rounded-lg border border-slate-200 relative">
-                <table class="min-w-full border-separate border-spacing-0 text-sm">
+            <div class="mt-6 plotting-table-container rounded-lg border border-slate-200 relative">
+                <table class="plotting-table border-separate border-spacing-0 text-sm">
                     <thead>
                         <tr>
-                            <th
-                                class="sticky left-0 z-10 w-44 border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <th class="sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-50 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 plotting-col-name">
                                 Name
                             </th>
                             @foreach ($dates as $dateString => $dateLabel)
-                                <th
-                                    class="border-b border-r border-slate-200 bg-slate-50 text-center text-xs font-semibold uppercase tracking-wide last:border-r-0 hover:bg-slate-100 transition-colors">
+                                <th class="border-b border-r border-slate-200 bg-slate-50 text-center text-xs font-semibold uppercase tracking-wide last:border-r-0 hover:bg-slate-100 transition-colors plotting-col-date">
                                     <a href="{{ route('payroll.per-date', ['date' => $dateString, 'from_date' => $resolvedFromDate, 'to_date' => $resolvedToDate]) }}"
                                         class="block w-full px-4 py-3 text-blue-600 hover:text-blue-800 hover:underline">
                                         {{ $dateLabel }}
@@ -105,8 +125,7 @@
                                 $employee = $row['employee'];
                             @endphp
                             <tr class="bg-white">
-                                <td
-                                    class="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 font-medium text-slate-900">
+                                <td class="sticky left-0 z-10 border-b border-r border-slate-200 bg-white px-4 py-3 font-medium text-slate-900 plotting-col-name">
                                     <a href="{{ route('payroll.plotting-payment.employee', ['employee' => $employee->id, 'from_date' => $resolvedFromDate, 'to_date' => $resolvedToDate]) }}"
                                         class="text-blue-600 hover:text-blue-800 hover:underline">
                                         {{ $employee->first_name }} {{ $employee->last_name }}
@@ -116,8 +135,7 @@
                                     @php
                                         $dayEntries = $row['days'][$dateString];
                                     @endphp
-                                    <td
-                                        class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative">
+                                    <td class="border-b border-r border-slate-200 px-2 py-2 text-center last:border-r-0 relative plotting-col-date">
                                         <div class="flex flex-col gap-1.5">
                                             @foreach ($dayEntries as $entryIndex => $dayData)
                                                 <div class="relative">

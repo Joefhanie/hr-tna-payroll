@@ -299,7 +299,7 @@
 
                 <div class="col-span-1 sm:min-w-[150px]">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
-                    <select name="status" id="filterStatus" onchange="this.form.submit()"
+                    <select name="status" id="filterStatus"
                         class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">All Statuses</option>
                         <option value="1" {{ ($filters['status'] ?? '') == '1' ? 'selected' : '' }}>Present</option>
@@ -334,9 +334,10 @@
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     const searchInput = document.getElementById('filterSearch');
+                    const statusSelect = document.getElementById('filterStatus');
+                    const dateInput = document.getElementById('filterDate');
                     const clearButton = document.getElementById('timekeeping-clear');
                     const exportButton = document.getElementById('btnExport');
-                    const filterForm = document.getElementById('filterForm');
 
                     function getAttendanceRows() {
                         return Array.from(document.querySelectorAll('#attendanceTable tbody tr.group'));
@@ -353,8 +354,8 @@
 
                         const params = new URLSearchParams();
                         const q = searchInput?.value?.trim() || '';
-                        const status = document.getElementById('filterStatus')?.value || '';
-                        const date = document.getElementById('filterDate')?.value || '';
+                        const status = statusSelect?.value || '';
+                        const date = dateInput?.value || '';
 
                         if (q) params.set('q', q);
                         if (status) params.set('status', status);
@@ -364,31 +365,38 @@
                         exportButton.href = `{{ route('timekeeping.export') }}${[...params].length ? '?' + params.toString() : ''}`;
                     }
 
-                    function getCleanListUrl() {
-                        const params = new URLSearchParams();
-                        params.set('tab', 'list');
-                        return `{{ route('timekeeping.index') }}?${params.toString()}`;
-                    }
-
                     function filterAttendanceRows() {
                         const term = (searchInput?.value || '').trim().toLowerCase();
+                        const statusVal = statusSelect?.value || '';
 
                         getAttendanceRows().forEach((row) => {
                             const searchable = row.textContent.toLowerCase();
-                            const isVisible = !term || searchable.includes(term);
+                            const rowStatus = row.getAttribute('data-status') || '';
+
+                            const matchesSearch = !term || searchable.includes(term);
+                            const matchesStatus = !statusVal || rowStatus === statusVal;
+
+                            const isVisible = matchesSearch && matchesStatus;
                             row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
                         });
 
                         getAttendanceCards().forEach((card) => {
                             const searchable = card.textContent.toLowerCase();
-                            card.classList.toggle('hidden', !!term && !searchable.includes(term));
+                            const cardStatus = card.getAttribute('data-status') || '';
+
+                            const matchesSearch = !term || searchable.includes(term);
+                            const matchesStatus = !statusVal || cardStatus === statusVal;
+
+                            const isVisible = matchesSearch && matchesStatus;
+                            card.classList.toggle('hidden', !isVisible);
                         });
+
+                        updateExportUrl();
                     }
 
-                    searchInput?.addEventListener('input', function() {
-                        filterAttendanceRows();
-                        updateExportUrl();
-                    });
+                    searchInput?.addEventListener('input', filterAttendanceRows);
+                    statusSelect?.addEventListener('change', filterAttendanceRows);
+                    dateInput?.addEventListener('change', updateExportUrl);
 
                     searchInput?.addEventListener('keydown', function(event) {
                         if (event.key === 'Enter') {
@@ -397,14 +405,12 @@
                     });
 
                     clearButton?.addEventListener('click', function() {
-                        window.location.href = getCleanListUrl();
+                        if (searchInput) searchInput.value = '';
+                        if (statusSelect) statusSelect.value = '';
+                        filterAttendanceRows();
                     });
 
-                    document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
-                    document.getElementById('filterDate')?.addEventListener('change', updateExportUrl);
-
                     filterAttendanceRows();
-                    updateExportUrl();
                 });
             </script>
             <!-- Desktop View -->
@@ -472,7 +478,7 @@
                                     $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
                                 }
                             @endphp
-                            <tr class="group hover:bg-slate-50/50 transition">
+                            <tr data-status="{{ $statusKey }}" class="group hover:bg-slate-50/50 transition">
                                 <td class="px-4 py-3 font-medium text-slate-900">{{ $employeeDisplayName }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $attendance->attendance_date->format('M d, Y') }}</td>
                                 <td class="px-4 py-3 text-slate-600">
@@ -579,7 +585,7 @@
                             $employeeDisplayName = $employeeNameParts[0] . ' ' . strtoupper(substr($employeeNameParts[1], 0, 1)) . '. ' . $employeeNameParts[count($employeeNameParts) - 1];
                         }
                     @endphp
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="attendance-card-{{ $attendance->id ?? $loop->index }}">
+                    <div data-status="{{ $statusKey }}" class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-blue-200 transition-colors" id="attendance-card-{{ $attendance->id ?? $loop->index }}">
                         <!-- Card Header -->
                         <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
                             <span class="font-semibold text-slate-900 text-base">{{ $employeeDisplayName }}</span>

@@ -65,8 +65,7 @@ class EmployeeController extends Controller
             'department_id'   => ['nullable', 'integer', 'exists:departments,id'],
         ]);
 
-        $employees = $this->buildQuery($request)
-            ->get();
+        $employees = Employee::with(['department', 'position', 'manager'])->get();
 
         $departments = Department::all();
         $filters = $request->only(['q', 'status', 'employment_type', 'department_id']);
@@ -521,7 +520,6 @@ class EmployeeController extends Controller
         $employees = $this->temporaryAccessEmployeesQuery()
             ->with(['department', 'position', 'user.temporaryAssignments.grantedBy'])
             ->get()
-            ->filter(fn (Employee $employee) => $this->matchesTemporaryAccessFilters($employee, $filters))
             ->values();
 
         $allEmployees = $this->temporaryAccessEmployeesQuery()

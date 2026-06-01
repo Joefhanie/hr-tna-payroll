@@ -34,14 +34,14 @@
                     </div>
 
                     <div class="mt-2 flex w-full flex-wrap items-center gap-2 md:mt-0 md:w-auto">
-                        <select name="onboarding_status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="onboarding_status" id="onboarding-status" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]">
                             <option value="">All Statuses</option>
                             @foreach (($filterOptions['onboarding_statuses'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['onboarding_status'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
                             @endforeach
                         </select>
 
-                        <select name="department" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]" data-auto-submit-filter>
+                        <select name="department" id="onboarding-department" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 md:w-[12rem]">
                             <option value="">All Departments</option>
                             @foreach (($filterOptions['departments'] ?? []) as $option)
                                 <option value="{{ $option['value'] }}" @selected(($filters['department'] ?? '') === $option['value'])>{{ $option['label'] }}</option>
@@ -270,7 +270,7 @@
                     <div class="min-h-0 flex-1 overflow-y-scroll pr-1">
                         <div class="flex flex-col gap-3">
                         @forelse ($employees as $emp)
-                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="onboarding-employee-card rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-indigo-600 bg-indigo-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md" data-filter-hidden="false">
+                            <a href="{{ route('onboarding', ['employee' => $emp['id']]) }}" class="onboarding-employee-card rounded-[0.8rem] border {{ ($selectedEmployee['id'] ?? null) === $emp['id'] ? 'border-indigo-600 bg-indigo-50/40' : 'border-slate-200 bg-white' }} p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition hover:border-slate-300 hover:shadow-md" data-filter-hidden="false" data-status-key="{{ $emp['status_key'] }}" data-department-id="{{ $emp['department_id'] ?? '' }}">
                                 <div class="flex items-center justify-between gap-3">
                                     <div>
                                         <h3 class="font-bold text-[#06112e]">{{ $emp['name'] }}</h3>
@@ -584,9 +584,16 @@
         (() => {
             const filterForm = document.getElementById('onboarding-filters-form');
             const searchField = document.getElementById('onboarding-search');
+            const statusSelect = document.getElementById('onboarding-status');
+            const deptSelect = document.getElementById('onboarding-department');
+            const clearButton = document.getElementById('onboarding-clear');
+            const exportButton = document.getElementById('onboarding-export');
+            const exportInput = document.getElementById('onboarding-export-input');
 
             function filterOnboardingEmployees() {
                 const term = (searchField?.value || '').trim().toLowerCase();
+                const statusVal = statusSelect?.value || '';
+                const deptVal = deptSelect?.value || '';
                 const cards = document.querySelectorAll('.onboarding-employee-card');
                 const emptyState = document.getElementById('onboarding-client-empty');
 
@@ -594,7 +601,14 @@
 
                 cards.forEach((card) => {
                     const searchable = card.textContent.toLowerCase();
-                    const isVisible = !term || searchable.includes(term);
+                    const cardStatus = card.getAttribute('data-status-key') || '';
+                    const cardDept = card.getAttribute('data-department-id') || '';
+
+                    const matchesSearch = !term || searchable.includes(term);
+                    const matchesStatus = !statusVal || cardStatus === statusVal;
+                    const matchesDept = !deptVal || cardDept === deptVal;
+
+                    const isVisible = matchesSearch && matchesStatus && matchesDept;
                     card.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
                     card.classList.toggle('hidden', !isVisible);
 
@@ -608,10 +622,9 @@
                 }
             }
 
-            searchField?.addEventListener('input', () => {
-                filterOnboardingEmployees();
-                updateTaExportUrl();
-            });
+            searchField?.addEventListener('input', filterOnboardingEmployees);
+            statusSelect?.addEventListener('change', filterOnboardingEmployees);
+            deptSelect?.addEventListener('change', filterOnboardingEmployees);
 
             searchField?.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -619,36 +632,11 @@
                 }
             });
 
-            filterForm?.querySelectorAll('[data-auto-submit-filter]')?.forEach((field) => {
-                field.addEventListener('change', () => {
-                    filterForm.submit();
-                });
-            });
-
-            const clearButton = document.getElementById('onboarding-clear');
-            const exportButton = document.getElementById('onboarding-export');
-            const exportInput = document.getElementById('onboarding-export-input');
-
-            const getCleanOnboardingUrl = () => {
-                const url = new URL(filterForm?.action || window.location.href, window.location.origin);
-                const employee = filterForm?.querySelector('input[name="employee"]')?.value || '';
-
-                url.searchParams.delete('q');
-                url.searchParams.delete('onboarding_status');
-                url.searchParams.delete('department');
-                url.searchParams.delete('export');
-
-                if (employee) {
-                    url.searchParams.set('employee', employee);
-                } else {
-                    url.searchParams.delete('employee');
-                }
-
-                return url.toString();
-            };
-
             clearButton?.addEventListener('click', () => {
-                window.location.href = getCleanOnboardingUrl();
+                if (searchField) searchField.value = '';
+                if (statusSelect) statusSelect.value = '';
+                if (deptSelect) deptSelect.value = '';
+                filterOnboardingEmployees();
             });
 
             exportButton?.addEventListener('click', () => {

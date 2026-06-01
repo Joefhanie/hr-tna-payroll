@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:timekeeping.view,timekeeping.create,timekeeping.edit,timekeeping.delete')->group(function () {
         Route::get('/timekeeping/export', [TimekeepingController::class, 'export'])->name('timekeeping.export');
         Route::get('/timekeeping', [TimekeepingController::class, 'index'])->name('timekeeping.index');
+        Route::get('/timekeeping/shift-schedule/export', [TimekeepingController::class, 'exportShiftSchedule'])->name('timekeeping.shift-schedule.export');
         Route::get('/timekeeping/shift-schedule', [TimekeepingController::class, 'shiftSchedule'])->name('timekeeping.shift-schedule');
         Route::get('/timekeeping/{user}', [TimekeepingController::class, 'show'])->name('timekeeping.show');
     });

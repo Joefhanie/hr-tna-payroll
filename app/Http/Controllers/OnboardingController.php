@@ -86,7 +86,9 @@ class OnboardingController extends Controller
         $now = Carbon::now();
         $selectedEmployeeId = (int) $request->integer('employee');
 
-        $employees = Employee::query()
+        $isExport = $request->boolean('export');
+
+        $employeesQuery = Employee::query()
             ->with([
                 'department',
                 'position',
@@ -94,8 +96,10 @@ class OnboardingController extends Controller
                 'onboardingAssignment.tasks',
             ])
             ->whereNotNull('hire_date')
-            ->whereNotIn('status', [4, 5])
-            ->when($filters['q'] !== '', function ($query) use ($filters) {
+            ->whereNotIn('status', [4, 5]);
+
+        if ($isExport) {
+            $employeesQuery->when($filters['q'] !== '', function ($query) use ($filters) {
                 $search = $filters['q'];
                 $query->where(function ($inner) use ($search) {
                     $inner->where('employee_code', 'like', '%' . $search . '%')
@@ -113,19 +117,22 @@ class OnboardingController extends Controller
             })
             ->when($filters['department'] !== '', function ($query) use ($filters) {
                 $query->where('department_id', (int) $filters['department']);
-            })
-            ->orderByRaw(
+            });
+        }
+
+        $employees = $employeesQuery->orderByRaw(
                 'CASE WHEN YEAR(hire_date) = ? AND MONTH(hire_date) = ? THEN 0 ELSE 1 END',
                 [$now->year, $now->month]
             )
             ->orderByDesc('hire_date')
             ->orderBy('first_name')
             ->get()
-            ->map(fn (Employee $employee) => $this->buildEmployeeCard($employee, true))
-            ->when($filters['onboarding_status'] !== '', function ($employees) use ($filters) {
-                return $employees->where('status_key', $filters['onboarding_status'])->values();
-            })
-            ->sortBy([
+            ->map(fn (Employee $employee) => $this->buildEmployeeCard($employee, true));
+
+        if ($isExport && $filters['onboarding_status'] !== '') {
+            $employees = $employees->where('status_key', $filters['onboarding_status'])->values();
+        }
+        $employees = $employees->sortBy([
                 fn (array $employee) => $employee['is_priority_hire'] ? 0 : 1,
                 fn (array $employee) => -1 * ($employee['hire_date_sort'] ?? 0),
                 fn (array $employee) => strtolower($employee['name']),
@@ -502,6 +509,7 @@ class OnboardingController extends Controller
             'employment_type_label' => $this->employmentTypeLabel((int) ($employee->employment_type ?? 0)),
             'employee_status' => (int) ($employee->status ?? 0),
             'employee_status_label' => $this->employeeStatusLabel((int) ($employee->status ?? 0)),
+            'department_id' => $employee->department_id,
             'is_priority_hire' => $employee->hire_date !== null
                 && (int) $employee->hire_date->year === (int) $now->year
                 && (int) $employee->hire_date->month === (int) $now->month,
