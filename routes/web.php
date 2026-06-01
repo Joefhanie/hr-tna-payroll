@@ -359,6 +359,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/payroll/disputes', [PayslipDisputeController::class, 'index'])->name('payroll.disputes.index');
         Route::post('/payroll/disputes', [PayslipDisputeController::class, 'store'])->name('payroll.disputes.store');
         Route::get('/payroll/disputes/api/payslip-items/{payslip}', [PayslipDisputeController::class, 'getPayslipItems'])->name('payroll.disputes.api.payslip-items');
+        Route::get('/payroll/disputes/api/payslips/{employeeId}', [PayslipDisputeController::class, 'getPayslips'])->name('payroll.disputes.api.payslips');
 
         Route::get('/payroll/{payRun}', [PayrollController::class, 'show'])->name('payroll.show');
     });
@@ -371,7 +372,6 @@ Route::middleware('auth')->group(function () {
         // Disputes — HR resolve / reject
         Route::post('/payroll/disputes/{dispute}/resolve', [PayslipDisputeController::class, 'resolve'])->name('payroll.disputes.resolve');
         Route::post('/payroll/disputes/{dispute}/reject', [PayslipDisputeController::class, 'reject'])->name('payroll.disputes.reject');
-        Route::get('/payroll/disputes/api/payslips/{employeeId}', [PayslipDisputeController::class, 'getPayslips'])->name('payroll.disputes.api.payslips');
     });
     Route::middleware('permission:payroll.delete')->group(function () {
         Route::delete('/payroll/previous-claims/{previousClaim}', [PreviousClaimController::class, 'destroy'])->name('payroll.previous-claims.destroy');
