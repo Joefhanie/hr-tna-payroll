@@ -454,15 +454,39 @@ class OnboardingController extends Controller
 
         $companyDocuments = CompanyDocument::query()->orderBy('title')->get();
 
-        $visibleTasks = $includeAllTasks
-            ? $allTasks->sortBy('sequence')->values()
-            : $allTasks
+        $visibleTasks = null;
+
+        if ($includeAllTasks) {
+            $currentUser = Auth::user();
+            $currentUserRole = (int) ($currentUser?->role ?? 0);
+            $currentUserEmployeeId = $currentUser?->employee?->id ?? null;
+
+            if ($currentUserRole === 2) {
+                // Supervisor: show full task list only for their direct reports.
+                // Otherwise show only tasks assigned to supervisors.
+                $isDirectReport = $currentUserEmployeeId !== null && (int) ($employee->manager_id ?? 0) === (int) $currentUserEmployeeId;
+
+                if ($isDirectReport) {
+                    $visibleTasks = $allTasks->sortBy('sequence')->values();
+                } else {
+                    $visibleTasks = $allTasks
+                        ->where('assigned_role', OnboardingTask::ASSIGNED_ROLE_SUPERVISOR)
+                        ->sortBy('sequence')
+                        ->values();
+                }
+            } else {
+                // HR or other roles with full view
+                $visibleTasks = $allTasks->sortBy('sequence')->values();
+            }
+        } else {
+            $visibleTasks = $allTasks
                 ->where('assigned_role', OnboardingTask::ASSIGNED_ROLE_EMPLOYEE)
                 ->sortBy([
                     fn (OnboardingTask $task) => $task->completed_at !== null ? 1 : 0,
                     fn (OnboardingTask $task) => $task->sequence,
                 ])
                 ->values();
+        }
 
         return [
             'id' => $employee->id,
@@ -654,8 +678,27 @@ class OnboardingController extends Controller
             return;
         }
 
-        if ($role === 2 && $task->assigned_role === OnboardingTask::ASSIGNED_ROLE_SUPERVISOR) {
-            return;
+        if ($role === 2) {
+            // Supervisors may complete tasks explicitly assigned to supervisors
+            if ($task->assigned_role === OnboardingTask::ASSIGNED_ROLE_SUPERVISOR) {
+                return;
+            }
+
+            // Supervisors may also complete employee-assigned tasks for their direct reports
+            $currentUserEmployeeId = Auth::user()?->employee?->id ?? null;
+
+            // Resolve assigned employee robustly (assignment relation may not be eager-loaded)
+            $assignedEmployee = null;
+            $assignment = $task->assignment()->with('employee')->first();
+            if ($assignment && $assignment->employee) {
+                $assignedEmployee = $assignment->employee;
+            }
+
+            if ($task->assigned_role === OnboardingTask::ASSIGNED_ROLE_EMPLOYEE && $assignedEmployee && $currentUserEmployeeId !== null) {
+                if ((int) $assignedEmployee->manager_id === (int) $currentUserEmployeeId) {
+                    return;
+                }
+            }
         }
 
         abort(403);

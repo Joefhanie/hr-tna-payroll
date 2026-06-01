@@ -210,7 +210,7 @@ class TimekeepingController extends Controller
         $request->validate([
             'date'   => ['nullable', 'date'],
             'q'      => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
         ]);
 
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
@@ -423,6 +423,65 @@ class TimekeepingController extends Controller
             $att->setAttribute('employee_display_name', $attDisplay);
         }
 
+        $empIds = $todayAttendance->pluck('emp_id')->merge($calendarDataRecords->pluck('emp_id'))->unique()->filter();
+        
+        $startDateStr = $selectedDateCarbon->copy()->startOfMonth()->toDateString();
+        $endDateStr = $selectedDateCarbon->copy()->endOfMonth()->toDateString();
+
+        $breakTaps = \Illuminate\Support\Facades\DB::table('tap_records')
+            ->whereIn('employee_id', $empIds)
+            ->whereBetween('time', [$startDateStr . ' 00:00:00', $endDateStr . ' 23:59:59'])
+            ->whereRaw('`function` IN (3, 4)')
+            ->orderBy('time')
+            ->get();
+
+        $tapsGrouped = $breakTaps->groupBy(function($tap) {
+            return $tap->employee_id . '|' . \Carbon\Carbon::parse($tap->time)->toDateString();
+        });
+
+        $breakDurations = [];
+        foreach ($tapsGrouped as $key => $taps) {
+            $totalMins = 0;
+            $lastBreakIn = null;
+            $firstBreakInStr = null;
+            $lastBreakOutStr = null;
+            
+            foreach ($taps as $tap) {
+                if ((int)$tap->function === 3) {
+                    $lastBreakIn = \Carbon\Carbon::parse($tap->time);
+                    if (!$firstBreakInStr) {
+                        $firstBreakInStr = $lastBreakIn->format('H:i');
+                    }
+                } elseif ((int)$tap->function === 4 && $lastBreakIn) {
+                    $lastBreakOut = \Carbon\Carbon::parse($tap->time);
+                    $totalMins += $lastBreakOut->diffInMinutes($lastBreakIn);
+                    $lastBreakOutStr = $lastBreakOut->format('H:i');
+                    $lastBreakIn = null;
+                }
+            }
+            $breakDurations[$key] = [
+                'duration' => $totalMins,
+                'in' => $firstBreakInStr,
+                'out' => $lastBreakOutStr
+            ];
+        }
+
+        foreach ($todayAttendance as $att) {
+            $key = $att->emp_id . '|' . $att->attendance_date->toDateString();
+            $brk = $breakDurations[$key] ?? ['duration' => 0, 'in' => null, 'out' => null];
+            $att->setAttribute('break_duration', $brk['duration']);
+            $att->setAttribute('break_in', $brk['in']);
+            $att->setAttribute('break_out', $brk['out']);
+        }
+
+        foreach ($calendarDataRecords as $att) {
+            $key = $att->emp_id . '|' . $att->attendance_date->toDateString();
+            $brk = $breakDurations[$key] ?? ['duration' => 0, 'in' => null, 'out' => null];
+            $att->setAttribute('break_duration', $brk['duration']);
+            $att->setAttribute('break_in', $brk['in']);
+            $att->setAttribute('break_out', $brk['out']);
+        }
+
         $calendarData = $calendarDataRecords->groupBy(function ($attendance) {
             return $attendance->attendance_date->toDateString();
         });
@@ -439,17 +498,31 @@ class TimekeepingController extends Controller
                 ->groupBy('emp_id')
             : collect();
 
+        $breakRemark = \Illuminate\Support\Facades\Cache::remember('break_remark', 3600, function () {
+            return \Illuminate\Support\Facades\DB::table('function_settings')->where('setting_value', 3)->value('remarks') ?: 'On Break';
+        });
+
+        $tap3Remark = \Illuminate\Support\Facades\Cache::remember('tap3_remark', 3600, function () {
+            return \Illuminate\Support\Facades\DB::table('function_settings')->where('setting_value', 3)->value('remarks') ?: 'Break In';
+        });
+
+        $tap4Remark = \Illuminate\Support\Facades\Cache::remember('tap4_remark', 3600, function () {
+            return \Illuminate\Support\Facades\DB::table('function_settings')->where('setting_value', 4)->value('remarks') ?: 'Break Out';
+        });
+
         $attendanceStatusLabels = [
             1 => 'Present',
             2 => 'Late',
             3 => 'Absent',
             4 => 'On Leave',
             5 => 'Shift Not Started',
+            6 => $breakRemark,
             'present' => 'Present',
             'late' => 'Late',
             'absent' => 'Absent',
             'excused' => 'On Leave',
             'not_started' => 'Shift Not Started',
+            'on_break' => $breakRemark,
         ];
 
         $normalizeStatus = function ($status) {
@@ -472,7 +545,7 @@ class TimekeepingController extends Controller
         $activeAttendance = $todayAttendance->first(function ($attendance) use ($normalizeStatus) {
             $status = $normalizeStatus($attendance->status);
 
-            return in_array($status, [1, 'present', 2, 'late'], true) && $attendance->check_in;
+            return in_array($status, [1, 'present', 2, 'late', 6, 'on_break'], true) && $attendance->check_in;
         }) ?? $todayAttendance->first();
 
         $openAttendanceMap = Schema::hasTable('attendance')
@@ -506,6 +579,8 @@ class TimekeepingController extends Controller
             'openAttendanceMap' => $openAttendanceMap,
             'calendarData' => $calendarData,
             'filters' => $filters,
+            'tap3Remark' => $tap3Remark,
+            'tap4Remark' => $tap4Remark,
         ]);
     }
 
@@ -523,7 +598,7 @@ class TimekeepingController extends Controller
         $request->validate([
             'date'   => ['nullable', 'date'],
             'q'      => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', 'integer', 'in:1,2,3,4,5'],
+            'status' => ['nullable', 'integer', 'in:1,2,3,4,5,6'],
         ]);
 
         $selectedDate = $request->query('date', Carbon::now()->toDateString());
@@ -576,12 +651,17 @@ class TimekeepingController extends Controller
                 'Notes'
             ]);
 
+            $breakRemark = \Illuminate\Support\Facades\Cache::remember('break_remark', 3600, function () {
+                return \Illuminate\Support\Facades\DB::table('function_settings')->where('setting_value', 3)->value('remarks') ?: 'On Break';
+            });
+
             $statusLabels = [
                 1 => 'Present',
                 2 => 'Late',
                 3 => 'Absent',
                 4 => 'On Leave',
-                5 => 'Shift Not Started'
+                5 => 'Shift Not Started',
+                6 => $breakRemark,
             ];
 
             foreach ($todayAttendance as $att) {

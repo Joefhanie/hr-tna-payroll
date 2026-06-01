@@ -452,12 +452,15 @@ class OrganizationController extends Controller
             'website' => ['nullable', 'url', 'max:255'],
             'tin' => ['nullable', 'string', 'max:60'],
             'industry' => ['nullable', 'string', 'max:120'],
+            'use_machine' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'image', 'max:10240'],
             'logo_dark' => ['nullable', 'image', 'max:10240'],
             'brand_primary_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
             'brand_secondary_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
             'brand_accent_color' => ['nullable', 'regex:/^#([A-Fa-f0-9]{6})$/'],
         ]);
+
+        $validated['use_machine'] = $request->boolean('use_machine');
 
         $settings->fill($validated);
 
@@ -490,8 +493,12 @@ class OrganizationController extends Controller
     /**
      * Show Machine Settings submodule list and form.
      */
-    public function machineSettings(): View
+    public function machineSettings(): View|RedirectResponse
     {
+        if (!CompanySetting::current()->use_machine) {
+            return redirect()->route('organization.settings')->with('error', 'Enable "Use a machine" in Company Settings to access this page.');
+        }
+
         $machines = Machine::orderBy('description')->get();
         $settings = MachineSetting::with('machine')->orderBy('machine_id')->get();
 

@@ -384,6 +384,7 @@
                     @php
                         $machineSettingsRouteExists = \Illuminate\Support\Facades\Route::has('organization.settings.machine-settings');
                         $machineSettingsHref = $machineSettingsRouteExists ? route('organization.settings.machine-settings') : url('/organization/settings/machine-settings');
+                        $machineTabEnabled = \App\Models\CompanySetting::current()->use_machine;
                     @endphp
 
                     <details class="sidebar-group" @if (request()->routeIs('organization.settings') || request()->routeIs('organization.settings.*') || request()->routeIs('organization.settings.machine-settings')) open @endif>
@@ -405,12 +406,14 @@
                                 <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">Company Settings</span>
                             </a>
 
-                            <a href="{{ $machineSettingsHref }}" class="sidebar-link sidebar-link-sub {{ request()->routeIs('organization.settings.machine-settings') ? 'sidebar-link-active' : '' }}">
-                                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
-                                    <i class="ti ti-point sidebar-icon text-base"></i>
-                                </span>
-                                <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">Machines</span>
-                            </a>
+                            @if ($machineTabEnabled)
+                                <a href="{{ $machineSettingsHref }}" class="sidebar-link sidebar-link-sub {{ request()->routeIs('organization.settings.machine-settings') ? 'sidebar-link-active' : '' }}">
+                                    <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                                        <i class="ti ti-point sidebar-icon text-base"></i>
+                                    </span>
+                                    <span class="sidebar-nav-label whitespace-nowrap font-medium text-xs">Machines</span>
+                                </a>
+                            @endif
                         </div>
                     </details>
                     @endif

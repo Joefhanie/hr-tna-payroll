@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendance;
+use App\Models\CompanySetting;
 use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -44,25 +45,93 @@ class TapRecordAttendanceService
             return null;
         }
 
-        $timeInTap = $tapRecords->first();
-        $timeIn = Carbon::parse($timeInTap->time);
+        // Function code mapping (from function_settings table):
+        //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
+        $checkInTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 1);
+        $checkOutTaps = $tapRecords->filter(fn($t) => isset($t->function) && (int) $t->function === 2);
+        $hasFunctionCodes = $tapRecords->contains(fn($t) => isset($t->function) && in_array((int) $t->function, [1, 2, 3, 4], true));
+
+        // Use function-specific taps when available; fall back to first/last for
+        // records without a function code (legacy / untyped imports).
+        $timeInTap = $checkInTaps->isNotEmpty()
+            ? $checkInTaps->first()
+            : ($hasFunctionCodes ? null : $tapRecords->first());
+
+        $existingInPunch = Attendance::query()
+            ->where('emp_id', $employee->id)
+            ->where('attendance_date', $dateString)
+            ->where('punch_type', 'in')
+            ->first();
+
+        $manualTimeIn = null;
+        if ($existingInPunch && $existingInPunch->time) {
+            $existingTimeStr = Carbon::parse($existingInPunch->time)->format('H:i:s');
+            $isFromTap = $tapRecords->contains(function ($t) use ($existingTimeStr) {
+                return $t->time && Carbon::parse($t->time)->format('H:i:s') === $existingTimeStr;
+            });
+            if (!$isFromTap) {
+                $manualTimeIn = Carbon::parse($existingInPunch->time);
+            }
+        }
+
+        if (!$timeInTap && !$existingInPunch) {
+            return null;
+        }
+
+        $timeIn = $manualTimeIn ?? ($timeInTap ? Carbon::parse($timeInTap->time) : Carbon::parse($existingInPunch->time));
 
         $timeOutTap = null;
 
-        if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
+        if ($checkOutTaps->isNotEmpty()) {
+            // Prefer the last Check Out tap after shift end; otherwise the last Check Out of the day.
+            if ($shift && $now->gte($shift->getShiftEndDateTime($date))) {
+                $shiftEnd = $shift->getShiftEndDateTime($date);
+                $checkOutsAfterShift = $checkOutTaps->filter(
+                    fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+                );
+                $timeOutTap = $checkOutsAfterShift->isNotEmpty()
+                    ? $checkOutsAfterShift->last()
+                    : $checkOutTaps->last();
+            } else {
+                $timeOutTap = $checkOutTaps->last();
+            }
+        } elseif (!$hasFunctionCodes && $shift && $now->gte($shift->getShiftEndDateTime($date))) {
+            // Legacy fallback: no function codes at all — use last tap after shift end.
             $shiftEnd = $shift->getShiftEndDateTime($date);
-            $tapsAfterShift = $tapRecords->filter(function ($tap) use ($shiftEnd) {
-                return Carbon::parse($tap->time)->gte($shiftEnd);
-            });
-
+            $tapsAfterShift = $tapRecords->filter(
+                fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
+            );
             $timeOutTap = $tapsAfterShift->isNotEmpty()
                 ? $tapsAfterShift->last()
                 : $tapRecords->last();
         }
 
-        $timeOut = $timeOutTap ? Carbon::parse($timeOutTap->time) : null;
+        $existingOutPunch = Attendance::query()
+            ->where('emp_id', $employee->id)
+            ->where('attendance_date', $dateString)
+            ->where('punch_type', 'out')
+            ->first();
 
-        $status = $this->resolveStatus($shift, $timeIn, $timeOut);
+        $manualTimeOut = null;
+        if ($existingOutPunch && $existingOutPunch->time) {
+            $existingTimeStr = Carbon::parse($existingOutPunch->time)->format('H:i:s');
+            $isFromTap = $tapRecords->contains(function ($t) use ($existingTimeStr) {
+                return $t->time && Carbon::parse($t->time)->format('H:i:s') === $existingTimeStr;
+            });
+            if (!$isFromTap) {
+                $manualTimeOut = Carbon::parse($existingOutPunch->time);
+            }
+        }
+
+        $timeOut = $manualTimeOut ?? ($timeOutTap ? Carbon::parse($timeOutTap->time) : null);
+
+        $lastBreakTap = $tapRecords
+            ->filter(fn($t) => isset($t->function) && in_array((int) $t->function, [3, 4], true))
+            ->sortBy(fn($t) => Carbon::parse($t->time)->timestamp)
+            ->last();
+        $isOnBreak = $lastBreakTap && (int) $lastBreakTap->function === 3;
+
+        $status = $isOnBreak ? 6 : $this->resolveStatus($shift, $timeIn, $timeOut);
 
         $attendance = Attendance::upsertPunch(
             $employee->id,
@@ -107,7 +176,7 @@ class TapRecordAttendanceService
     public function syncAll(): int
     {
         $tapRecords = DB::table('tap_records')
-            ->select('employee_id', 'masterlist_id', 'time')
+            ->select('employee_id', 'masterlist_id', 'time', 'function')
             ->where(function ($query) {
                 $query->whereNotNull('employee_id')
                     ->orWhereNotNull('masterlist_id');

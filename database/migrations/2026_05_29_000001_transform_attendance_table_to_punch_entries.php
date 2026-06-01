@@ -40,7 +40,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('emp_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('shift_id')->nullable()->constrained('shifts')->nullOnDelete();
-            $table->enum('punch_type', ['in', 'out']);
+            $table->string('punch_type', 10);
             $table->date('attendance_date');
             $table->time('time')->nullable();
             $table->tinyInteger('status')->default(1)->comment('1=Present, 2=Late, 3=Absent, 4=Excused');

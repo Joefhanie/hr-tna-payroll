@@ -291,7 +291,7 @@
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Search Employee</label>
                     <div class="relative">
                         <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
-                        <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}"
+                        <input type="text" name="q" id="filterSearch" value="{{ $filters['q'] ?? '' }}" autocomplete="off"
                             placeholder="Search by name, code, email…"
                             class="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
@@ -307,6 +307,7 @@
                         <option value="3" {{ ($filters['status'] ?? '') == '3' ? 'selected' : '' }}>Absent</option>
                         <option value="4" {{ ($filters['status'] ?? '') == '4' ? 'selected' : '' }}>On Leave</option>
                         <option value="5" {{ ($filters['status'] ?? '') == '5' ? 'selected' : '' }}>Shift Not Started</option>
+                        <option value="6" {{ ($filters['status'] ?? '') == '6' ? 'selected' : '' }}>On Break</option>
                     </select>
                 </div>
 
@@ -316,50 +317,96 @@
                         class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
 
+                <button type="button" id="timekeeping-clear"
+                    class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
+                    Clear
+                </button>
+
                 @if(auth()->user()->role === 4)
-                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
-                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
-                            class="col-span-1 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-                            Clear Filters
-                        </a>
-                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
-                            class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Export CSV
-                        </a>
-                    @else
-                        <a href="{{ route('timekeeping.export') }}" id="btnExport"
-                            class="col-span-2 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Export CSV
-                        </a>
-                    @endif
-                @else
-                    @if(($filters['q'] ?? '') || ($filters['status'] ?? ''))
-                        <a href="{{ route('timekeeping.index', ['tab' => 'list', 'date' => $selectedDate]) }}"
-                            class="col-span-2 w-full sm:w-auto text-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50">
-                            Clear Filters
-                        </a>
-                    @endif
+                    <a href="{{ route('timekeeping.export') }}" id="btnExport"
+                        class="col-span-1 w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Export CSV
+                    </a>
                 @endif
             </form>
             <script>
-                (function() {
-                    let debounceTimer;
+                document.addEventListener('DOMContentLoaded', function() {
                     const searchInput = document.getElementById('filterSearch');
-                    if (searchInput) {
-                        searchInput.addEventListener('input', function() {
-                            clearTimeout(debounceTimer);
-                            debounceTimer = setTimeout(function() {
-                                document.getElementById('filterForm').submit();
-                            }, 500);
+                    const clearButton = document.getElementById('timekeeping-clear');
+                    const exportButton = document.getElementById('btnExport');
+                    const filterForm = document.getElementById('filterForm');
+
+                    function getAttendanceRows() {
+                        return Array.from(document.querySelectorAll('#attendanceTable tbody tr.group'));
+                    }
+
+                    function getAttendanceCards() {
+                        return Array.from(document.querySelectorAll('[id^="attendance-card-"]'));
+                    }
+
+                    function updateExportUrl() {
+                        if (!exportButton) {
+                            return;
+                        }
+
+                        const params = new URLSearchParams();
+                        const q = searchInput?.value?.trim() || '';
+                        const status = document.getElementById('filterStatus')?.value || '';
+                        const date = document.getElementById('filterDate')?.value || '';
+
+                        if (q) params.set('q', q);
+                        if (status) params.set('status', status);
+                        if (date) params.set('date', date);
+                        params.set('tab', 'list');
+
+                        exportButton.href = `{{ route('timekeeping.export') }}${[...params].length ? '?' + params.toString() : ''}`;
+                    }
+
+                    function getCleanListUrl() {
+                        const params = new URLSearchParams();
+                        params.set('tab', 'list');
+                        return `{{ route('timekeeping.index') }}?${params.toString()}`;
+                    }
+
+                    function filterAttendanceRows() {
+                        const term = (searchInput?.value || '').trim().toLowerCase();
+
+                        getAttendanceRows().forEach((row) => {
+                            const searchable = row.textContent.toLowerCase();
+                            const isVisible = !term || searchable.includes(term);
+                            row.setAttribute('data-filter-hidden', isVisible ? 'false' : 'true');
+                        });
+
+                        getAttendanceCards().forEach((card) => {
+                            const searchable = card.textContent.toLowerCase();
+                            card.classList.toggle('hidden', !!term && !searchable.includes(term));
                         });
                     }
-                })();
+
+                    searchInput?.addEventListener('input', function() {
+                        filterAttendanceRows();
+                        updateExportUrl();
+                    });
+
+                    searchInput?.addEventListener('keydown', function(event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                        }
+                    });
+
+                    clearButton?.addEventListener('click', function() {
+                        window.location.href = getCleanListUrl();
+                    });
+
+                    document.getElementById('filterStatus')?.addEventListener('change', updateExportUrl);
+                    document.getElementById('filterDate')?.addEventListener('change', updateExportUrl);
+
+                    filterAttendanceRows();
+                    updateExportUrl();
+                });
             </script>
             <!-- Desktop View -->
             <div class="hidden lg:block overflow-x-auto rounded-lg border border-slate-200 bg-white">
@@ -409,11 +456,13 @@
                                     3 => 'bg-rose-100 text-rose-700 border-rose-200',
                                     4 => 'bg-sky-100 text-sky-700 border-sky-200',
                                     5 => 'bg-slate-100 text-slate-500 border-slate-200',
+                                    6 => 'bg-orange-100 text-orange-700 border-orange-200',
                                     'present' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                                     'late' => 'bg-amber-100 text-amber-700 border-amber-200',
                                     'absent' => 'bg-rose-100 text-rose-700 border-rose-200',
                                     'excused' => 'bg-sky-100 text-sky-700 border-sky-200',
                                     'not_started' => 'bg-slate-100 text-slate-500 border-slate-200',
+                                    'on_break' => 'bg-orange-100 text-orange-700 border-orange-200',
                                 ];
                                 $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
@@ -456,8 +505,18 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-slate-900">{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</td>
-                                <td class="px-4 py-3 text-slate-900">{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</td>
+                                <td class="px-4 py-3 text-slate-900">
+                                    <span>{{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}</span>
+                                    @if($attendance->break_in)
+                                        <div class="text-[10px] text-slate-400 mt-0.5"><span class="font-semibold">{{ $tap3Remark }}:</span> {{ $attendance->break_in }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-slate-900">
+                                    <span>{{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}</span>
+                                    @if($attendance->break_out)
+                                        <div class="text-[10px] text-slate-400 mt-0.5"><span class="font-semibold">{{ $tap4Remark }}:</span> {{ $attendance->break_out }}</div>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ $pillClass }}">{{ $statusLabel }}</span>
                                 </td>
@@ -516,11 +575,13 @@
                             3 => 'bg-rose-100 text-rose-700 border-rose-200',
                             4 => 'bg-sky-100 text-sky-700 border-sky-200',
                             5 => 'bg-slate-100 text-slate-500 border-slate-200',
+                            6 => 'bg-orange-100 text-orange-700 border-orange-200',
                             'present' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                             'late' => 'bg-amber-100 text-amber-700 border-amber-200',
                             'absent' => 'bg-rose-100 text-rose-700 border-rose-200',
                             'excused' => 'bg-sky-100 text-sky-700 border-sky-200',
                             'not_started' => 'bg-slate-100 text-slate-500 border-slate-200',
+                            'on_break' => 'bg-orange-100 text-orange-700 border-orange-200',
                         ];
                         $pillClass = $statusClasses[$statusKey] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
@@ -588,12 +649,18 @@
                                     <span class="font-semibold text-slate-800 text-base">
                                         {{ $attendance->check_in ? $attendance->check_in->format('H:i') : '—' }}
                                     </span>
+                                    @if($attendance->break_in)
+                                        <span class="block text-[10px] text-slate-400 mt-1"><span class="font-semibold">{{ $tap3Remark }}:</span> {{ $attendance->break_in }}</span>
+                                    @endif
                                 </div>
                                 <div>
                                     <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Time Out</span>
                                     <span class="font-semibold text-slate-800 text-base">
                                         {{ $attendance->check_out ? $attendance->check_out->format('H:i') : '—' }}
                                     </span>
+                                    @if($attendance->break_out)
+                                        <span class="block text-[10px] text-slate-400 mt-1"><span class="font-semibold">{{ $tap4Remark }}:</span> {{ $attendance->break_out }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -753,6 +820,8 @@
     <script>
         const calendarAttendanceData = @json($calendarData);
         const calendarStatusLabels = @json($attendanceStatusLabels);
+        const tap3Remark = @json($tap3Remark);
+        const tap4Remark = @json($tap4Remark);
 
         const calendarStatusClasses = {
             '1': 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -760,11 +829,13 @@
             '3': 'bg-rose-100 text-rose-700 border-rose-200',
             '4': 'bg-sky-100 text-sky-700 border-sky-200',
             '5': 'bg-slate-100 text-slate-500 border-slate-200',
+            '6': 'bg-orange-100 text-orange-700 border-orange-200',
             'present': 'bg-emerald-100 text-emerald-700 border-emerald-200',
             'late': 'bg-amber-100 text-amber-700 border-amber-200',
             'absent': 'bg-rose-100 text-rose-700 border-rose-200',
             'excused': 'bg-sky-100 text-sky-700 border-sky-200',
             'not_started': 'bg-slate-100 text-slate-500 border-slate-200',
+            'on_break': 'bg-orange-100 text-orange-700 border-orange-200',
         };
 
         window.calendarInitialized = false;
@@ -950,12 +1021,46 @@
                     }
                 }
 
+                if (record.break_duration > 0) {
+                    shiftBadgesHtml += `
+                        <span class="text-[9px] text-slate-400 font-medium" title="Break Duration">
+                            <i class="ti ti-coffee"></i> ${record.break_duration}m break
+                        </span>
+                    `;
+                }
+
                 const card = document.createElement('div');
-                card.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-sm transition hover:shadow-md';
+                card.className = 'bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm transition hover:shadow-md';
+
+                let breakRowHtml = '';
+                if (record.break_in) {
+                    const bIn  = formatTimeValue(record.break_in);
+                    const bOut = record.break_out ? formatTimeValue(record.break_out) : '—';
+                    breakRowHtml = `
+                        <hr class="border-slate-100 my-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">${tap3Remark}:</span>
+                            <span class="text-[0.7rem] font-bold text-slate-600">${bIn}</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">${tap4Remark}:</span>
+                            <span class="text-[0.7rem] font-bold text-slate-600">${bOut}</span>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
-                    <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-0.5">In: ${timeIn}</p>
-                    <p class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Out: ${timeOut}</p>
-                    <p class="text-sm font-bold text-[#06112e] mb-3">${employeeName}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">IN:</span>
+                        <span class="text-sm font-semibold text-slate-800">${timeIn}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-0.5">
+                        <span class="text-[0.65rem] font-semibold text-slate-400 uppercase tracking-wider">OUT:</span>
+                        <span class="text-sm font-semibold text-slate-800">${timeOut}</span>
+                    </div>
+                    ${breakRowHtml}
+                    <hr class="border-slate-100 my-2">
+                    <p class="text-sm font-bold text-[#06112e] mb-2">${employeeName}</p>
                     <div class="flex flex-wrap gap-1.5 items-center">
                         <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider ${statusClass}">${statusLabel}</span>
                         ${shiftBadgesHtml}
