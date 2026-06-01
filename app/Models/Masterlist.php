@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Masterlist extends Model
 {
@@ -34,8 +34,8 @@ class Masterlist extends Model
         'is_deleted' => 'boolean',
     ];
 
-    public function employee(): HasOne
+    public function employee(): BelongsTo
     {
-        return $this->hasOne(Employee::class, 'masterlist_id');
+        return $this->belongsTo(Employee::class, 'emp_id');
     }
 }

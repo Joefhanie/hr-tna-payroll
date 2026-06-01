@@ -240,25 +240,32 @@ class TapRecordAttendanceService
         $masterlistId = $tapRecord->masterlist_id ?? null;
         $employeeId = $tapRecord->employee_id ?? null;
 
-        if ($employeesByMasterlist && $masterlistId && $employeesByMasterlist->has((int) $masterlistId)) {
-            return $employeesByMasterlist->get((int) $masterlistId);
-        }
+        if ($masterlistId) {
+            $masterlist = Masterlist::with(['employee.user', 'employee.shiftAssignments.shift'])
+                ->find((int) $masterlistId);
 
-        if ($employeesById && $masterlistId && $employeesById->has((int) $masterlistId)) {
-            return $employeesById->get((int) $masterlistId);
+            if ($masterlist?->employee) {
+                return $masterlist->employee;
+            }
+
+            $masterlistEmployeeId = $masterlist?->emp_id;
+            if ($employeesById && $masterlistEmployeeId && $employeesById->has((int) $masterlistEmployeeId)) {
+                return $employeesById->get((int) $masterlistEmployeeId);
+            }
         }
 
         if ($employeesById && $employeeId && $employeesById->has((int) $employeeId)) {
             return $employeesById->get((int) $employeeId);
         }
 
-        return Employee::with(['user', 'shiftAssignments.shift'])
-            ->when($masterlistId, function ($query) use ($masterlistId) {
-                $query->where('masterlist_id', $masterlistId);
-            }, function ($query) use ($employeeId) {
-                $query->whereKey($employeeId);
-            })
-            ->first();
+        if ($masterlistId) {
+            $fallbackMasterlist = Masterlist::query()->find((int) $masterlistId);
+            if ($fallbackMasterlist?->emp_id) {
+                return Employee::with(['user', 'shiftAssignments.shift'])->find($fallbackMasterlist->emp_id);
+            }
+        }
+
+        return Employee::with(['user', 'shiftAssignments.shift'])->find($employeeId);
     }
 
     protected function resolveStatus(?\App\Models\Shift $shift, ?Carbon $timeIn, ?Carbon $timeOut): int

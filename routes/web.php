@@ -88,7 +88,8 @@ Route::middleware('auth')->group(function () {
 
         $tapRecords = DB::table('tap_records as tap')
             ->leftJoin('employees as employee_by_id', 'tap.employee_id', '=', 'employee_by_id.id')
-            ->leftJoin('employees as employee_by_masterlist', 'tap.masterlist_id', '=', 'employee_by_masterlist.masterlist_id')
+            ->leftJoin('masterlist as masterlist_by_id', 'tap.masterlist_id', '=', 'masterlist_by_id.id')
+            ->leftJoin('employees as employee_by_masterlist', 'masterlist_by_id.emp_id', '=', 'employee_by_masterlist.id')
             ->leftJoin('users as creator', 'tap.created_by', '=', 'creator.id')
             ->leftJoin('users as updater', 'tap.updated_by', '=', 'updater.id')
             ->leftJoin('users as deleter', 'tap.deleted_by', '=', 'deleter.id')
@@ -96,6 +97,7 @@ Route::middleware('auth')->group(function () {
                 'tap.id',
                 'tap.employee_id',
                 'tap.masterlist_id',
+                'masterlist_by_id.emp_id as masterlist_emp_id',
                 'tap.machine_id',
                 'tap.time',
                 'tap.function',
