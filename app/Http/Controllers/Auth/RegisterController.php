@@ -63,7 +63,7 @@ class RegisterController extends Controller
 
     public function profile(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('registration.profile') || ! $request->session()->has('registration.account')) {
+        if (!$request->session()->has('registration.profile') || !$request->session()->has('registration.account')) {
             return redirect()->route('register');
         }
 
@@ -98,11 +98,11 @@ class RegisterController extends Controller
 
     public function employment(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('registration.profile')) {
+        if (!$request->session()->has('registration.profile')) {
             return redirect()->route('register');
         }
 
-        if (! $request->session()->has('registration.account')) {
+        if (!$request->session()->has('registration.account')) {
             return redirect()->route('register.profile');
         }
 
@@ -126,7 +126,7 @@ class RegisterController extends Controller
         $account = $request->session()->get('registration.account');
         $profile = $request->session()->get('registration.profile');
 
-        if (! is_array($account) || ! is_array($profile)) {
+        if (!is_array($account) || !is_array($profile)) {
             return redirect()->route('register');
         }
 
@@ -148,8 +148,7 @@ class RegisterController extends Controller
                 'contact_number' => (string) ($profile['phone'] ?? ''),
                 'email' => $account['email'],
                 'emergency_contact' => '',
-                'company_id' => 1,
-                'uid' => (string) Str::uuid(),
+                'uid' => null,
                 'is_admin' => 0,
                 'status' => 1,
                 'created_by' => $user->id,

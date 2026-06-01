@@ -96,7 +96,6 @@ Route::middleware('auth')->group(function () {
                 'tap.employee_id',
                 'tap.masterlist_id',
                 'tap.machine_id',
-                'tap.company_id',
                 'tap.time',
                 'tap.function',
                 'tap.status',
@@ -174,7 +173,6 @@ Route::middleware('auth')->group(function () {
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'machine_id' => 'required|integer|min:1',
-            'company_id' => 'required|integer|min:1',
             'tap_time' => 'required|date',
             'function' => 'required|integer|min:0',
             'status' => 'required|integer|min:0',
@@ -187,7 +185,6 @@ Route::middleware('auth')->group(function () {
             'employee_id' => $employee->id,
             'masterlist_id' => $employee->id,
             'machine_id' => $validated['machine_id'],
-            'company_id' => $validated['company_id'],
             'time' => $tapTime->toDateTimeString(),
             'function' => $validated['function'],
             'status' => $validated['status'],

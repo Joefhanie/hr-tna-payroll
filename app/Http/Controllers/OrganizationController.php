@@ -104,7 +104,7 @@ class OrganizationController extends Controller
             'role' => ['nullable', 'in:1,2,3,4'],
             'has_employee_record' => ['nullable', 'boolean'],
             'employee_id' => [
-                Rule::requiredIf($associateEmployee && ! empty($availableEmployeeIds)),
+                Rule::requiredIf($associateEmployee && !empty($availableEmployeeIds)),
                 'nullable',
                 Rule::in($availableEmployeeIds),
             ],
@@ -121,14 +121,13 @@ class OrganizationController extends Controller
                 'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
             ]);
 
-            if (! $associateEmployee) {
+            if (!$associateEmployee) {
                 $masterlist = Masterlist::create([
                     'name' => $validated['username'],
                     'contact_number' => '',
                     'email' => $validated['email'],
                     'emergency_contact' => '',
-                    'company_id' => 1,
-                    'uid' => (string) Str::uuid(),
+                    'uid' => null,
                     'is_admin' => (int) ($validated['role'] ?? 4) === 4 ? 1 : 0,
                     'status' => 1,
                     'created_by' => auth()->id() ?? 0,
@@ -140,7 +139,7 @@ class OrganizationController extends Controller
             return $user;
         });
 
-        if (! empty($validated['employee_id'])) {
+        if (!empty($validated['employee_id'])) {
             $employee = Employee::find($validated['employee_id']);
 
             if ($employee) {
@@ -148,7 +147,7 @@ class OrganizationController extends Controller
             }
         }
 
-        if (! $associateEmployee) {
+        if (!$associateEmployee) {
             $request->session()->put('pending_employee_user_id', $user->id);
 
             return redirect()->route('employees.create')->with('success', 'User credentials saved. Continue by creating the employee profile.');
@@ -179,7 +178,7 @@ class OrganizationController extends Controller
             'status' => ['nullable', 'integer'],
             'has_employee_record' => ['nullable', 'boolean'],
             'employee_id' => [
-                Rule::requiredIf($associateEmployee && ! empty($availableEmployeeIds)),
+                Rule::requiredIf($associateEmployee && !empty($availableEmployeeIds)),
                 'nullable',
                 Rule::in($availableEmployeeIds),
             ],
@@ -192,13 +191,13 @@ class OrganizationController extends Controller
             'employee_id' => $associateEmployee ? ($validated['employee_id'] ?? null) : null,
         ]);
 
-        if (! empty($validated['password'])) {
+        if (!empty($validated['password'])) {
             $user->password = $validated['password'];
         }
 
         $user->save();
 
-        if (! empty($validated['employee_id'])) {
+        if (!empty($validated['employee_id'])) {
             $employee = Employee::find($validated['employee_id']);
 
             if ($employee) {
@@ -206,7 +205,7 @@ class OrganizationController extends Controller
             }
         }
 
-        if (! $associateEmployee) {
+        if (!$associateEmployee) {
             $request->session()->put('pending_employee_user_id', $user->id);
 
             return redirect()->route('employees.create')->with('success', 'User updated successfully. Continue by creating the employee profile.');
@@ -248,14 +247,14 @@ class OrganizationController extends Controller
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Employee> $employees */
         $employees = Employee::query()
-            ->when(! empty($linkedEmployeeIds), function ($query) use ($linkedEmployeeIds) {
+            ->when(!empty($linkedEmployeeIds), function ($query) use ($linkedEmployeeIds) {
                 $query->whereNotIn('id', $linkedEmployeeIds);
             })
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
 
-        if ($currentEmployee && ! $employees->contains('id', $currentEmployee->id)) {
+        if ($currentEmployee && !$employees->contains('id', $currentEmployee->id)) {
             $employees->prepend($currentEmployee);
         }
 
@@ -338,7 +337,7 @@ class OrganizationController extends Controller
     /**
      * Build a flattened department list ordered by hierarchy depth.
      *
-        * @return array<int, array{id:int,name:string,depth:int,label:string}>
+     * @return array<int, array{id:int,name:string,depth:int,label:string}>
      */
     private function departmentOptionsByHierarchy(): array
     {
@@ -366,7 +365,7 @@ class OrganizationController extends Controller
      * Flatten departments in parent-to-child display order.
      *
      * @param Collection<int, Department> $departments
-    * @return array<int, array{department: Department, depth: int, path: string}>
+     * @return array<int, array{department: Department, depth: int, path: string}>
      */
     private function flattenDepartmentsByHierarchy(Collection $departments): array
     {

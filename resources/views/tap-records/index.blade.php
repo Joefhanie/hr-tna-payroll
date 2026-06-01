@@ -13,7 +13,8 @@
             </div>
             <form method="POST" action="{{ route('tap-records.sync') }}">
                 @csrf
-                <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
                     Sync Attendance
                 </button>
             </form>
@@ -37,7 +38,8 @@
 
             <label class="block">
                 <span class="mb-1 block text-sm font-medium text-slate-700">Employee</span>
-                <select name="employee_id" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <select name="employee_id"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Select employee</option>
                     @foreach ($employees as $employee)
                         <option value="{{ $employee->id }}" @selected(old('employee_id') == $employee->id)>
@@ -50,36 +52,35 @@
 
             <label class="block">
                 <span class="mb-1 block text-sm font-medium text-slate-700">Machine ID</span>
-                <input type="number" name="machine_id" value="{{ old('machine_id', 1) }}" min="1" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <input type="number" name="machine_id" value="{{ old('machine_id', 1) }}" min="1"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 @error('machine_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
             </label>
 
             <label class="block">
-                <span class="mb-1 block text-sm font-medium text-slate-700">Company ID</span>
-                <input type="number" name="company_id" value="{{ old('company_id', 1) }}" min="1" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                @error('company_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
-            </label>
-
-            <label class="block">
                 <span class="mb-1 block text-sm font-medium text-slate-700">Tap Time</span>
-                <input type="datetime-local" name="tap_time" value="{{ old('tap_time', now()->format('Y-m-d\TH:i')) }}" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <input type="datetime-local" name="tap_time" value="{{ old('tap_time', now()->format('Y-m-d\TH:i')) }}"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 @error('tap_time')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
             </label>
 
             <label class="block">
                 <span class="mb-1 block text-sm font-medium text-slate-700">Function Code</span>
-                <input type="number" name="function" value="{{ old('function', 0) }}" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <input type="number" name="function" value="{{ old('function', 0) }}" min="0"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 @error('function')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
             </label>
 
             <label class="block">
                 <span class="mb-1 block text-sm font-medium text-slate-700">Status Code</span>
-                <input type="number" name="status" value="{{ old('status', 1) }}" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <input type="number" name="status" value="{{ old('status', 1) }}" min="0"
+                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 @error('status')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
             </label>
 
             <div class="md:col-span-2 lg:col-span-3 flex justify-end">
-                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                     Add Tap Record
                 </button>
             </div>
@@ -107,17 +108,25 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($tapRecords as $record)
                         <tr class="hover:bg-slate-50">
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->employee_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->employee_code_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->masterlist_id ?? 'NULL' }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->machine_id ?? 'NULL' }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->company_id ?? 'NULL' }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->employee_label }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">
+                                {{ $record->employee_code_label }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">
+                                {{ $record->masterlist_id ?? 'NULL' }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">
+                                {{ $record->machine_id ?? 'NULL' }}</td>
                             <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->time_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->function_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->status_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->created_by_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->updated_by_label }}</td>
-                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->deleted_by_label }}</td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->function_label }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->status_label }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->created_by_label }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->updated_by_label }}
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 align-top text-slate-700">{{ $record->deleted_by_label }}
+                            </td>
                         </tr>
                     @empty
                         <tr>
