@@ -2,6 +2,12 @@
     <x-slot:title>Payroll Details - {{ $payRun->name }}</x-slot:title>
     <x-slot:header>Payroll Details</x-slot:header>
 
+    @php
+        $backUrl = request('from') === 'disputes'
+            ? route('payroll.disputes.index')
+            : route('payroll.index');
+    @endphp
+
     <div class="mb-8 flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-semibold">{{ $payRun->name }}</h1>
@@ -16,7 +22,7 @@
                     </button>
                 </form>
             @endif
-            <a href="{{ route('payroll.index') }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
+            <a href="{{ $backUrl }}" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Back</a>
         </div>
     </div>
 
