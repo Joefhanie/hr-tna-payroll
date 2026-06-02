@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Attendance;
 use App\Models\CompanySetting;
 use App\Models\Employee;
+use App\Models\Masterlist;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +32,9 @@ class TapRecordAttendanceService
         }
 
         if ($tapRecords === null) {
+            // Resolve taps by masterlist_id only
             $tapRecords = DB::table('tap_records')
-                ->where(function ($query) use ($employee) {
-                    $query->where('masterlist_id', $employee->masterlist_id)
-                        ->orWhere('employee_id', $employee->id);
-                })
+                ->where('masterlist_id', $employee->masterlist_id)
                 ->whereBetween('time', [$date->copy()->startOfDay()->toDateTimeString(), $windowEnd->toDateTimeString()])
                 ->orderBy('time')
                 ->get();
@@ -50,8 +49,30 @@ class TapRecordAttendanceService
         // When the function settings table is incomplete or contains nulls,
         // treat the tap list as plain punches and use the first/last record.
         if (! $useFunctionCodes) {
-            $timeInTap = $tapRecords->first();
-            $timeOutTap = $tapRecords->last();
+            // Legacy untyped taps: prefer first tap as In. For Out, only set when
+            // there's a clear second tap or when the tap is at/after shift end
+            // (or the shift has already passed). This avoids creating an Out
+            // equal to In when there's only a single early tap.
+            if ($tapRecords->count() === 1) {
+                $singleTap = $tapRecords->first();
+                $timeInTap = $singleTap;
+                $timeOutTap = null;
+
+                if ($shift) {
+                    $shiftEnd = $shift->getShiftEndDateTime($date);
+                    // If the single tap is at/after shift end, or the current
+                    // time is already past shift end, allow it as an Out.
+                    if (Carbon::parse($singleTap->time)->gte($shiftEnd) || $now->gte($shiftEnd)) {
+                        $timeOutTap = $singleTap;
+                    }
+                } else {
+                    // No shift info: treat single tap as both In and Out.
+                    $timeOutTap = $singleTap;
+                }
+            } else {
+                $timeInTap = $tapRecords->first();
+                $timeOutTap = $tapRecords->last();
+            }
         } else {
             // Function code mapping (from function_settings table):
             //   1 = Check In  |  2 = Check Out  |  3 = Break In  |  4 = Break Out
@@ -152,14 +173,28 @@ class TapRecordAttendanceService
         );
 
         if ($timeOut) {
-            Attendance::upsertPunch(
-                $employee->id,
-                $dateString,
-                'out',
-                $timeOut,
-                $shift?->id,
-                $status
-            );
+            // Avoid creating an Out punch identical to the In punch — this
+            // commonly happens when a single tap was treated as both In and Out.
+            $shouldCreateOut = true;
+            if ($timeIn && $timeOut) {
+                try {
+                    $shouldCreateOut = ! (Carbon::parse($timeIn)->format('H:i:s') === Carbon::parse($timeOut)->format('H:i:s'));
+                } catch (\Throwable $e) {
+                    // If parsing fails, fall back to creating the Out.
+                    $shouldCreateOut = true;
+                }
+            }
+
+            if ($shouldCreateOut) {
+                Attendance::upsertPunch(
+                    $employee->id,
+                    $dateString,
+                    'out',
+                    $timeOut,
+                    $shift?->id,
+                    $status
+                );
+            }
         }
 
         return $attendance;
@@ -169,7 +204,7 @@ class TapRecordAttendanceService
     {
         $employee = $this->resolveEmployeeFromTapRecord($tapRecord);
 
-        if (!$employee || !$employee->user) {
+        if (!$employee) {
             return null;
         }
 
@@ -178,12 +213,10 @@ class TapRecordAttendanceService
 
     public function syncAll(): int
     {
+        // Only consider taps that have a masterlist_id; ignore employee_id values
         $tapRecords = DB::table('tap_records')
-            ->select('employee_id', 'masterlist_id', 'time', 'function')
-            ->where(function ($query) {
-                $query->whereNotNull('employee_id')
-                    ->orWhereNotNull('masterlist_id');
-            })
+            ->select('masterlist_id', 'time', 'function')
+            ->whereNotNull('masterlist_id')
             ->orderBy('time')
             ->get();
 
@@ -192,38 +225,28 @@ class TapRecordAttendanceService
         }
 
         $employeeRefs = $tapRecords
-            ->flatMap(function ($tapRecord) {
-                return [$tapRecord->masterlist_id, $tapRecord->employee_id];
-            })
+            ->pluck('masterlist_id')
             ->filter()
             ->unique()
             ->values();
 
-        $employeesById = Employee::with(['user', 'shiftAssignments.shift'])
-            ->whereIn('id', $employeeRefs)
-            ->get()
-            ->keyBy('id');
-
-        $employeesByMasterlist = Employee::with(['user', 'shiftAssignments.shift'])
+        $employeesByMasterlist = Employee::with(['shiftAssignments.shift'])
             ->whereIn('masterlist_id', $employeeRefs)
             ->get()
             ->keyBy('masterlist_id');
 
-        $recordsByEmployeeDate = $tapRecords->groupBy(function ($tapRecord) use ($employeesByMasterlist, $employeesById) {
-            $employee = $this->resolveEmployeeFromTapRecord($tapRecord, $employeesByMasterlist, $employeesById);
-            $employeeRef = $employee?->masterlist_id ?? $employee?->id ?? ($tapRecord->masterlist_id ?? $tapRecord->employee_id);
-
-            return $employeeRef . '|' . Carbon::parse($tapRecord->time)->toDateString();
+        $recordsByEmployeeDate = $tapRecords->groupBy(function ($tapRecord) {
+            // Group by masterlist_id and tap date only
+            return $tapRecord->masterlist_id . '|' . Carbon::parse($tapRecord->time)->toDateString();
         });
 
         $synced = 0;
 
         foreach ($recordsByEmployeeDate as $groupKey => $records) {
             [$employeeRef, $tapDate] = explode('|', $groupKey, 2);
-            $employee = $employeesByMasterlist->get((int) $employeeRef)
-                ?? $employeesById->get((int) $employeeRef);
+            $employee = $employeesByMasterlist->get((int) $employeeRef);
 
-            if (!$employee || !$employee->user) {
+            if (!$employee) {
                 continue;
             }
 
@@ -235,13 +258,12 @@ class TapRecordAttendanceService
         return $synced;
     }
 
-    private function resolveEmployeeFromTapRecord(object $tapRecord, ?Collection $employeesByMasterlist = null, ?Collection $employeesById = null): ?Employee
+    private function resolveEmployeeFromTapRecord(object $tapRecord): ?Employee
     {
         $masterlistId = $tapRecord->masterlist_id ?? null;
-        $employeeId = $tapRecord->employee_id ?? null;
 
         if ($masterlistId) {
-            $masterlist = Masterlist::with(['employee.user', 'employee.shiftAssignments.shift'])
+            $masterlist = Masterlist::with(['employee.shiftAssignments.shift'])
                 ->find((int) $masterlistId);
 
             if ($masterlist?->employee) {
@@ -249,23 +271,12 @@ class TapRecordAttendanceService
             }
 
             $masterlistEmployeeId = $masterlist?->emp_id;
-            if ($employeesById && $masterlistEmployeeId && $employeesById->has((int) $masterlistEmployeeId)) {
-                return $employeesById->get((int) $masterlistEmployeeId);
+            if ($masterlistEmployeeId) {
+                return Employee::with(['shiftAssignments.shift'])->find($masterlistEmployeeId);
             }
         }
 
-        if ($employeesById && $employeeId && $employeesById->has((int) $employeeId)) {
-            return $employeesById->get((int) $employeeId);
-        }
-
-        if ($masterlistId) {
-            $fallbackMasterlist = Masterlist::query()->find((int) $masterlistId);
-            if ($fallbackMasterlist?->emp_id) {
-                return Employee::with(['user', 'shiftAssignments.shift'])->find($fallbackMasterlist->emp_id);
-            }
-        }
-
-        return Employee::with(['user', 'shiftAssignments.shift'])->find($employeeId);
+        return null;
     }
 
     protected function resolveStatus(?\App\Models\Shift $shift, ?Carbon $timeIn, ?Carbon $timeOut): int

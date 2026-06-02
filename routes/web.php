@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
 use App\Services\TapRecordAttendanceService;
 
-Route::redirect('/', 'dashboard');
+Route::redirect('/', '/dashboard');
 
 // Machine-independent media URL for files stored on the public disk.
 Route::get('/media/{path}', [PublicStorageController::class, 'show'])
@@ -235,7 +235,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/onboarding/tasks/{task}', [OnboardingController::class, 'destroyTask'])->name('onboarding.tasks.destroy');
     Route::post('/onboarding/tasks/{task}/submit', [OnboardingController::class, 'submitEmployeeTask'])->name('onboarding.tasks.submit');
     Route::post('/onboarding/tasks/{task}/complete', [OnboardingController::class, 'completeTask'])->name('onboarding.tasks.complete');
-    Route::view('/leave', 'leave')->name('leave')->middleware('permission:leaves.view');
     // Benefits Management
     Route::middleware('permission:benefits.view,benefits.create,benefits.edit,benefits.delete')->group(function () {
         Route::get('/benefits', [App\Http\Controllers\BenefitsController::class, 'index'])->name('benefits');
