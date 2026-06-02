@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 use App\Services\TapRecordAttendanceService;
 
 Route::redirect('/', '/dashboard');
+Route::redirect('/public', '/dashboard');
 
 // Machine-independent media URL for files stored on the public disk.
 Route::get('/media/{path}', [PublicStorageController::class, 'show'])
