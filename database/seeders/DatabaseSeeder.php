@@ -417,6 +417,7 @@ class DatabaseSeeder extends Seeder
                     'empid' => $svEmployee->employee_code,
                     'Date' => $date,
                     'sup_id' => $svEmployee->employee_code,
+                    'company_id' => 1,
                     'time' => $date . ' 08:00:00',
                     'function' => 1,
                     'status' => 1,
