@@ -13,11 +13,34 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
     public function __construct(private readonly OnboardingAssignmentService $onboardingAssignmentService)
     {
+    }
+
+    /**
+     * Resolve the user account linked to an employee.
+     *
+     * Prefer the explicit employee_id relationship; fall back to matching by
+     * current employee email for legacy rows that were not linked yet.
+     */
+    private function resolveLinkedUser(Employee $employee): ?User
+    {
+        $linkedUser = $employee->user;
+
+        if ($linkedUser) {
+            return $linkedUser;
+        }
+
+        $email = trim((string) $employee->email);
+        if ($email === '') {
+            return null;
+        }
+
+        return User::where('email', $email)->first();
     }
 
     /**
@@ -390,12 +413,19 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, Employee $employee): RedirectResponse
     {
+        $linkedUser = $this->resolveLinkedUser($employee);
+
         $validated = $request->validate([
             'employee_code' => ['required', 'string', 'unique:employees,employee_code,' . $employee->id],
             'first_name' => ['required', 'string', 'max:80'],
             'last_name' => ['required', 'string', 'max:80'],
             'middle_name' => ['nullable', 'string', 'max:80'],
-            'email' => ['required', 'email', 'unique:employees,email,' . $employee->id],
+            'email' => [
+                'required',
+                'email',
+                'unique:employees,email,' . $employee->id,
+                Rule::unique('users', 'email')->ignore($linkedUser?->id),
+            ],
             'phone' => ['nullable', 'string', 'max:30'],
             'birth_date' => ['nullable', 'date'],
             'gender' => ['nullable', 'in:Male,Female,Non-binary,Prefer not to say'],
@@ -419,7 +449,26 @@ class EmployeeController extends Controller
             'manager_id' => ['nullable', 'exists:employees,id'],
         ]);
 
-        $employee->update($validated);
+        DB::transaction(function () use ($employee, $validated, $linkedUser) {
+            $employee->update($validated);
+
+            if (!$linkedUser) {
+                return;
+            }
+
+            $userUpdates = [];
+            if ((string) $linkedUser->email !== (string) $validated['email']) {
+                $userUpdates['email'] = $validated['email'];
+            }
+
+            if (empty($linkedUser->employee_id)) {
+                $userUpdates['employee_id'] = $employee->id;
+            }
+
+            if ($userUpdates !== []) {
+                $linkedUser->update($userUpdates);
+            }
+        });
 
         return redirect()->route('employees.show', $employee)
             ->with('success', 'Employee updated successfully.');
