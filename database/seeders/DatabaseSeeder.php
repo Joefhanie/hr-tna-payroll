@@ -52,12 +52,12 @@ class DatabaseSeeder extends Seeder
 
         // 1b. Seed Default Salary Settings
         $taxBrackets = [
-            ['threshold' => 0.00, 'rate' => 0.00, 'label' => 'Exempt', 'notes' => '₱20,833 and below', 'is_active' => true, 'sort_order' => 0],
-            ['threshold' => 20833.00, 'rate' => 0.15, 'label' => 'Bracket 2', 'notes' => 'Over ₱20,833 to ₱33,333', 'is_active' => true, 'sort_order' => 1],
-            ['threshold' => 33333.00, 'rate' => 0.20, 'label' => 'Bracket 3', 'notes' => 'Over ₱33,333 to ₱66,667', 'is_active' => true, 'sort_order' => 2],
-            ['threshold' => 66667.00, 'rate' => 0.25, 'label' => 'Bracket 4', 'notes' => 'Over ₱66,667 to ₱166,667', 'is_active' => true, 'sort_order' => 3],
-            ['threshold' => 166667.00, 'rate' => 0.30, 'label' => 'Bracket 5', 'notes' => 'Over ₱166,667 to ₱666,667', 'is_active' => true, 'sort_order' => 4],
-            ['threshold' => 666667.00, 'rate' => 0.35, 'label' => 'Bracket 6', 'notes' => 'Over ₱666,667', 'is_active' => true, 'sort_order' => 5],
+            ['threshold' => 0.00, 'rate' => 0.00, 'label' => 'Exempt', 'notes' => 'â‚±20,833 and below', 'is_active' => true, 'sort_order' => 0],
+            ['threshold' => 20833.00, 'rate' => 0.15, 'label' => 'Bracket 2', 'notes' => 'Over â‚±20,833 to â‚±33,333', 'is_active' => true, 'sort_order' => 1],
+            ['threshold' => 33333.00, 'rate' => 0.20, 'label' => 'Bracket 3', 'notes' => 'Over â‚±33,333 to â‚±66,667', 'is_active' => true, 'sort_order' => 2],
+            ['threshold' => 66667.00, 'rate' => 0.25, 'label' => 'Bracket 4', 'notes' => 'Over â‚±66,667 to â‚±166,667', 'is_active' => true, 'sort_order' => 3],
+            ['threshold' => 166667.00, 'rate' => 0.30, 'label' => 'Bracket 5', 'notes' => 'Over â‚±166,667 to â‚±666,667', 'is_active' => true, 'sort_order' => 4],
+            ['threshold' => 666667.00, 'rate' => 0.35, 'label' => 'Bracket 6', 'notes' => 'Over â‚±666,667', 'is_active' => true, 'sort_order' => 5],
         ];
         foreach ($taxBrackets as $tb) {
             TaxBracket::create($tb);
@@ -279,7 +279,7 @@ class DatabaseSeeder extends Seeder
             $svEmployees[] = $svEmp;
         }
 
-        // 6. Seed 6 Employees (EMP) — "2 emp for each 1 SV"
+        // 6. Seed 6 Employees (EMP) â€” "2 emp for each 1 SV"
         $empData = [
             // Under SV 1 (Andrei Dilag)
             [

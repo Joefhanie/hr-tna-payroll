@@ -81,7 +81,7 @@ class TapRecordAttendanceService
                     $timeOutTap = $checkOutTaps->last();
                 }
             } elseif (!$hasFunctionCodes && $shift && $now->gte($shift->getShiftEndDateTime($date))) {
-                // Legacy fallback: no function codes at all — use last tap after shift end.
+                // Legacy fallback: no function codes at all â€” use last tap after shift end.
                 $shiftEnd = $shift->getShiftEndDateTime($date);
                 $tapsAfterShift = $tapRecords->filter(
                     fn($t) => Carbon::parse($t->time)->gte($shiftEnd)
