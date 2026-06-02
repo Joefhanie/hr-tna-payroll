@@ -117,7 +117,7 @@
                         @endif
                         <td class="px-4 py-3 text-slate-600 whitespace-nowrap text-xs">
                             @if($dispute->payslip && $dispute->payslip->payRun)
-                                <a href="{{ route('payroll.show', $dispute->payslip->payRun) }}" class="text-blue-600 hover:underline font-medium text-sm">
+                                <a href="{{ route('payroll.show', ['payRun' => $dispute->payslip->payRun, 'from' => 'disputes']) }}" class="text-blue-600 hover:underline font-medium text-sm">
                                     {{ \Carbon\Carbon::parse($dispute->payslip->payRun->period_start)->format('M d') }} – {{ \Carbon\Carbon::parse($dispute->payslip->payRun->period_end)->format('M d, Y') }}
                                 </a>
                             @else

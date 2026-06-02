@@ -36,7 +36,7 @@
             </a>
             @endif
             <button type="button" id="openClaimModal"
-                class="{{ $isOvertimePage ? 'bg-amber-500 hover:bg-amber-600' : ($isNightDifferentialPage ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700') }} text-white px-5 py-2.5 rounded-lg transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
+                class="bg-brand-primary text-white px-5 py-2.5 rounded-lg hover:opacity-90 transition flex items-center gap-2 font-medium text-sm whitespace-nowrap">
                 <i class="ti ti-plus text-base"></i>
                 @if($isOvertimePage) File Overtime Request
                 @elseif($isNightDifferentialPage) File Night Differential Request
@@ -407,7 +407,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="px-5 py-2 rounded-xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 transition">
+                        class="px-5 py-2 rounded-xl bg-brand-primary text-sm font-medium text-white hover:opacity-90 transition">
                         Submit Claim
                     </button>
                 </div>
