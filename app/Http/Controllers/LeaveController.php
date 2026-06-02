@@ -324,15 +324,22 @@ class LeaveController extends Controller
      */
     public function calendarView(Request $request)
     {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
         $selectedDate        = $request->query('date', now()->toDateString());
         $selectedDateCarbon  = Carbon::parse($selectedDate);
 
         $startOfMonth = $selectedDateCarbon->copy()->startOfMonth()->toDateString();
         $endOfMonth   = $selectedDateCarbon->copy()->endOfMonth()->toDateString();
 
-        // All leave requests that overlap with this month (excluding Cancelled status)
         $leaveRequests = Leave::with('employee')
-            ->where('status', '!=', 4)
+            ->when($user && (int) $user->role === 1 && $user->employee_id, function ($query) use ($user) {
+                $query->where('employee_id', $user->employee_id);
+            }, function ($query) {
+                // Leave management calendar for HR and supervisors excludes cancelled requests.
+                $query->where('status', '!=', 4);
+            })
             ->where(function ($q) use ($startOfMonth, $endOfMonth) {
                 $q->whereBetween('start_date', [$startOfMonth, $endOfMonth])
                   ->orWhereBetween('end_date', [$startOfMonth, $endOfMonth])

@@ -61,7 +61,7 @@
         ['url' => route('timekeeping.index'),          'label' => 'Attendance'],
         ['url' => route('timekeeping.shift-schedule'), 'label' => 'Shift Schedule'],
       ]],
-      ['url' => route('leave'),        'label' => 'Leave',         'group' => 'Modules', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete'],
+      ['url' => route('leave.index'),  'label' => 'Leave',         'group' => 'Modules', 'permission' => 'leaves.view,leaves.create,leaves.edit,leaves.delete'],
       ['label' => 'Salaries', 'group' => 'Modules', 'permission' => 'payroll.view,payroll.create,payroll.edit,payroll.delete', 'children' => [
         ['url' => route('salary.index'), 'label' => 'Salary Records'],
         ['url' => route('salary.settings'), 'label' => 'Salary Settings'],
