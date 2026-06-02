@@ -17,6 +17,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\TimekeepingController;
 use App\Models\Employee;
 use App\Models\Masterlist;
+use App\Models\TapRecord;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -192,7 +193,8 @@ Route::middleware('auth')->group(function () {
 
         $tapTime = Carbon::parse($validated['tap_time']);
 
-        DB::table('tap_records')->insert([
+        // Use Eloquent create so the TapRecord model's created hook triggers
+        TapRecord::create([
             'employee_id' => $employee->id,
             'masterlist_id' => $masterlist->id,
             'machine_id' => $validated['machine_id'],
@@ -206,8 +208,6 @@ Route::middleware('auth')->group(function () {
             'deleted_at' => null,
             'deleted_by' => null,
         ]);
-
-        app(TapRecordAttendanceService::class)->syncForEmployeeDate($employee, $tapTime);
 
         return redirect()->route('tap-records.index')->with('success', 'Tap record added successfully.');
     })->name('tap-records.store');
