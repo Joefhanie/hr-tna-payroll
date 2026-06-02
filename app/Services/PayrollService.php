@@ -120,6 +120,7 @@ class PayrollService
             return round($baseAmount, 2);
         }
 
+        $periodDays = max($periodStart->diffInDays($periodEnd) + 1, 1);
         $workedDays = $this->countWorkedAttendanceDays($employee, $periodStart, $periodEnd);
 
         return match ((int) ($record->pay_frequency ?? 5)) {
@@ -131,7 +132,10 @@ class PayrollService
                     }
                     return round(($baseAmount / $divisor) * $workedDays, 2);
                 })(),
-            default => $this->computeGrossForPeriod($record, $periodStart, $periodEnd),
+            default => round(
+                $this->computeGrossForPeriod($record, $periodStart, $periodEnd) * ($workedDays / $periodDays),
+                2
+            ),
         };
     }
 
@@ -759,6 +763,10 @@ class PayrollService
             $salaryRecord = $this->getSalaryRecordForDate($employee, $periodEnd);
             $isFixedRate = $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) === 0.0);
             $applyGovernmentContributions = (bool) ($payRun->deduct_government_contributions ?? false);
+            $payFrequency = (int) ($salaryRecord?->pay_frequency ?? 5);
+            $proratedGross = $salaryRecord
+                && ! $isFixedRate
+                && ($payFrequency !== 5 || (float) ($salaryRecord->daily_divisor ?? 0) > 0);
             $gross = 0.0;
             if ($salaryRecord) {
                 $gross = $this->computeAttendanceBasedGross($salaryRecord, $employee, $periodStart, $periodEnd);
@@ -770,7 +778,7 @@ class PayrollService
                 $periodEnd,
                 $salaryRecord ? (float) $salaryRecord->amount : $gross,
                 $salaryRecord,
-                $salaryRecord && ((float) ($salaryRecord->daily_divisor ?? 0) > 0) && (int) ($salaryRecord->pay_frequency ?? 5) === 5
+                $proratedGross
             );
             $attendanceEarningsTotal = $attendanceAdjustments['earnings_total'];
             $attendanceDeductionsTotal = $attendanceAdjustments['deductions_total'];
