@@ -2,11 +2,20 @@
 
 $externalUploadRoot = env('UPLOADS_ROOT');
 
-if ($externalUploadRoot && !preg_match('/^(?:[A-Za-z]:[\\\/]|\\\\|\/)/', $externalUploadRoot)) {
-    $externalUploadRoot = base_path($externalUploadRoot);
-}
+if ($externalUploadRoot) {
+    $isWindowsAbsolute = strlen($externalUploadRoot) >= 3
+        && ctype_alpha($externalUploadRoot[0])
+        && $externalUploadRoot[1] === ':'
+        && in_array($externalUploadRoot[2], ['\\', '/'], true);
 
-if (!$externalUploadRoot) {
+    $isAbsolute = $isWindowsAbsolute
+        || str_starts_with($externalUploadRoot, '/')
+        || str_starts_with($externalUploadRoot, '\\\\');
+
+    if (!$isAbsolute) {
+        $externalUploadRoot = base_path($externalUploadRoot);
+    }
+} else {
     $externalUploadRoot = base_path('../micro');
 }
 

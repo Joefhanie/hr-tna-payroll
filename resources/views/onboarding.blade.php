@@ -696,9 +696,7 @@
                 });
             });
 
-            if (!form) {
-                return;
-            }
+            if (form) {
 
             filterOnboardingEmployees();
 
@@ -864,13 +862,14 @@
                 openModal('add-task-modal');
             @endif
 
-            document.addEventListener('keydown', (event) => {
-                if (event.key !== 'Escape') {
-                    return;
-                }
+                document.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Escape') {
+                        return;
+                    }
 
-                closeModal('add-task-modal');
-            });
+                    closeModal('add-task-modal');
+                });
+            }
 
             // ===== Onboarding Document Upload File Pickers =====
             document.querySelectorAll('[data-onboarding-upload]').forEach((wrapper) => {
